@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sessions de formation — 2KPI</title>
+<meta name="description" content="Calendrier des sessions de formation 2KPI ouvertes : télédétection, SIG, urbanisme numérique, démographie, aménagement paysager, WebSIG. Inscription en ligne." />
+<link rel="icon" href="../assets/img/favicon-32.png" sizes="32x32" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Jost:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-row">
+    <a href="../index.html" class="brand">
+      <img src="../assets/img/logo2kpi.png" alt="2KPI" width="120" height="75" />
+    </a>
+    <nav class="nav-links">
+      <a href="../index.html" data-page="index.html">Accueil</a>
+      <div class="nav-item has-dropdown">
+        <button class="nav-parent" type="button" aria-expanded="false" aria-haspopup="true">Formations <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="nav-dropdown">
+          <a href="formations.html" data-page="formations.html">Nos formations</a>
+          <a href="academy.html" data-page="academy.html">2KPI Academy</a>
+          <a href="sessions.html" data-page="sessions.html">Sessions</a>
+        </div>
+      </div>
+      <div class="nav-item has-dropdown">
+        <button class="nav-parent" type="button" aria-expanded="false" aria-haspopup="true">Réalisations <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="nav-dropdown">
+          <a href="realisations.html" data-page="realisations.html">Nos réalisations</a>
+          <a href="websig-demo.html" data-page="websig-demo.html">Démo WebSIG</a>
+        </div>
+      </div>
+      <a href="cabinet.html" data-page="cabinet.html">Cabinet</a>
+      <a href="contact.html" data-page="contact.html">Contact</a>
+      <a href="sessions.html" class="btn btn-primary nav-cta">S'inscrire</a>
+    </nav>
+    <button class="nav-toggle" aria-label="Ouvrir le menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero page-hero--banner" style="background-image:url('../assets/img/banners/sessions.png')">
+    <div class="container">
+      <p class="eyebrow">Sessions ouvertes</p>
+      <h1>Choisissez votre session, inscrivez-vous en ligne</h1>
+      <p class="lead">Sessions en ligne ou en présentiel, places limitées. Choisissez une formation ci-dessous : le résumé de la session (dates, lieu, places restantes) se remplit automatiquement sur la page d'inscription.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="session-filters" id="session-filters"></div>
+      <div class="grid grid-3" id="sessions-list"></div>
+
+      <div class="demo-callout" data-reveal>
+        <p>Une formation sur mesure, pour votre institution ou votre équipe&nbsp;?</p>
+        <a href="contact.html" class="btn btn-outline-navy">
+          Décrire votre besoin
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="../assets/img/logo2kpi.png" alt="2KPI" width="140" height="88" />
+        <p>« Développer des compétences numériques pour des territoires plus intelligents. »</p>
+      </div>
+      <div class="footer">
+        <h4>Navigation</h4>
+        <ul class="footer-links">
+          <li><a href="../index.html">Accueil</a></li>
+          <li><a href="cabinet.html">Cabinet</a></li>
+          <li><a href="formations.html">Formations</a></li>
+          <li><a href="academy.html">2KPI Academy</a></li>
+          <li><a href="sessions.html">Sessions</a></li>
+          <li><a href="realisations.html">Réalisations</a></li>
+        </ul>
+      </div>
+      <div class="footer">
+        <h4>Contact</h4>
+        <ul class="footer-contact">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s7-7.4 7-12a7 7 0 1 0-14 0c0 4.6 7 12 7 12Z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Abidjan, Côte d'Ivoire</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z"/><path d="m4 6 8 7 8-7"/></svg><a href="mailto:contacts@2kpinnov.org">contacts@2kpinnov.org</a></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .6 3a2 2 0 0 1-.5 2L8 10a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2-.5c1 .3 2 .5 3 .6a2 2 0 0 1 1.7 2Z"/></svg><a href="tel:+2250749305943">(+225) 07 49 30 5943</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© <span id="year">2026</span> 2KPI — Knowledge • Key • Planning • Innovation. Tous droits réservés.</p>
+      <a href="#top" class="back-to-top" aria-label="Retour en haut"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
+    </div>
+  </div>
+</footer>
+
+<script src="../js/sessions-data.js"></script>
+<script src="../js/sessions-catalog.js"></script>
+<script src="../js/main.js"></script>
+</body>
+</html>
