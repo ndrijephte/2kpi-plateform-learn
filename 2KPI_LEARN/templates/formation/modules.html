@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Mon cours — 2KPI Learn{% endblock %}
+{% block content %}
+<h1>{{ formation.titre|default:"Formation" }}</h1>
+<ul class="modules">
+  {% for m in modules %}
+    <li><a href="{% url 'formation:module_detail' m.code %}"><strong>{{ m.code }}</strong> — {{ m.titre }}</a>
+      <small>{{ m.seances.count }} séances · {{ m.competences.count }} compétences</small></li>
+  {% empty %}<li>Contenu à venir.</li>{% endfor %}
+</ul>
+{% endblock %}

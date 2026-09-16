@@ -1,0 +1,154 @@
+// ======================================================================
+// Banque de questions — Test Semaine 1 (Formation GéoAI, Sassandra)
+// Format : GIFT (import direct dans Moodle)
+// Import : Cours > Banque de questions > Importer > Format "GIFT"
+//          Choisir/laisser la catégorie, puis composer le Test S1
+//          à partir de ces questions (aléatoires ou fixes).
+// Barème conseillé : 1 point / question. Séances 1 à 4.
+// ======================================================================
+
+$CATEGORY: Formation GéoAI/Semaine 1/Séance 1 — Comprendre la GéoAI
+
+::S1Q1 Définition GéoAI:: Qu'est-ce qui définit le mieux la GéoAI (IA géospatiale) ? {
+=La combinaison de l'observation de la Terre, de l'apprentissage automatique et des SIG pour produire des connaissances spatiales
+~Un logiciel SIG de bureau servant uniquement à dessiner des cartes
+~Une base de données relationnelle pour stocker des adresses
+~Un format de fichier raster compressé
+}
+
+::S1Q2 GéoAI vs SIG:: Vrai ou faux : contrairement au SIG classique qui décrit et interroge l'espace, la GéoAI apprend des régularités dans les données massives. {TRUE}
+
+::S1Q3 Chaîne de valeur:: Dans la chaîne de valeur GéoAI, quel maillon vient juste APRÈS l'« Acquisition » ? {
+=Cube spatio-temporel
+~Apprentissage (Random Forest, K-means)
+~Alerte & diffusion
+~Statistiques spatiales (Moran, Gi*)
+}
+
+::S1Q4 Variables du cube:: Parmi ces variables, lesquelles font partie des 8 variables du cube de Sassandra ? {
+~%25%NDVI
+~%25%MNDWI
+~%25%Rain (précipitations)
+~%25%TempMax
+~%-50%Population
+~%-50%pH du sol
+}
+
+::S1Q5 Nombre de variables:: Combien de variables biophysiques et climatiques composent le cube spatio-temporel du projet Sassandra ? {
+=8
+=huit
+}
+
+
+$CATEGORY: Formation GéoAI/Semaine 1/Séance 2 — Earth Engine & Python
+
+::S2Q1 Éditeur GEE:: Quelle adresse ouvre l'éditeur de code Google Earth Engine ? {
+=code.earthengine.google.com
+=https://code.earthengine.google.com
+}
+
+::S2Q2 Collection Sentinel-2:: Quel identifiant désigne la collection Sentinel-2 (réflectance de surface) utilisée dans la formation ? {
+=COPERNICUS/S2_SR_HARMONIZED
+~LANDSAT/LC08/C02/T1_L2
+~MODIS/006/MOD13Q1
+~COPERNICUS/S1_GRD
+}
+
+::S2Q3 Environnement conda:: Quelle commande crée l'environnement Python de la formation ? {
+=conda create -n geoai python\=3.11 -y
+~pip install geoai
+~conda activate geoai
+~python -m venv geoai
+}
+
+::S2Q4 Authenticate vs Initialize:: Vrai ou faux : ee.Authenticate() doit être relancé à CHAQUE session de travail. {FALSE
+#Faux : ee.Authenticate() ne sert (en général) que la première fois pour coller le jeton ; c'est ee.Initialize() qui s'exécute à chaque session.
+}
+
+::S2Q5 Filtre nuages:: Quel filtre limite les images à moins de 40 % de nuages ? {
+=ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 40)
+~ee.Filter.gt('CLOUDY_PIXEL_PERCENTAGE', 40)
+~ee.Filter.eq('CLOUD', 40)
+~ee.Filter.date('2024-01-01', '2024-12-31')
+}
+
+::S2Q6 Superficie AOI:: L'emprise (AOI) approximative de Sassandra utilisée dans le premier script GEE couvre environ combien de km² ? {#5000:1500}
+
+
+$CATEGORY: Formation GéoAI/Semaine 1/Séance 3 — QGIS, Git & structure
+
+::S3Q1 Init dépôt:: Quelle commande initialise un nouveau dépôt Git dans un dossier ? {
+=git init
+~git start
+~git new
+~git clone
+}
+
+::S3Q2 Fichier d'exclusion:: Quel fichier indique à Git de NE PAS versionner les données lourdes et fichiers temporaires ? {
+=.gitignore
+=gitignore
+}
+
+::S3Q3 Structure projet:: Parmi ces dossiers, lesquels font partie de l'arborescence recommandée du projet geoai-sassandra ? {
+~%25%01_donnees
+~%25%02_scripts_gee
+~%25%03_notebooks
+~%25%05_qgis
+~%-50%system32
+~%-50%node_modules
+}
+
+::S3Q4 PyQGIS:: Quel import permet d'accéder au projet courant dans la console Python de QGIS ? {
+=from qgis.core import QgsProject
+~import arcpy
+~from osgeo import qgis
+~import qgisproject
+}
+
+::S3Q5 Reproductibilité:: Vrai ou faux : versionner ses scripts et notebooks avec Git contribue à la reproductibilité de la chaîne GéoAI. {TRUE}
+
+
+$CATEGORY: Formation GéoAI/Semaine 1/Séance 4 — Atelier Sentinel-2 & NDVI
+
+::S4Q1 Bandes NDVI:: Le NDVI de Sentinel-2 se calcule avec la différence normalisée de quelles bandes ? {
+=B8 (PIR) et B4 (Rouge)
+~B2 (Bleu) et B3 (Vert)
+~B11 et B12 (SWIR)
+~B1 et B9
+}
+
+::S4Q2 Masquage SCL:: Quelles classes de la bande SCL sont exclues lors du masquage des nuages et ombres ? {
+~%20%3
+~%20%8
+~%20%9
+~%20%10
+~%20%11
+~%-50%4 (végétation)
+~%-50%6 (eau)
+}
+
+::S4Q3 Composite médian:: Quelle opération produit un composite sans nuages à partir de la collection filtrée et masquée ? {
+=s2.median()
+~s2.first()
+~s2.sum()
+~s2.count()
+}
+
+::S4Q4 Saisonnalité NDVI:: Vrai ou faux : le NDVI est plus élevé pendant/juste après la saison des pluies qu'en pleine saison sèche. {TRUE
+#Vrai : la végétation est plus active (donc NDVI plus élevé) pendant et après la saison des pluies.
+}
+
+::S4Q5 Résolution d'export:: Quelle résolution (scale) est utilisée pour l'export afin de limiter la mémoire et rester cohérent avec le cube ? {
+=250 m
+~10 m
+~1 km
+~30 m
+}
+
+::S4Q6 Associations:: Associez chaque élément à son rôle. {
+=NDVI -> Vigueur de la végétation
+=MNDWI -> Détection de l'eau
+=Bande SCL -> Masquage nuages/ombres
+=Git -> Versionnement et reproductibilité
+=geemap -> Cartes interactives dans le notebook
+}

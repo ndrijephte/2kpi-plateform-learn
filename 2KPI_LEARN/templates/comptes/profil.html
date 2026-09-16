@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Profil — 2KPI Learn{% endblock %}
+{% block content %}
+<h1>Mon profil</h1>
+<div class="card">
+  <p><strong>Nom :</strong> {{ user.get_full_name|default:user.username }}</p>
+  <p><strong>Rôle :</strong> {{ profil.get_role_display }}</p>
+  <p><strong>Structure :</strong> {{ profil.structure|default:"—" }}</p>
+  <p><strong>Spécialité :</strong> {{ profil.specialite|default:"—" }}</p>
+  <p><strong>Téléphone :</strong> {{ profil.telephone|default:"—" }}</p>
+</div>
+{% endblock %}
