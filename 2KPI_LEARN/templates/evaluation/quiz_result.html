@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Résultat — {{ quiz.titre }}{% endblock %}
+{% block content %}
+<h1>Résultat — {{ quiz.titre }}</h1>
+<div class="kpi-grid">
+  <div class="kpi"><span>{{ score }}/20</span><label>Note</label></div>
+  <div class="kpi"><span>{{ bonnes }}/{{ total }}</span><label>Bonnes réponses</label></div>
+</div>
+<ul class="modules">
+  {% for r in resultats %}
+    <li>{% if r.ok %}✔{% else %}✗{% endif %} {{ forloop.counter }}. {{ r.q.intitule }}
+      <small>{% if r.ok %}Correct{% else %}À revoir{% endif %}</small></li>
+  {% endfor %}
+</ul>
+<p><a class="btn" href="{% url 'evaluation:quiz' quiz.id %}">Refaire le test</a>
+   <a href="{% url 'formation:module_detail' quiz.module.code %}">← Retour au module</a></p>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.titre }} — 2KPI Learn{% endblock %}
+{% block content %}
+<h1>{{ quiz.titre }}</h1>
+<p>Réponds à toutes les questions puis valide. Correction automatique.</p>
+<form method="post">{% csrf_token %}
+  {% for item in questions %}
+  <div class="card">
+    <p><strong>{{ forloop.counter }}.</strong> {{ item.q.intitule }}</p>
+    {% if item.type == 'qcm' or item.type == 'vf' %}
+      {% for c in item.choix %}
+        <label class="opt"><input type="{% if item.multi %}checkbox{% else %}radio{% endif %}" name="q{{ item.q.id }}" value="{{ c.id }}"> {{ c.texte }}</label>
+      {% endfor %}
+      {% if item.multi %}<small>(plusieurs réponses possibles)</small>{% endif %}
+    {% elif item.type == 'court' %}
+      <input type="text" name="q{{ item.q.id }}" placeholder="Ta réponse">
+    {% elif item.type == 'num' %}
+      <input type="text" name="q{{ item.q.id }}" placeholder="Valeur numérique">
+    {% elif item.type == 'appariement' %}
+      {% for p in item.pairs %}
+        <div class="pair"><span>{{ p.gauche }}</span> →
+          <select name="q{{ item.q.id }}_{{ p.cid }}">
+            <option value=""></option>
+            {% for d in item.droites %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+          </select>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+  {% endfor %}
+  <button class="btn" type="submit">Valider mes réponses</button>
+</form>
+{% endblock %}

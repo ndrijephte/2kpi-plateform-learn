@@ -3,8 +3,19 @@
 {% block content %}
 <p><a href="{% url 'formation:modules' %}">← Mon cours</a></p>
 <h1>{{ module.code }} — {{ module.titre }}</h1>
+
 <h2>Séances</h2>
-<ol>{% for s in module.seances.all %}<li>{{ s.get_jour_display }} — {{ s.theme|default:"(à venir)" }} <small>{{ s.duree_prevue_h }} h</small></li>{% endfor %}</ol>
+<ul class="modules">
+  {% for s in module.seances.all %}
+    <li><a href="{% url 'formation:seance' s.pk %}">{{ s.get_jour_display }} — {{ s.theme|default:"(à venir)" }}</a>
+      <small>{{ s.duree_prevue_h }} h</small></li>
+  {% endfor %}
+</ul>
+
+{% if quiz %}
+<p><a class="btn" href="{% url 'evaluation:quiz' quiz.id %}">Passer le test — {{ quiz.titre }}</a></p>
+{% endif %}
+
 <h2>Compétences visées</h2>
 <ul>{% for c in module.competences.all %}<li><strong>{{ c.code }}</strong> — {{ c.libelle }} <small>(niveau visé {{ c.niveau_vise }})</small></li>{% endfor %}</ul>
 {% endblock %}

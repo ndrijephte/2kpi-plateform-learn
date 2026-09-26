@@ -93,6 +93,11 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
+# En développement (DEBUG), on évite le stockage "manifest" (pas besoin de
+# collectstatic) ; en production WhiteNoise sert les statiques compressés+manifest.
+if DEBUG:
+    STORAGES["staticfiles"]["BACKEND"] = "django.contrib.staticfiles.storage.StaticFilesStorage"
+
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 

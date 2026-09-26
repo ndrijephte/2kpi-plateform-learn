@@ -6,15 +6,21 @@ Déploiement visé : `learn.2kpinnov.org` via cPanel **Setup Python App** (Passe
 ## Démarrer en local
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate      # Windows : .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env          # laisser DB_ENGINE vide => SQLite en local
+
+# Créer un .env LOCAL (SQLite, pas de PostgreSQL nécessaire) :
+printf 'DEBUG=True\nSECRET_KEY=dev-local\nALLOWED_HOSTS=127.0.0.1,localhost\nDB_ENGINE=\n' > .env
+
 python manage.py migrate
 python manage.py seed_geoai   # 12 modules, 24 compétences, 48 séances
 python manage.py import_gift  # 22 questions du Test S1 (module M1)
 python manage.py createsuperuser
-python manage.py runserver
+python manage.py runserver     # http://127.0.0.1:8000
 ```
+
+> En local, `DEBUG=True` et `DB_ENGINE` vide : SQLite est utilisé et aucun `collectstatic`
+> n'est nécessaire. PostgreSQL et `psycopg` ne servent qu'en production.
 
 Pages : `/` (tableau de bord) · `/formation/modules/` · `/comptes/profil/` · `/admin/`.
 
