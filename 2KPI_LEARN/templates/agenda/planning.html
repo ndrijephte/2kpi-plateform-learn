@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Planning — {{ promotion.nom }}{% endblock %}
+{% block content %}
+<h1>Planning — {{ promotion.nom }}</h1>
+<p class="muted">Espace formateur. Génère l'agenda depuis l'admin, puis ajuste ici et notifie l'apprenant.</p>
+<table class="tbl">
+  <thead><tr><th>Date</th><th>Séance</th><th>Statut</th><th>Actions</th></tr></thead>
+  <tbody>
+  {% for ev in evenements %}
+    <tr class="statut-{{ ev.statut }}">
+      <td>{{ ev.date_debut|date:"D d/m H:i" }}</td>
+      <td>{{ ev.libelle }} {% if ev.module_code %}<small class="muted">{{ ev.module_code }}</small>{% endif %}</td>
+      <td>{{ ev.get_statut_display }}</td>
+      <td class="actions">
+        <form method="post" action="{% url 'agenda:evenement_action' ev.id %}" class="inline">{% csrf_token %}
+          <button class="mini" name="action" value="confirmer">Confirmer</button>
+          <button class="mini" name="action" value="realiser">Réalisée</button>
+          <button class="mini" name="action" value="annuler">Annuler</button>
+          <button class="mini primary" name="action" value="notifier">Notifier</button>
+        </form>
+        <details class="report">
+          <summary>Reporter</summary>
+          <form method="post" action="{% url 'agenda:evenement_action' ev.id %}">{% csrf_token %}
+            <input type="hidden" name="action" value="reporter">
+            <input type="datetime-local" name="nouvelle_date" required>
+            <input type="text" name="motif" placeholder="Motif (optionnel)">
+            <label class="chk"><input type="checkbox" name="decaler_suite"> décaler la suite</label>
+            <button class="mini" type="submit">Reporter</button>
+          </form>
+        </details>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

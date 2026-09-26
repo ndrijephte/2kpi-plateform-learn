@@ -13,6 +13,8 @@ class Inscription(models.Model):
     apprenant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                   related_name="inscriptions")
     formation = models.ForeignKey(Formation, on_delete=models.CASCADE, related_name="inscriptions")
+    promotion = models.ForeignKey("agenda.Promotion", on_delete=models.SET_NULL, null=True,
+                                  blank=True, related_name="inscriptions")
     date_debut = models.DateField(null=True, blank=True)
     date_fin_prevue = models.DateField(null=True, blank=True)
     statut = models.CharField(max_length=12, choices=Statut.choices, default=Statut.EN_COURS)
@@ -34,17 +36,20 @@ class Presence(models.Model):
         ABSENT = "absent", "Absent"
 
     inscription = models.ForeignKey(Inscription, on_delete=models.CASCADE, related_name="presences")
-    seance = models.ForeignKey(Seance, on_delete=models.CASCADE, related_name="presences")
+    seance = models.ForeignKey(Seance, on_delete=models.CASCADE, related_name="presences",
+                               null=True, blank=True)
+    evenement = models.ForeignKey("agenda.Evenement", on_delete=models.CASCADE,
+                                  related_name="presences", null=True, blank=True)
     statut = models.CharField(max_length=10, choices=Statut.choices, default=Statut.ABSENT)
     duree_realisee_h = models.DecimalField(max_digits=4, decimal_places=1, default=0)
 
     class Meta:
         verbose_name = "Présence"
         verbose_name_plural = "Présences"
-        unique_together = ("inscription", "seance")
+        unique_together = ("inscription", "evenement")
 
     def __str__(self):
-        return f"{self.inscription.apprenant} · {self.seance} : {self.get_statut_display()}"
+        return f"{self.inscription.apprenant} · {self.evenement} : {self.get_statut_display()}"
 
 
 class Livrable(models.Model):

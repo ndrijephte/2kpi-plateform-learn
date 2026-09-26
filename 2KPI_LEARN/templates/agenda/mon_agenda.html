@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Mon agenda — 2KPI Learn{% endblock %}
+{% block content %}
+<h1>Mon agenda</h1>
+{% if promotion %}
+  <p class="muted">{{ promotion.nom }}</p>
+  {% if prochaine %}
+  <div class="card next">
+    <span class="tag">Prochaine séance</span>
+    <p><strong>{{ prochaine.date_debut|date:"l d F, H:i" }}</strong> — {{ prochaine.libelle }}</p>
+    <p class="muted">{{ prochaine.get_mode_display }}{% if prochaine.lieu %} · {{ prochaine.lieu }}{% endif %} · statut : {{ prochaine.get_statut_display }}</p>
+  </div>
+  {% endif %}
+  {% for sem in semaines %}
+    <h2>{{ sem.label }} <small class="muted">({{ sem.annee }})</small></h2>
+    <ul class="agenda">
+      {% for ev in sem.evenements %}
+        <li class="statut-{{ ev.statut }}">
+          <span class="date">{{ ev.date_debut|date:"D d/m · H:i" }}</span>
+          <span class="lib">{{ ev.libelle }}{% if ev.module_code %} <small class="muted">{{ ev.module_code }}</small>{% endif %}</span>
+          <span class="badge-statut">{{ ev.get_statut_display }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% empty %}
+    <p>Ton calendrier n'est pas encore publié. Ton formateur le mettra en ligne prochainement.</p>
+  {% endfor %}
+{% else %}
+  <p>Tu n'es rattaché à aucune promotion pour le moment. Contacte ton formateur.</p>
+{% endif %}
+{% endblock %}

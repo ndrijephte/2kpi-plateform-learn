@@ -2,6 +2,13 @@
 {% block title %}Tableau de bord — 2KPI Learn{% endblock %}
 {% block content %}
 <h1>Bonjour {{ user.first_name|default:user.username }}</h1>
+{% if prochaine %}
+<div class="card next">
+  <span class="tag">Prochaine séance</span>
+  <p><strong>{{ prochaine.date_debut|date:"l d F, H:i" }}</strong> — {{ prochaine.libelle }}</p>
+  <p class="muted">{{ prochaine.get_mode_display }}{% if prochaine.lieu %} · {{ prochaine.lieu }}{% endif %} — <a href="{% url 'agenda:mon_agenda' %}">voir l'agenda</a></p>
+</div>
+{% endif %}
 {% if synthese %}
 <div class="kpi-grid">
   <div class="kpi"><span>{{ synthese.progression }}%</span><label>Progression</label></div>

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Notifications — 2KPI Learn{% endblock %}
+{% block content %}
+<div class="row-between">
+  <h1>Notifications</h1>
+  <form method="post">{% csrf_token %}<button class="link">Tout marquer comme lu</button></form>
+</div>
+<ul class="notifs">
+  {% for n in notifications %}
+    <li class="{% if not n.lu %}nonlu{% endif %}">
+      <strong>{{ n.titre }}</strong>
+      <span class="muted">· {{ n.date_creation|date:"d/m H:i" }}</span>
+      {% if n.message %}<p>{{ n.message }}</p>{% endif %}
+    </li>
+  {% empty %}<li>Aucune notification.</li>{% endfor %}
+</ul>
+{% endblock %}

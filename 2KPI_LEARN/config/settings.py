@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     "apps.comptes",
     "apps.formation",
     "apps.evaluation",
+    "apps.agenda",
     "apps.tableau_bord",
 ]
 
@@ -46,6 +47,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.agenda.context_processors.notifications",
             ],
         },
     },
