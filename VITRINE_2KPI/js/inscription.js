@@ -57,6 +57,8 @@
     var session = getSessionById(data.get("session"));
     var payload = {
       session: session ? session.titre + " (" + session.dateAffichage + ")" : data.get("session"),
+      session_code: data.get("session") || "",
+      site_web: data.get("site_web") || "",
       nom: data.get("nom") || "",
       email: data.get("email") || "",
       telephone: data.get("telephone") || "",
@@ -80,7 +82,43 @@
       if (statusOk) statusOk.classList.add("visible");
     }
 
-    if (typeof isAppsScriptConfigured === "function" && isAppsScriptConfigured()) {
+    function succes() {
+      if (statusOk) statusOk.classList.add("visible");
+      form.reset();
+      renderSummary();
+    }
+
+    if (typeof isLearnConfigured === "function" && isLearnConfigured()) {
+      var bouton = form.querySelector("button[type=submit]");
+      if (bouton) bouton.disabled = true;
+      fetch(LEARN_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nom: payload.nom, email: payload.email, telephone: payload.telephone,
+          participants: payload.participants, message: payload.message,
+          session: payload.session_code, session_libelle: payload.session, site_web: payload.site_web
+        })
+      })
+        .then(function (r) {
+          return r.json().catch(function () { return {}; }).then(function (corps) { return { r: r, corps: corps }; });
+        })
+        .then(function (res) {
+          if (res.r.ok) { succes(); return; }
+          if (res.r.status === 400 || res.r.status === 429) {
+            // Erreur de saisie ou trop d'envois : on l'explique, sans basculer sur l'e-mail
+            var detail = res.corps.erreur || "Vérifiez les champs du formulaire (adresse e-mail, téléphone…).";
+            if (statusErr) { statusErr.textContent = detail; statusErr.classList.add("visible"); }
+            return;
+          }
+          throw new Error("HTTP " + res.r.status);
+        })
+        .catch(function () {
+          if (statusErr) statusErr.classList.add("visible");
+          sendMailtoFallback();
+        })
+        .then(function () { if (bouton) bouton.disabled = false; });
+    } else if (typeof isAppsScriptConfigured === "function" && isAppsScriptConfigured()) {
       fetch(APPS_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",

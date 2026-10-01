@@ -1,5 +1,11 @@
 # Faire arriver les inscriptions dans un Google Sheet
 
+> **Mise à jour :** par défaut, les inscriptions sont désormais envoyées à la plateforme
+> **2KPI Learn** (`learn.2kpinnov.org` › Candidatures), où l'admin les accepte en un clic :
+> le compte apprenant est créé et un e-mail d'activation est envoyé. Réglage :
+> `LEARN_API_URL` dans `js/inscription-config.js`. Le Google Sheet ci-dessous ne sert que si
+> `LEARN_API_URL` est vidé ; l'e-mail reste le repli automatique si la plateforme est injoignable.
+
 Par défaut, le formulaire d'inscription (`pages/inscription.html`) fonctionne déjà :
 chaque inscription ouvre le client mail avec les informations pré-remplies, comme le
 formulaire de contact. C'est utilisable tout de suite, mais chaque inscription arrive

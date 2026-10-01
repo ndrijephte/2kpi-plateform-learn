@@ -37,6 +37,7 @@
       </div>
       <a href="cabinet.html" data-page="cabinet.html">Cabinet</a>
       <a href="contact.html" data-page="contact.html">Contact</a>
+      <a href="https://learn.2kpinnov.org/login/" class="btn btn-outline-navy nav-espace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Espace apprenant</a>
       <a href="sessions.html" class="btn btn-primary nav-cta">S'inscrire</a>
     </nav>
     <button class="nav-toggle" aria-label="Ouvrir le menu" aria-expanded="false">
@@ -78,6 +79,8 @@
 
         <form id="inscription-form">
           <input type="hidden" name="session" id="session-hidden" />
+          <!-- Champ piège anti-robots : invisible et ignoré par les humains -->
+          <div class="hp" aria-hidden="true"><label for="site_web">Site web</label><input type="text" id="site_web" name="site_web" tabindex="-1" autocomplete="off" /></div>
           <div class="form-row">
             <div class="field">
               <label for="nom">Nom complet</label>
@@ -106,7 +109,7 @@
             Envoyer mon inscription
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </button>
-          <p class="form-note">En soumettant, votre inscription est transmise à 2KPI (Google Sheet si configuré, sinon par e-mail à contacts@2kpinnov.org).</p>
+          <p class="form-note">En soumettant, votre demande est transmise à l'équipe 2KPI. Une fois validée, vous recevrez par e-mail un lien pour activer votre espace apprenant.</p>
         </form>
       </div>
 
