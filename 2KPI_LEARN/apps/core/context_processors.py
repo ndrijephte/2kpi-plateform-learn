@@ -14,6 +14,7 @@ RUBRIQUES = {
     "comptes": "profil",
     "comptes:utilisateurs": "utilisateurs",
     "comptes:utilisateur_editer": "utilisateurs",
+    "comptes:candidatures": "candidatures",
     "core": "parametres",
     "formation:ressources": "ressources",
     "formation:ressource_ajouter": "ressources",
@@ -52,6 +53,9 @@ def interface(request):
         return {**ctx, "notifs_non_lues": 0, "role": None, "rubrique": ""}
     from apps.agenda.models import Notification
     role = role_de(user)
+    if role == ADMIN:
+        from apps.comptes.models import Candidature
+        ctx["candidatures_nouvelles"] = Candidature.objects.filter(statut=Candidature.Statut.NOUVELLE).count()
     return {**ctx,
         "notifs_non_lues": Notification.objects.filter(destinataire=user, lu=False).count(),
         "role": role,

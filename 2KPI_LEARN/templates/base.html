@@ -29,6 +29,9 @@
         {% icon "dashboard" %}<span>Tableau de bord</span></a>
       <a href="{% url 'comptes:utilisateurs' %}" {% if rubrique == "utilisateurs" %}class="active" aria-current="page"{% endif %}>
         {% icon "user-check" %}<span>Utilisateurs</span></a>
+      <a href="{% url 'comptes:candidatures' %}" {% if rubrique == "candidatures" %}class="active" aria-current="page"{% endif %}>
+        {% icon "inbox" %}<span>Candidatures</span>
+        {% if candidatures_nouvelles %}<span class="badge" aria-label="{{ candidatures_nouvelles }} nouvelles">{{ candidatures_nouvelles }}</span>{% endif %}</a>
       <a href="{% url 'agenda:promotions' %}" {% if rubrique == "promotions" %}class="active" aria-current="page"{% endif %}>
         {% icon "users" %}<span>Promotions</span></a>
 

@@ -12,6 +12,10 @@ class Promotion(models.Model):
                                   on_delete=models.SET_NULL, null=True, blank=True,
                                   related_name="promotions_encadrees")
     active = models.BooleanField(default=True)
+    code_vitrine = models.SlugField(
+        "Code session (site vitrine)", max_length=100, blank=True,
+        help_text="Identifiant de la session sur le site vitrine (ex. teledetection-sig-initiation) : "
+                  "les candidatures reçues pour cette session sont rattachées à cette promotion.")
     ouverture_auto = models.BooleanField(
         "Ouverture automatique des modules", default=True,
         help_text="Chaque module s'ouvre le lundi de la semaine de sa première séance. "

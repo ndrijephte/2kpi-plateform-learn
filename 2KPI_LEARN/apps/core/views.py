@@ -292,3 +292,21 @@ def question(request, quiz_pk, pk=None):
         "aide_types": AIDE_TYPES, "section": "quiz", "libelle": libelle,
         "aide_liste": [(Question.Type(k).label, v) for k, v in AIDE_TYPES.items()],
         "fil": _fil(*_fil_quiz(q), (libelle, None))})
+
+
+# ---------- Fichiers publics de media/ (logo, image de connexion, photos de profil) ----------
+
+DOSSIERS_PUBLICS = ("parametres/", "profils/")
+
+
+def media_publique(request, chemin):
+    """Sert les fichiers publics de MEDIA_ROOT, y compris en production (Passenger ne les sert pas).
+    Liste blanche de dossiers ; `serve` protège contre la remontée de chemin (../)."""
+    from django.conf import settings
+    from django.views.static import serve
+    if not chemin.startswith(DOSSIERS_PUBLICS):
+        raise Http404
+    reponse = serve(request, chemin, document_root=settings.MEDIA_ROOT)
+    reponse["Cache-Control"] = "public, max-age=86400"
+    reponse["X-Content-Type-Options"] = "nosniff"
+    return reponse

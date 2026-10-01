@@ -1,0 +1,12 @@
+{% autoescape off %}
+Bonjour {{ c.nom_complet }},
+
+Merci pour votre intérêt{% if c.session_libelle %} pour « {{ c.session_libelle }} »{% endif %}.
+Nous ne pouvons malheureusement pas donner suite à votre demande pour cette session.
+{% if c.motif_refus %}
+{{ c.motif_refus }}
+{% endif %}
+N'hésitez pas à consulter nos prochaines sessions.
+
+L'équipe 2KPI
+{% endautoescape %}

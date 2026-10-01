@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Candidatures — {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "inbox" size=16 %}<span>Candidatures</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "shield" size=14 %} Administration · site vitrine</span>
+    <h1>Candidatures</h1>
+    <p class="muted">Demandes d'inscription envoyées depuis le site vitrine. Accepter crée le compte apprenant, l'inscrit à la promotion et lui envoie un lien pour choisir son mot de passe.</p>
+  </div>
+</div>
+<nav class="tabs" aria-label="Filtrer par statut">
+  {% for val, lib in statuts %}
+  <a href="?statut={{ val }}" {% if filtre == val %}class="on"{% endif %}>{{ lib }}s
+    {% if val == "nouvelle" and compte.nouvelle %}<span class="badge">{{ compte.nouvelle }}</span>{% elif val == "acceptee" %}<small>({{ compte.acceptee }})</small>{% elif val == "refusee" %}<small>({{ compte.refusee }})</small>{% endif %}</a>
+  {% endfor %}
+  <a href="?statut=toutes" {% if filtre == "toutes" %}class="on"{% endif %}>Toutes</a>
+</nav>
+
+{% for c in candidatures %}
+<div class="card cand">
+  <div class="cand-tete">
+    <div>
+      <strong class="cand-nom">{{ c.nom_complet }}</strong>
+      <div class="res-meta">
+        <span>{% icon "mail" size=12 %} <a href="mailto:{{ c.email }}">{{ c.email }}</a></span>
+        <span>{% icon "phone" size=12 %} <a href="tel:{{ c.telephone }}">{{ c.telephone }}</a></span>
+        {% if c.participants > 1 %}<span class="result-ko">{% icon "users" size=12 %} {{ c.participants }} participants</span>{% endif %}
+        <span>{% icon "clock" size=12 %} {{ c.date_reception|date:"d/m/Y H:i" }}</span>
+      </div>
+    </div>
+    <span class="pill {% if c.statut == 'acceptee' %}pill-ok{% elif c.statut == 'refusee' %}pill-ko{% else %}pill-warn{% endif %}">{{ c.get_statut_display }}</span>
+  </div>
+  <p class="cand-session">{% icon "graduation-cap" size=14 %} <strong>{{ c.session_libelle|default:"Session non précisée" }}</strong>
+    {% if c.promotion %}<span class="muted"> → {{ c.promotion.nom }}</span>{% elif c.statut == "nouvelle" %}<span class="muted"> · aucune promotion associée à ce code{% if c.session_code %} (« {{ c.session_code }} »){% endif %}</span>{% endif %}</p>
+  {% if c.message %}<p class="res-consignes" style="background:var(--bg);border-color:var(--border-strong);color:var(--text)">{{ c.message }}</p>{% endif %}
+
+  {% if c.statut == "nouvelle" %}
+  <div class="cand-actions">
+    <form method="post" class="inline-form">{% csrf_token %}
+      <input type="hidden" name="candidature" value="{{ c.pk }}"><input type="hidden" name="action" value="accepter">
+      <select name="promotion" aria-label="Promotion" required>
+        <option value="">— Promotion —</option>
+        {% for p in promotions %}<option value="{{ p.pk }}" {% if c.promotion_id == p.pk %}selected{% endif %}>{{ p.nom }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">{% icon "user-check" size=14 %} Accepter et créer le compte</button>
+    </form>
+    <details class="report">
+      <summary class="btn btn-sm btn-ghost-danger">{% icon "ban" size=14 %} Refuser</summary>
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="candidature" value="{{ c.pk }}"><input type="hidden" name="action" value="refuser">
+        <input type="text" name="motif" placeholder="Motif communiqué au candidat (optionnel)" style="flex:1">
+        <button class="btn btn-sm btn-ghost-danger" type="submit">Confirmer le refus</button>
+      </form>
+    </details>
+  </div>
+  {% else %}
+  <p class="muted"><small>{{ c.get_statut_display }} le {{ c.traitee_le|date:"d/m/Y H:i" }}{% if c.traitee_par %} par {{ c.traitee_par.get_full_name|default:c.traitee_par.username }}{% endif %}
+    {% if c.utilisateur %} · compte <a href="{% url 'comptes:utilisateur_editer' c.utilisateur.pk %}">{{ c.utilisateur.username }}</a>{% endif %}
+    {% if c.motif_refus %} · motif : {{ c.motif_refus }}{% endif %}</small></p>
+  {% if c.statut == "acceptee" and c.utilisateur and not c.utilisateur.has_usable_password %}
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="candidature" value="{{ c.pk }}"><input type="hidden" name="action" value="renvoyer">
+    <button class="btn btn-sm btn-secondary" type="submit">{% icon "send" size=14 %} Renvoyer l'invitation (compte pas encore activé)</button>
+  </form>
+  {% endif %}
+  {% endif %}
+</div>
+{% empty %}
+<div class="card empty"><span class="ico-tile done">{% icon "check-check" %}</span><strong>Aucune candidature {% if filtre == "nouvelle" %}à traiter{% endif %}</strong>Les demandes envoyées depuis le site vitrine apparaîtront ici.</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,8 @@
+{% autoescape off %}
+Bonjour {{ user.first_name|default:user.username }},
+
+Votre inscription{% if promotion %} à « {{ promotion.nom }} »{% endif %} est confirmée.
+Elle apparaît dans votre espace : {{ connexion }}
+
+L'équipe 2KPI
+{% endautoescape %}

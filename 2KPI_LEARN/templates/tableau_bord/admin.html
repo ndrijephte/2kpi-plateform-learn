@@ -22,7 +22,7 @@
   <div class="kpi"><span class="kpi-icon amber">{% icon "clipboard-check" %}</span><div><strong>{{ nb_a_corriger }}</strong><span>Livrables à corriger</span></div></div>
 </div>
 
-{% if sans_formateur or sans_promotion %}
+{% if sans_formateur or sans_promotion or candidatures_nouvelles %}
 <div class="card highlight">
   <h2 class="section-title">{% icon "alert" size=18 %} Points d'attention</h2>
   <ul class="list">
@@ -30,6 +30,10 @@
     <li><a class="list-item" href="{% url 'agenda:promotions' %}"><span class="ico-tile coral">{% icon "briefcase" size=18 %}</span>
       <span class="grow"><strong>{{ p.nom }}</strong><small>Aucun formateur affecté</small></span><span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
     {% endfor %}
+    {% if candidatures_nouvelles %}
+    <li><a class="list-item" href="{% url 'comptes:candidatures' %}"><span class="ico-tile coral">{% icon "inbox" size=18 %}</span>
+      <span class="grow"><strong>{{ candidatures_nouvelles }} candidature{{ candidatures_nouvelles|pluralize }} à traiter</strong><small>Reçue{{ candidatures_nouvelles|pluralize }} depuis le site vitrine</small></span><span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
+    {% endif %}
     {% if sans_promotion %}
     <li><a class="list-item" href="{% url 'comptes:utilisateurs' %}?role=apprenant"><span class="ico-tile coral">{% icon "graduation-cap" size=18 %}</span>
       <span class="grow"><strong>{{ sans_promotion }} apprenant{{ sans_promotion|pluralize }} sans promotion</strong><small>Ils ne voient ni agenda ni progression</small></span><span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>

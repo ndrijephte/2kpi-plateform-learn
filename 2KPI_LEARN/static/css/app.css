@@ -390,3 +390,10 @@ input[type=search]{width:100%;padding:9px 12px;border:1px solid var(--border-str
 .prevenir{display:inline-flex;align-items:center;gap:4px;font-size:.76rem;margin-left:8px}
 .prevenir input{width:auto}
 .seg label .icon{vertical-align:-2px}
+.cand-tete{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.cand-nom{font-size:1.05rem}
+.cand-session{margin:12px 0 0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cand-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.cand-actions select{min-width:220px}
+.code-vitrine{margin-top:6px}
+.code-vitrine input{width:190px;font-size:.78rem;padding:4px 8px}

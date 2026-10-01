@@ -112,6 +112,7 @@ LOGOUT_REDIRECT_URL = "login"
 LOGIN_URL = "login"
 
 # Sécurité (activée hors DEBUG)
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default="", cast=Csv())
 if not DEBUG:
     SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=True, cast=bool)
     SESSION_COOKIE_SECURE = True
@@ -119,15 +120,47 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 2592000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     X_FRAME_OPTIONS = "DENY"
+    if config("BEHIND_PROXY", default=False, cast=bool):  # HTTPS terminé par un proxy frontal
+        SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# E-mail
+# Site vitrine autorisé à appeler l'API publique (candidatures)
+VITRINE_ORIGINS = config("VITRINE_ORIGINS", default="https://2kpinnov.org,https://www.2kpinnov.org", cast=Csv())
+
+# E-mail : SMTP de l'hébergeur (465 = SSL, 587 = STARTTLS). Vide = e-mails affichés dans la console.
 EMAIL_HOST = config("EMAIL_HOST", default="")
 if EMAIL_HOST:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+    EMAIL_PORT = config("EMAIL_PORT", default=465, cast=int)
     EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
     EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
-    EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+    EMAIL_USE_SSL = config("EMAIL_USE_SSL", default=EMAIL_PORT == 465, cast=bool)
+    EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=not EMAIL_USE_SSL, cast=bool)
+    EMAIL_TIMEOUT = 15
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="2KPI Learn <no-reply@2kpinnov.org>")
+SERVER_EMAIL = config("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
+# ADMINS=Nom <adresse>,Autre <adresse> : reçoivent le détail des erreurs 500 en production
+ADMINS = [(n.split("<")[0].strip(), n.split("<")[1].rstrip("> ").strip())
+          for n in config("ADMINS", default="", cast=Csv()) if "<" in n]
+
+# Journaux : logs/2kpi_learn.log (rotation 5 × 2 Mo) + e-mail aux ADMINS sur erreur serveur
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"simple": {"format": "{asctime} {levelname} {name} — {message}", "style": "{"}},
+    "filters": {"prod": {"()": "django.utils.log.RequireDebugFalse"}},
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "simple"},
+        "fichier": {"class": "logging.handlers.RotatingFileHandler", "filename": LOG_DIR / "2kpi_learn.log",
+                    "maxBytes": 2 * 1024 * 1024, "backupCount": 5, "encoding": "utf-8", "formatter": "simple"},
+        "mail_admins": {"class": "django.utils.log.AdminEmailHandler", "filters": ["prod"], "level": "ERROR"},
+    },
+    "loggers": {
+        "django": {"handlers": ["console", "fichier"], "level": "INFO"},
+        "django.request": {"handlers": ["fichier", "mail_admins"], "level": "ERROR", "propagate": False},
+        "apps": {"handlers": ["console", "fichier"], "level": "INFO"},
+    },
+}

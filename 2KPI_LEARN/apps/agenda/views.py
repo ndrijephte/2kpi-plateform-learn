@@ -7,6 +7,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.text import slugify
 from apps.core.permissions import (APPRENANT, FORMATEUR, formateur_requis, est_admin,
                                    promotions_visibles, role_de)
 from apps.evaluation.models import Presence
@@ -148,6 +149,16 @@ def promotions(request):
     if request.method == "POST":
         if not admin:
             raise PermissionDenied
+        if request.POST.get("action") == "code":
+            promo = get_object_or_404(Promotion, pk=request.POST.get("promotion"))
+            code = slugify(request.POST.get("code_vitrine", ""))[:100]
+            if code and Promotion.objects.filter(code_vitrine=code, active=True).exclude(pk=promo.pk).exists():
+                messages.error(request, f"Le code « {code} » est déjà utilisé par une autre promotion active.")
+            else:
+                promo.code_vitrine = code
+                promo.save(update_fields=["code_vitrine"])
+                messages.success(request, f"Code vitrine de « {promo.nom} » : {code or '(aucun)'}.")
+            return redirect("agenda:promotions")
         if request.POST.get("action") == "affecter":
             promo = get_object_or_404(Promotion, pk=request.POST.get("promotion"))
             promo.formateur = formateurs.filter(pk=request.POST.get("formateur") or None).first()
@@ -160,6 +171,7 @@ def promotions(request):
         if nom and formation_id and date_debut:
             Promotion.objects.create(
                 nom=nom, formation_id=formation_id, date_debut=date_debut,
+                code_vitrine=slugify(request.POST.get("code_vitrine", ""))[:100],
                 formateur=formateurs.filter(pk=request.POST.get("formateur") or None).first())
             messages.success(request, "Promotion créée. Tu peux générer son calendrier.")
         else:

@@ -178,3 +178,43 @@ def utilisateur_modifier(request, pk):
     url = redirect("comptes:utilisateurs").url
     params = request.POST.get("retour", "")
     return redirect(f"{url}?{params}" if params else url)
+
+
+# ---------- Candidatures reçues du site vitrine ----------
+
+@admin_requis
+def candidatures(request):
+    from . import services
+    from .models import Candidature
+    if request.method == "POST":
+        c = get_object_or_404(Candidature, pk=request.POST.get("candidature"))
+        action = request.POST.get("action")
+        if action == "accepter" and c.statut != Candidature.Statut.ACCEPTEE:
+            promo = Promotion.objects.filter(pk=request.POST.get("promotion") or None, active=True).first()
+            if not promo:
+                messages.error(request, "Choisis la promotion dans laquelle inscrire la personne.")
+            else:
+                user, cree, envoye = services.accepter(request, c, promo)
+                messages.success(request, f"{c.nom_complet} inscrit(e) à « {promo.nom} » "
+                                          f"({'compte créé' if cree else 'compte existant'}, identifiant : {user.username}).")
+                if not envoye:
+                    messages.warning(request, "L'e-mail n'a pas pu partir : vérifie la configuration SMTP, "
+                                              "puis utilise « Renvoyer l'invitation ».")
+        elif action == "refuser" and c.statut == Candidature.Statut.NOUVELLE:
+            services.refuser(request, c, (request.POST.get("motif") or "").strip())
+            messages.info(request, f"Candidature de {c.nom_complet} refusée.")
+        elif action == "renvoyer" and c.utilisateur:
+            if services.envoyer_invitation(request, c.utilisateur, c.promotion):
+                messages.success(request, f"Invitation renvoyée à {c.utilisateur.email}.")
+            else:
+                messages.error(request, "Échec de l'envoi de l'e-mail (configuration SMTP ?).")
+        return redirect(f"{reverse('comptes:candidatures')}?statut={request.GET.get('statut', 'nouvelle')}")
+
+    filtre = request.GET.get("statut", "nouvelle")
+    qs = Candidature.objects.select_related("promotion", "utilisateur", "traitee_par")
+    if filtre in Candidature.Statut.values:
+        qs = qs.filter(statut=filtre)
+    compte = {s: Candidature.objects.filter(statut=s).count() for s in Candidature.Statut.values}
+    return render(request, "comptes/candidatures.html", {
+        "candidatures": qs[:200], "filtre": filtre, "compte": compte, "statuts": Candidature.Statut.choices,
+        "promotions": Promotion.objects.filter(active=True).select_related("formation").order_by("-date_debut")})

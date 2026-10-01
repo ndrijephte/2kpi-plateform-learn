@@ -92,6 +92,26 @@ web) et téléchargés uniquement via l'application après contrôle des droits.
 - `apps/tableau_bord` — synthèse (note globale 40/40/20) + vue formateur
 - `docs/ARCHITECTURE.md` — architecture détaillée
 
+## Tests
+
+```bash
+python manage.py test        # 32 tests : rôles, paramètres, accès aux contenus, fichiers, quiz, candidatures
+```
+
+## Exploitation
+
+- `python manage.py tester_email adresse@exemple.org` — vérifie la configuration SMTP
+- `python manage.py envoyer_rappels` — rappels J-1 (cron quotidien)
+- `python manage.py sauvegarder [--garder 14]` — base + `media/` + `prive/` dans `sauvegardes/` (cron nocturne)
+- Journaux : `logs/2kpi_learn.log` ; erreurs 500 envoyées par e-mail aux `ADMINS`
+
+## Site vitrine
+
+Le formulaire d'inscription de la vitrine envoie les demandes à `POST /api/candidatures/` (CORS limité à
+`VITRINE_ORIGINS`, anti-robots, 5 envois/heure/IP). L'admin les traite dans **Candidatures** : accepter
+crée le compte apprenant, l'inscrit à la promotion (rattachée via son « code session vitrine ») et
+envoie un e-mail d'activation. Voir `docs/DEPLOIEMENT_cPanel.md`, étapes 9 à 11.
+
 ## Commandes de données
 
 - `python manage.py seed_geoai` — (ré)initialise la formation GéoAI

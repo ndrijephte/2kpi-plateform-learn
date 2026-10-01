@@ -26,6 +26,7 @@
         {% for e in formateurs %}<option value="{{ e.id }}">{{ e.get_full_name|default:e.username }}</option>{% endfor %}
       </select></div>
     <div class="field" style="flex:0 1 170px"><label for="p-date">Date de début</label><input id="p-date" type="date" name="date_debut" required></div>
+    <div class="field"><label for="p-code">Code session vitrine <small class="muted">(optionnel)</small></label><input id="p-code" type="text" name="code_vitrine" placeholder="teledetection-sig-initiation"></div>
     <button class="btn" type="submit">{% icon "plus" size=16 %} Créer</button>
   </form>
 </div>
@@ -38,7 +39,14 @@
   <tbody>
   {% for p in promotions %}
     <tr>
-      <td><strong>{{ p.nom }}</strong>{% if not p.active %} <span class="pill">Archivée</span>{% endif %}<br><small class="muted">{{ p.formation.titre }}</small></td>
+      <td><strong>{{ p.nom }}</strong>{% if not p.active %} <span class="pill">Archivée</span>{% endif %}<br><small class="muted">{{ p.formation.titre }}</small>
+        {% if peut_gerer %}
+        <form method="post" class="inline-form code-vitrine">{% csrf_token %}
+          <input type="hidden" name="action" value="code"><input type="hidden" name="promotion" value="{{ p.id }}">
+          <input type="text" name="code_vitrine" value="{{ p.code_vitrine }}" placeholder="code session vitrine" aria-label="Code session vitrine de {{ p.nom }}">
+          <button class="btn btn-sm btn-secondary" type="submit" title="Enregistrer le code">{% icon "check" size=12 %}</button>
+        </form>
+        {% elif p.code_vitrine %}<br><small class="muted">{% icon "link" size=12 %} {{ p.code_vitrine }}</small>{% endif %}</td>
       <td>
         {% if peut_gerer %}
         <form method="post" class="inline-form">{% csrf_token %}

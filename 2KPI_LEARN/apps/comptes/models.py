@@ -58,3 +58,38 @@ class Prerequis(models.Model):
 
     def __str__(self):
         return f"Prérequis de {self.profil}"
+
+
+class Candidature(models.Model):
+    """Demande d'inscription reçue depuis le site vitrine, validée (ou non) par un admin."""
+    class Statut(models.TextChoices):
+        NOUVELLE = "nouvelle", "Nouvelle"
+        ACCEPTEE = "acceptee", "Acceptée"
+        REFUSEE = "refusee", "Refusée"
+
+    nom_complet = models.CharField("Nom complet", max_length=200)
+    email = models.EmailField()
+    telephone = models.CharField("Téléphone", max_length=40)
+    participants = models.PositiveSmallIntegerField(default=1)
+    message = models.TextField(blank=True)
+    session_code = models.CharField("Code session vitrine", max_length=100, blank=True)
+    session_libelle = models.CharField("Session demandée", max_length=250, blank=True)
+    promotion = models.ForeignKey("agenda.Promotion", on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name="candidatures")
+    statut = models.CharField(max_length=10, choices=Statut.choices, default=Statut.NOUVELLE)
+    motif_refus = models.TextField("Motif du refus", blank=True)
+    utilisateur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+                                    blank=True, related_name="candidatures")
+    traitee_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+                                    blank=True, related_name="candidatures_traitees")
+    traitee_le = models.DateTimeField(null=True, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    date_reception = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Candidature"
+        verbose_name_plural = "Candidatures"
+        ordering = ["-date_reception"]
+
+    def __str__(self):
+        return f"{self.nom_complet} — {self.session_libelle or self.session_code}"

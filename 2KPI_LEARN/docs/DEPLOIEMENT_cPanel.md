@@ -80,20 +80,9 @@ En haut de la page de l'app, cPanel affiche une **commande pour entrer dans l'en
    Copie la longue chaîne obtenue.
 2. Dans cPanel → **Gestionnaire de fichiers** → va dans `/home/c2864961c/apps/2kpi_learn`.
 3. Bouton **+ Fichier** → nomme-le `.env` → **Créer**.
-4. Sélectionne `.env` → **Modifier** → colle ceci (remplace les valeurs par les tiennes) :
-
-   ```
-   SECRET_KEY=colle-ici-la-cle-generee
-   DEBUG=False
-   ALLOWED_HOSTS=learn.2kpinnov.org
-
-   DB_ENGINE=postgresql
-   DB_NAME=c2864961c_learn
-   DB_USER=c2864961c_learn
-   DB_PASSWORD=colle-ici-le-mot-de-passe-de-la-base
-   DB_HOST=localhost
-   DB_PORT=5432
-   ```
+4. Sélectionne `.env` → **Modifier** → colle le contenu de `.env.example` (fourni dans le dépôt)
+   et remplace les valeurs par les tiennes : `SECRET_KEY`, mot de passe de la base, et la boîte
+   e-mail d'envoi (étape 9).
 5. **Enregistrer**.
 
 > Si `https://learn.2kpinnov.org` n'a pas encore de certificat SSL (voir Étape 8), ajoute
@@ -111,12 +100,15 @@ En haut de la page de l'app, cPanel affiche une **commande pour entrer dans l'en
    pip install -r requirements.txt
    python manage.py migrate
    python manage.py collectstatic --noinput
-   python manage.py seed_geoai
-   python manage.py import_gift
+   python manage.py seed_geoai        # première installation uniquement
+   python manage.py import_gift       # première installation uniquement
    python manage.py createsuperuser
    ```
    - `createsuperuser` te demande un identifiant, un e-mail et un mot de passe : ce sera **ton
      compte administrateur** de la plateforme.
+   - Les dossiers `media/` (logo, photos — publics) et `prive/` (ressources, livrables — **jamais
+     servis directement**) sont créés dans `/home/c2864961c/apps/2kpi_learn`, donc **hors** du
+     dossier public du sous-domaine : ne les déplace pas dans `public_html`.
 
 ---
 
@@ -140,10 +132,63 @@ Ouvre **https://learn.2kpinnov.org** :
 
 ---
 
+## Étape 9 — E-mails (activation des comptes, mot de passe oublié, notifications)
+
+1. cPanel → **Comptes de messagerie** → crée `no-reply@2kpinnov.org` (mot de passe fort).
+2. Sur ce compte → **Connect Devices** : relève le **serveur SMTP sortant** (souvent
+   `mail.2kpinnov.org`) et le **port SSL** (465).
+3. Renseigne dans `.env` : `EMAIL_HOST`, `EMAIL_PORT=465`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`,
+   `DEFAULT_FROM_EMAIL`, `ADMINS` → **Restart**.
+4. Teste dans le terminal : `python manage.py tester_email ton.adresse@exemple.org`
+
+---
+
+## Étape 10 — Tâches planifiées (cPanel › Tâches cron)
+
+Remplace `ACTIVER` par la commande d'activation de l'étape 4 :
+
+| Fréquence | Commande |
+|---|---|
+| Tous les jours à 18 h | `ACTIVER && python manage.py envoyer_rappels >> logs/cron.log 2>&1` |
+| Tous les jours à 2 h | `ACTIVER && python manage.py sauvegarder --garder 14 >> logs/cron.log 2>&1` |
+
+Les sauvegardes (base + `media/` + `prive/`) vont dans `sauvegardes/`. Télécharge-en une
+régulièrement hors du serveur (Gestionnaire de fichiers › Télécharger).
+
+---
+
+## Étape 11 — Relier le site vitrine
+
+1. Dans l'application : **Promotions** → pour chaque promotion, saisis le **code session vitrine**
+   (l'`id` de la session dans `SITE_2KPI_V2/js/sessions-data.js`, ex. `teledetection-sig-initiation`).
+2. Le site vitrine envoie les inscriptions à `https://learn.2kpinnov.org/api/candidatures/`
+   (`js/inscription-config.js` › `LEARN_API_URL`). Elles arrivent dans **Candidatures** (badge dans
+   le menu admin). **Accepter** crée le compte, l'inscrit à la promotion et envoie l'e-mail
+   d'activation.
+3. Le bouton **Espace apprenant** du menu de la vitrine pointe vers `https://learn.2kpinnov.org/login/`.
+4. Si la vitrine est servie sur un autre domaine que `2kpinnov.org` / `www.2kpinnov.org`, ajoute-le à
+   `VITRINE_ORIGINS` dans `.env`.
+
+---
+
+## Mise à jour (à chaque nouvelle version)
+
+Sur ta machine : `python manage.py test` (tout doit être « OK »), puis `git push`.
+Dans cPanel : Contrôle de version Git → **Update from Remote**, puis Terminal :
+```bash
+pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput
+```
+puis **Restart**.
+
+---
+
 ## En cas de souci
 
-- **Erreur 500 / page blanche** : Setup Python App → onglet **Log** ; ou vérifie le `.env`
-  (identifiants de base, SECRET_KEY présents).
+- **Erreur 500 / page blanche** : consulte `logs/2kpi_learn.log` (et l'e-mail envoyé aux `ADMINS`) ;
+  vérifie le `.env` (identifiants de base, SECRET_KEY présents).
+- **Les e-mails ne partent pas** : `python manage.py tester_email …` affiche l'erreur SMTP exacte.
+- **Le formulaire de la vitrine bascule sur l'e-mail** : l'API n'est pas joignable ou le domaine de la
+  vitrine manque dans `VITRINE_ORIGINS`.
 - **Boucle de redirection** : SSL pas encore actif → mets `SECURE_SSL_REDIRECT=False` le temps de
   faire l'AutoSSL (étape 8).
 - **`pip` tente de compiler psycopg** : assure-toi que `requirements.txt` contient bien
@@ -151,18 +196,3 @@ Ouvre **https://learn.2kpinnov.org** :
 - **CSS absent** : relance `python manage.py collectstatic --noinput` puis **Restart**.
 
 ---
-
-## Rappel Git (pousser le code une fois)
-
-Sur ta machine, dans le dossier `2KPI_LEARN` :
-```bash
-git init
-git add -A
-git commit -m "2KPI Learn — fondations (Phase A)"
-git branch -M main
-git remote add origin https://github.com/TON_COMPTE/2kpi-learn.git
-git push -u origin main
-```
-Ensuite, à chaque évolution : `git push`, puis dans cPanel → Contrôle de version Git → **Update from
-Remote** ; puis Terminal → `pip install -r requirements.txt` (si besoin) + `migrate` + `collectstatic`
-+ **Restart**.

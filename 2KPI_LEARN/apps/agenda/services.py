@@ -1,8 +1,11 @@
 """Génération du calendrier d'une promotion + envoi de notifications."""
 import datetime as dt
+import logging
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -85,7 +88,7 @@ def notifier(destinataires, titre, message, evenement=None, type="info", envoyer
             expediteur=expediteur, annonce=annonce))
         if envoyer_email and getattr(u, "email", ""):
             try:
-                send_mail(titre, message, settings.DEFAULT_FROM_EMAIL, [u.email], fail_silently=True)
-            except Exception:
-                pass
+                send_mail(titre, message, settings.DEFAULT_FROM_EMAIL, [u.email])
+            except Exception:  # l'e-mail est un plus : la notification in-app est déjà créée
+                logger.warning("Échec d'envoi de l'e-mail « %s » à %s", titre, u.email, exc_info=True)
     return crees

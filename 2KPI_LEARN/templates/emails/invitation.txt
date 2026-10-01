@@ -1,0 +1,16 @@
+{% autoescape off %}
+Bonjour {{ user.first_name|default:user.get_full_name|default:user.username }},
+
+Votre inscription{% if promotion %} à « {{ promotion.nom }} »{% endif %} est confirmée. Bienvenue !
+
+Pour activer votre compte, choisissez votre mot de passe en cliquant sur ce lien
+(valable {{ jours }} jours) :
+
+{{ lien }}
+
+Votre identifiant de connexion : {{ user.username }}
+Ensuite, connectez-vous à tout moment ici : {{ connexion }}
+
+À très bientôt,
+L'équipe 2KPI
+{% endautoescape %}

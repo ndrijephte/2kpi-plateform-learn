@@ -1,0 +1,8 @@
+{% autoescape off %}
+Bonjour {{ c.nom_complet }},
+
+Nous avons bien reçu votre demande d'inscription{% if c.session_libelle %} à « {{ c.session_libelle }} »{% endif %}.
+Notre équipe l'examine et revient vers vous très rapidement, par e-mail ou par téléphone.
+
+L'équipe 2KPI
+{% endautoescape %}
