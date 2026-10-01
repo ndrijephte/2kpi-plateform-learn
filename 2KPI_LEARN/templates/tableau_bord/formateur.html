@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Tableau de bord — {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "dashboard" size=16 %}<span>Tableau de bord</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "briefcase" size=14 %} Espace formateur · {% now "l j F Y" %}</span>
+    <h1>Bonjour {{ user.first_name|default:user.username }}</h1>
+    <p class="muted">Tes promotions, tes séances et les livrables à corriger.</p>
+  </div>
+  <a class="btn" href="{% url 'evaluation:livrables' %}">{% icon "clipboard-check" size=16 %} Corriger les livrables</a>
+</div>
+<div class="kpi-grid kpi-4">
+  <div class="kpi"><span class="kpi-icon">{% icon "users" %}</span><div><strong>{{ promotions|length }}</strong><span>Promotion{{ promotions|length|pluralize }} active{{ promotions|length|pluralize }}</span></div></div>
+  <div class="kpi"><span class="kpi-icon green">{% icon "graduation-cap" %}</span><div><strong>{{ nb_apprenants }}</strong><span>Apprenants suivis</span></div></div>
+  <div class="kpi"><span class="kpi-icon amber">{% icon "clipboard-check" %}</span><div><strong>{{ nb_a_corriger }}</strong><span>Livrables à corriger</span></div></div>
+  <div class="kpi"><span class="kpi-icon coral">{% icon "calendar-days" %}</span><div><strong>{{ nb_semaine }}</strong><span>Séances sous 7 jours</span></div></div>
+</div>
+{% include "tableau_bord/_pilotage.html" %}
+{% endblock %}

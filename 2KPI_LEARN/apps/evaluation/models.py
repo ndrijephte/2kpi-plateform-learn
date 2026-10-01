@@ -1,6 +1,7 @@
 from decimal import Decimal
 from django.conf import settings
 from django.db import models
+from apps.core.stockage import stockage_prive
 from apps.formation.models import Formation, Module, Seance, Competence
 
 
@@ -57,7 +58,8 @@ class Livrable(models.Model):
     seance = models.ForeignKey(Seance, on_delete=models.CASCADE, related_name="livrables")
     rendu = models.BooleanField(default=False)
     note_sur_20 = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
-    fichier = models.FileField(upload_to="livrables/", blank=True, null=True)
+    fichier = models.FileField(upload_to="livrables/%Y/%m/", storage=stockage_prive, max_length=255,
+                               blank=True, null=True)
     observations = models.TextField(blank=True)
 
     class Meta:

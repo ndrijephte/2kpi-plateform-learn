@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Résultats — {{ quiz.titre }}{% endblock %}
+{% block crumbs %}<a href="{% url 'formation:modules' %}">Contenu des cours</a>{% icon "chevron-right" size=14 %}<a href="{% url 'formation:module_detail' quiz.module.code %}">{{ quiz.module.code }}</a>{% icon "chevron-right" size=14 %}<span>Résultats du quiz</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "quiz" size=14 %} Résultats · {{ nb_questions }} questions</span>
+    <h1>{{ quiz.titre }}</h1>
+    <p class="muted">Meilleur score de chaque apprenant {% if est_admin %}(toutes les promotions){% else %}de tes promotions{% endif %}. Le test se passe uniquement côté apprenant.</p>
+  </div>
+</div>
+<div class="kpi-grid">
+  <div class="kpi"><span class="kpi-icon">{% icon "users" %}</span><div><strong>{{ passes }}<small>/{{ inscriptions|length }}</small></strong><span>Apprenants ayant passé le test</span></div></div>
+  <div class="kpi"><span class="kpi-icon coral">{% icon "award" %}</span><div><strong>{% if moyenne is not None %}{{ moyenne }}<small>/20</small>{% else %}—{% endif %}</strong><span>Moyenne des meilleurs scores</span></div></div>
+</div>
+<div class="table-wrap">
+<table class="tbl">
+  <thead><tr><th>Apprenant</th><th>Promotion</th><th class="num">Meilleur score</th><th class="num">Tentatives</th><th>Dernière</th></tr></thead>
+  <tbody>
+  {% for i in inscriptions %}
+    <tr>
+      <td><div class="list-item" style="padding:0;border:0">{% avatar i.apprenant %}<span class="grow"><strong>{{ i.apprenant.get_full_name|default:i.apprenant.username }}</strong></span></div></td>
+      <td>{{ i.promotion.nom }}</td>
+      <td class="num">{% if i.meilleur is not None %}<span class="pill {% if i.meilleur >= 10 %}pill-ok{% else %}pill-ko{% endif %}">{{ i.meilleur|floatformat:1 }}/20</span>{% else %}<span class="pill">Non passé</span>{% endif %}</td>
+      <td class="num">{{ i.nb }}</td>
+      <td>{{ i.derniere|date:"d/m/Y H:i"|default:"—" }}</td>
+    </tr>
+  {% empty %}<tr><td colspan="5"><div class="empty"><span class="ico-tile">{% icon "users" %}</span><strong>Aucun apprenant</strong>Aucun apprenant de tes promotions ne suit cette formation.</div></td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="btn-row"><a class="btn btn-secondary" href="{% url 'formation:module_detail' quiz.module.code %}">{% icon "arrow-left" size=16 %} Retour au module</a></div>
+{% endblock %}

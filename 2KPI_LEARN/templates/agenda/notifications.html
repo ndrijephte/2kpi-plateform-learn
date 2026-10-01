@@ -1,17 +1,31 @@
 {% extends "base.html" %}
-{% block title %}Notifications — 2KPI Learn{% endblock %}
+{% load ui %}
+{% block title %}Notifications — {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "bell" size=16 %}<span>Notifications</span>{% endblock %}
 {% block content %}
-<div class="row-between">
-  <h1>Notifications</h1>
-  <form method="post">{% csrf_token %}<button class="link">Tout marquer comme lu</button></form>
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "bell" size=14 %} Notifications</span>
+    <h1>Notifications</h1>
+  </div>
+  <div class="actions">
+    {% if notifs_non_lues %}
+    <form method="post">{% csrf_token %}<button class="btn btn-secondary btn-sm" type="submit">{% icon "check-check" size=16 %} Tout marquer comme lu</button></form>
+    {% endif %}
+    {% if est_formateur %}<a class="btn btn-sm" href="{% url 'agenda:envoyer' %}">{% icon "send" size=16 %} Envoyer une notification</a>{% endif %}
+  </div>
 </div>
-<ul class="notifs">
-  {% for n in notifications %}
-    <li class="{% if not n.lu %}nonlu{% endif %}">
-      <strong>{{ n.titre }}</strong>
-      <span class="muted">· {{ n.date_creation|date:"d/m H:i" }}</span>
-      {% if n.message %}<p>{{ n.message }}</p>{% endif %}
-    </li>
-  {% empty %}<li>Aucune notification.</li>{% endfor %}
-</ul>
+{% for n in notifications %}
+<div class="notif {% if not n.lu %}nonlu{% endif %}">
+  <span class="ico-tile {% if not n.lu %}coral{% endif %}">{% if n.type == "agenda" %}{% icon "calendar-days" size=18 %}{% elif n.type == "rappel" %}{% icon "clock" size=18 %}{% else %}{% icon "info" size=18 %}{% endif %}</span>
+  <div class="grow">
+    <div class="card-head" style="margin:0"><strong>{{ n.titre }}</strong><small class="muted">{{ n.date_creation|date:"d/m H:i" }}</small></div>
+    <small class="muted">{% if n.expediteur %}{% icon "user" size=12 %} De {{ n.expediteur.get_full_name|default:n.expediteur.username }}{% else %}{% icon "bell" size=12 %} Message automatique{% endif %}</small>
+    {% if n.message %}<p>{{ n.message }}</p>{% endif %}
+    {% if n.evenement and n.evenement.seance_id %}<a class="link" href="{% url 'formation:seance' n.evenement.seance_id %}" style="margin-top:6px;font-size:.85rem;display:inline-flex">Voir la séance {% icon "arrow-right" size=14 %}</a>{% endif %}
+  </div>
+</div>
+{% empty %}
+<div class="card empty"><span class="ico-tile done">{% icon "check-check" %}</span><strong>Aucune notification</strong>Tu seras prévenu ici des changements de planning.</div>
+{% endfor %}
 {% endblock %}

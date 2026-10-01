@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{% if ressource %}Modifier la ressource{% else %}Nouvelle ressource{% endif %} — {{ site_nom }}{% endblock %}
+{% block crumbs %}<a href="{% url 'formation:ressources' %}">Ressources</a>{% icon "chevron-right" size=14 %}<span>{% if ressource %}Modifier{% else %}Ajouter{% endif %}</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "upload" size=14 %} Ressource pédagogique</span>
+    <h1>{% if ressource %}{{ ressource.titre }}{% else %}Nouvelle ressource{% endif %}</h1>
+  </div>
+</div>
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
+  <input type="hidden" name="next" value="{{ retour }}">
+  <div class="grid-2">
+    <div class="card">
+      {% if form.non_field_errors %}<ul class="errorlist nonfield">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      {% for field in form %}
+      <div class="field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+        {{ field.errors }}
+      </div>
+      {% endfor %}
+      <div class="btn-row">
+        <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
+        <a class="btn btn-secondary" href="{{ retour }}">Annuler</a>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2 class="section-title">{% icon "info" size=18 %} Bonnes pratiques</h2>
+        <ul class="list">
+          <li class="list-item"><span class="ico-tile">{% icon "code" size=18 %}</span><span class="grow"><strong>Notebook</strong><small>Dépose le .ipynb et ajoute le lien Colab : l'apprenant l'ouvre en un clic.</small></span></li>
+          <li class="list-item"><span class="ico-tile">{% icon "archive" size=18 %}</span><span class="grow"><strong>Archive</strong><small>Regroupe données + scripts dans un .zip et décris l'arborescence dans les consignes.</small></span></li>
+          <li class="list-item"><span class="ico-tile">{% icon "link" size=18 %}</span><span class="grow"><strong>Lien</strong><small>Vidéos, dépôts GitHub, jeux de données volumineux : préfère un lien au dépôt.</small></span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2 class="section-title">{% icon "shield" size=18 %} Formats acceptés</h2>
+        <p class="muted"><small>{{ parametres.extensions|join:", " }} — {{ parametres.taille_max_mo }} Mo maximum par fichier.</small></p>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

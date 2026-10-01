@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Utilisateurs — {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "user-check" size=16 %}<span>Utilisateurs</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "shield" size=14 %} Administration</span>
+    <h1>Utilisateurs</h1>
+    <p class="muted">Crée les comptes, attribue les rôles et rattache les apprenants à leur promotion.</p>
+  </div>
+</div>
+
+<details class="card panel" {% if ouvrir_formulaire or request.GET.nouveau %}open{% endif %}>
+  <summary class="card-head" style="margin:0">
+    <h2 class="section-title">{% icon "plus" size=18 %} Nouveau compte</h2>
+    <span class="chev">{% icon "chevron-right" size=18 %}</span>
+  </summary>
+  <form method="post" novalidate>{% csrf_token %}
+    {% if form.non_field_errors %}<ul class="errorlist nonfield">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    <div class="form-grid">
+      {% for field in form %}
+      <div class="field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+        {{ field.errors }}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="btn-row"><button class="btn" type="submit">{% icon "check" size=16 %} Créer le compte</button></div>
+  </form>
+</details>
+
+<div class="toolbar">
+  <nav class="tabs" aria-label="Filtrer par rôle">
+    <a href="?{% if q %}q={{ q|urlencode }}{% endif %}" {% if not filtre %}class="on"{% endif %}>Tous</a>
+    {% for val, lib in roles %}
+    <a href="?role={{ val }}{% if q %}&q={{ q|urlencode }}{% endif %}" {% if filtre == val %}class="on"{% endif %}>
+      {% if val == "admin" %}{% icon "shield" size=14 %}{% elif val == "formateur" %}{% icon "briefcase" size=14 %}{% else %}{% icon "graduation-cap" size=14 %}{% endif %}
+      {{ lib }} <small>({% if val == "admin" %}{{ compte.admin }}{% elif val == "formateur" %}{{ compte.formateur }}{% else %}{{ compte.apprenant }}{% endif %})</small></a>
+    {% endfor %}
+  </nav>
+  <form method="get" role="search">
+    {% if filtre %}<input type="hidden" name="role" value="{{ filtre }}">{% endif %}
+    <input type="text" name="q" value="{{ q }}" placeholder="Nom, identifiant, e-mail…" aria-label="Rechercher">
+    <button class="btn btn-secondary btn-sm" type="submit">Rechercher</button>
+  </form>
+</div>
+
+<div class="table-wrap">
+<table class="tbl">
+  <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Promotion</th><th>Compte</th></tr></thead>
+  <tbody>
+  {% for l in lignes %}{% with u=l.u %}
+    <tr {% if not u.is_active %}class="statut-annule"{% endif %}>
+      <td><div class="list-item" style="padding:0;border:0">
+        {% avatar u %}
+        <span class="grow"><a href="{% url 'comptes:utilisateur_editer' u.pk %}"><strong>{{ u.get_full_name|default:u.username }}</strong></a><small>{{ u.username }} · {{ u.email|default:"sans e-mail" }}</small></span>
+      </div></td>
+      <td>
+        <form method="post" action="{% url 'comptes:utilisateur_modifier' u.pk %}" class="inline-form">{% csrf_token %}
+          <input type="hidden" name="action" value="role"><input type="hidden" name="retour" value="{{ request.GET.urlencode }}">
+          <select name="role" aria-label="Rôle de {{ u.username }}" onchange="this.form.submit()">
+            {% for val, lib in roles %}<option value="{{ val }}" {% if l.role == val %}selected{% endif %}>{{ lib }}</option>{% endfor %}
+          </select>
+          <noscript><button class="btn btn-sm btn-secondary">OK</button></noscript>
+        </form>
+        {% if u.is_superuser %}<small class="muted">super-utilisateur</small>{% endif %}
+      </td>
+      <td>
+        {% if l.role == "apprenant" %}
+        <form method="post" action="{% url 'comptes:utilisateur_modifier' u.pk %}" class="inline-form">{% csrf_token %}
+          <input type="hidden" name="action" value="promotion"><input type="hidden" name="retour" value="{{ request.GET.urlencode }}">
+          <select name="promotion" aria-label="Promotion de {{ u.username }}" onchange="this.form.submit()">
+            <option value="">— aucune —</option>
+            {% for p in promotions %}<option value="{{ p.id }}" {% if l.promotion.id == p.id %}selected{% endif %}>{{ p.nom }}</option>{% endfor %}
+          </select>
+          <noscript><button class="btn btn-sm btn-secondary">OK</button></noscript>
+        </form>
+        {% else %}<span class="muted">—</span>{% endif %}
+      </td>
+      <td>
+        <form method="post" action="{% url 'comptes:utilisateur_modifier' u.pk %}">{% csrf_token %}
+          <input type="hidden" name="action" value="activer"><input type="hidden" name="retour" value="{{ request.GET.urlencode }}">
+          <div class="actions"><a class="btn btn-sm btn-secondary" href="{% url 'comptes:utilisateur_editer' u.pk %}" title="Modifier toutes les informations">{% icon "pencil" size=14 %} Modifier</a>
+          {% if u == user %}<span class="pill pill-ok">Toi</span>
+          {% elif u.is_active %}<button class="btn btn-sm btn-secondary" type="submit" title="Désactiver le compte">{% icon "ban" size=14 %} Désactiver</button>
+          {% else %}<button class="btn btn-sm btn-secondary" type="submit">{% icon "rotate-ccw" size=14 %} Réactiver</button>{% endif %}</div>
+        </form>
+      </td>
+    </tr>
+  {% endwith %}{% empty %}
+    <tr><td colspan="4"><div class="empty"><span class="ico-tile">{% icon "users" %}</span><strong>Aucun utilisateur</strong>Aucun compte ne correspond à ces critères.</div></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

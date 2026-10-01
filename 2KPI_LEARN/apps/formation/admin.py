@@ -23,8 +23,8 @@ class ModuleAdmin(admin.ModelAdmin):
 
 @admin.register(Seance)
 class SeanceAdmin(admin.ModelAdmin):
-    list_display = ("module", "jour", "theme", "duree_prevue_h", "ordre")
-    list_filter = ("module__formation", "jour")
+    list_display = ("module", "ordre", "theme", "semaine", "jour", "heure_debut", "duree_prevue_h", "mode")
+    list_filter = ("module__formation", "jour", "mode")
 
 @admin.register(Competence)
 class CompetenceAdmin(admin.ModelAdmin):
@@ -33,5 +33,6 @@ class CompetenceAdmin(admin.ModelAdmin):
 
 @admin.register(Ressource)
 class RessourceAdmin(admin.ModelAdmin):
-    list_display = ("titre", "type", "seance", "module")
+    list_display = ("titre", "type", "seance", "module", "ajoute_par", "date_ajout")
     list_filter = ("type",)
+    search_fields = ("titre", "instructions")

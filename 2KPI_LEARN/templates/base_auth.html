@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block body %}
+<div class="auth" style="--auth-bg:url('{{ image_connexion_url }}')">
+  <section class="auth-hero">
+    <a class="brand brand-lg" href="{% url 'login' %}">{% include "partials/brand.html" %}</a>
+    <div class="auth-hero-text">
+      <h2>{{ parametres.titre_connexion }}</h2>
+      <p>{{ parametres.texte_connexion }}</p>
+      <ul class="auth-points">
+        <li>{% icon "book-open" size=18 %} Modules et séances guidées</li>
+        <li>{% icon "calendar-days" size=18 %} Agenda de ta promotion</li>
+        <li>{% icon "trending-up" size=18 %} Suivi de performance en temps réel</li>
+      </ul>
+    </div>
+    <p class="auth-foot">© {% now "Y" %} {{ parametres.nom_plateforme }}{% if parametres.slogan %} — {{ parametres.slogan }}{% endif %}</p>
+  </section>
+  <main class="auth-main" id="contenu">
+    <div class="auth-card">
+      <a class="brand brand-card" href="{% url 'login' %}">{% include "partials/brand.html" %}</a>
+      {% if messages %}{% for m in messages %}<div class="msg msg-{{ m.tags|default:'info' }}" role="status"><span>{{ m }}</span></div>{% endfor %}{% endif %}
+      {% block content %}{% endblock %}
+      {% if parametres.email_contact %}<p class="auth-contact">{% icon "mail" size=14 %} Besoin d'aide ? <a href="mailto:{{ parametres.email_contact }}">{{ parametres.email_contact }}</a></p>{% endif %}
+    </div>
+  </main>
+</div>
+{% endblock %}

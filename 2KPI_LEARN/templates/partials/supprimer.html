@@ -1,0 +1,5 @@
+{% load ui %}{# Paramètres : modele, pk, next, quoi (libellé pour la confirmation) #}
+<form method="post" action="{% url 'core:supprimer' modele pk %}" class="inline" onsubmit="return confirm('Supprimer {{ quoi|escapejs }} ? Cette action est définitive.')">{% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <button class="btn btn-sm btn-ghost-danger" type="submit" title="Supprimer">{% icon "trash" size=14 %}<span class="sr-only">Supprimer</span></button>
+</form>

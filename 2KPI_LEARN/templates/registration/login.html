@@ -1,10 +1,14 @@
-{% extends "base.html" %}
-{% block title %}Connexion — 2KPI Learn{% endblock %}
+{% extends "base_auth.html" %}
+{% load ui %}
+{% block title %}Connexion — {{ site_nom }}{% endblock %}
 {% block content %}
+<span class="eyebrow">{% icon "lock" size=14 %} Espace sécurisé</span>
 <h1>Connexion</h1>
-<form method="post" class="card form">{% csrf_token %}
-  {{ form.as_p }}
-  <button class="btn" type="submit">Se connecter</button>
-  <p><a href="{% url 'password_reset' %}">Mot de passe oublié ?</a></p>
+<p class="muted">Accède à ton cours, ton agenda et ton suivi de performance.</p>
+<form method="post" class="stack">{% csrf_token %}
+  {% include "partials/form_fields.html" %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <button class="btn btn-block" type="submit">{% icon "log-in" size=18 %} Se connecter</button>
 </form>
+<p class="stack center"><a href="{% url 'password_reset' %}">Mot de passe oublié ?</a></p>
 {% endblock %}

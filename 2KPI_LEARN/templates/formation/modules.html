@@ -1,11 +1,49 @@
 {% extends "base.html" %}
-{% block title %}Mon cours — 2KPI Learn{% endblock %}
+{% load ui %}
+{% block title %}Mon cours — {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "book-open" size=16 %}<span>{% if est_apprenant %}Mon cours{% else %}Contenu des cours{% endif %}</span>{% endblock %}
 {% block content %}
-<h1>{{ formation.titre|default:"Formation" }}</h1>
-<ul class="modules">
-  {% for m in modules %}
-    <li><a href="{% url 'formation:module_detail' m.code %}"><strong>{{ m.code }}</strong> — {{ m.titre }}</a>
-      <small>{{ m.seances.count }} séances · {{ m.competences.count }} compétences</small></li>
-  {% empty %}<li>Contenu à venir.</li>{% endfor %}
-</ul>
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "graduation-cap" size=14 %} {% if est_apprenant %}Mon cours{% else %}Contenu pédagogique · consultation{% endif %}</span>
+    <h1>{{ formation.titre|default:"Formation" }}</h1>
+    {% if formation.description %}<p class="muted">{{ formation.description }}</p>{% endif %}
+  </div>
+</div>
+
+{% if modules %}
+<div class="module-grid">
+  {% for item in modules %}{% with m=item.module %}
+  {% if item.acces and not item.acces.ouvert %}
+  <div class="module-card verrouille" aria-disabled="true">
+    <div class="card-head" style="margin:0"><span class="code">{{ m.code }}</span><span class="pill pill-ko">{% icon "lock" size=12 %} Verrouillé</span></div>
+    <h3>{{ m.titre }}</h3>
+    <p class="muted"><small>{% icon "info" size=12 %} {{ item.acces.motif }}</small></p>
+  </div>
+  {% else %}
+  <a class="module-card" href="{% url 'formation:module_detail' m.code %}">
+    <div class="card-head" style="margin:0">
+      <span class="code">{{ m.code }}</span>
+      {% if item.pct == 100 %}<span class="pill pill-ok">{% icon "check" size=12 stroke=2.5 %} Terminé</span>
+      {% elif item.faits %}<span class="pill pill-warn">En cours</span>{% endif %}
+    </div>
+    <h3>{{ m.titre }}</h3>
+    <div class="meta">
+      <span>{% icon "calendar" size=14 %} {{ item.nb_seances }} séances</span>
+      <span>{% icon "target" size=14 %} {{ item.nb_competences }} compétences</span>
+      {% if item.quiz %}<span>{% icon "quiz" size=14 %} {% if item.score is not None %}Quiz {{ item.score|floatformat:1 }}/20{% else %}Quiz{% endif %}</span>{% endif %}
+    </div>
+    {% if inscription %}
+    <div>
+      <div class="progress-label"><span>{{ item.faits }}/{{ item.nb_seances }} livrables</span><span>{{ item.pct }} %</span></div>
+      <div class="progress"><span style="width:{{ item.pct }}%"></span></div>
+    </div>
+    {% endif %}
+  </a>
+  {% endif %}
+  {% endwith %}{% endfor %}
+</div>
+{% else %}
+<div class="card empty"><span class="ico-tile">{% icon "book-open" %}</span><strong>Contenu à venir</strong>Les modules seront publiés prochainement.</div>
+{% endif %}
 {% endblock %}

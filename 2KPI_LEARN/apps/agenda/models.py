@@ -8,9 +8,14 @@ class Promotion(models.Model):
     formation = models.ForeignKey(Formation, on_delete=models.CASCADE, related_name="promotions")
     nom = models.CharField(max_length=200)
     date_debut = models.DateField(help_text="Date de la première semaine (le calendrier en découle).")
-    formateur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                                  null=True, blank=True, related_name="promotions_encadrees")
+    formateur = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="Formateur",
+                                  on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name="promotions_encadrees")
     active = models.BooleanField(default=True)
+    ouverture_auto = models.BooleanField(
+        "Ouverture automatique des modules", default=True,
+        help_text="Chaque module s'ouvre le lundi de la semaine de sa première séance. "
+                  "Sinon, le formateur ouvre les modules un à un.")
 
     class Meta:
         verbose_name = "Promotion"
@@ -19,6 +24,28 @@ class Promotion(models.Model):
 
     def __str__(self):
         return self.nom
+
+
+class AccesModule(models.Model):
+    """Décision d'ouverture d'un module pour une promotion (prime sur l'ouverture automatique)."""
+    class Etat(models.TextChoices):
+        AUTO = "auto", "Automatique (calendrier)"
+        OUVERT = "ouvert", "Ouvert"
+        FERME = "ferme", "Fermé"
+
+    promotion = models.ForeignKey(Promotion, on_delete=models.CASCADE, related_name="acces_modules")
+    module = models.ForeignKey("formation.Module", on_delete=models.CASCADE, related_name="acces")
+    etat = models.CharField(max_length=8, choices=Etat.choices, default=Etat.AUTO)
+    modifie_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    modifie_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Accès à un module"
+        verbose_name_plural = "Accès aux modules"
+        unique_together = ("promotion", "module")
+
+    def __str__(self):
+        return f"{self.module.code} · {self.promotion} : {self.get_etat_display()}"
 
 
 class Indisponibilite(models.Model):
@@ -89,6 +116,35 @@ class Evenement(models.Model):
         return f"{self.date_debut:%d/%m %H:%M} — {self.libelle}"
 
 
+class Annonce(models.Model):
+    """Message diffusé manuellement par un admin ou un formateur (une notification par destinataire)."""
+    class Cible(models.TextChoices):
+        TOUS = "tous", "Tous les utilisateurs"
+        APPRENANTS = "apprenants", "Tous les apprenants"
+        FORMATEURS = "formateurs", "Tous les formateurs"
+        PROMOTION = "promotion", "Les apprenants d'une promotion"
+        PERSONNES = "personnes", "Des personnes choisies"
+
+    expediteur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+                                   related_name="annonces_envoyees")
+    titre = models.CharField(max_length=200)
+    message = models.TextField()
+    cible = models.CharField(max_length=12, choices=Cible.choices)
+    promotion = models.ForeignKey(Promotion, on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name="annonces")
+    par_email = models.BooleanField("Envoyer aussi par e-mail", default=False)
+    nb_destinataires = models.PositiveIntegerField(default=0)
+    date_envoi = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Notification envoyée"
+        verbose_name_plural = "Notifications envoyées"
+        ordering = ["-date_envoi"]
+
+    def __str__(self):
+        return self.titre
+
+
 class Notification(models.Model):
     class Type(models.TextChoices):
         AGENDA = "agenda", "Agenda"
@@ -102,6 +158,11 @@ class Notification(models.Model):
     message = models.TextField(blank=True)
     evenement = models.ForeignKey(Evenement, on_delete=models.SET_NULL, null=True, blank=True,
                                   related_name="notifications")
+    expediteur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+                                   blank=True, related_name="notifications_envoyees",
+                                   help_text="Vide = message automatique de la plateforme.")
+    annonce = models.ForeignKey(Annonce, on_delete=models.CASCADE, null=True, blank=True,
+                                related_name="notifications")
     lu = models.BooleanField(default=False)
     date_creation = models.DateTimeField(auto_now_add=True)
 

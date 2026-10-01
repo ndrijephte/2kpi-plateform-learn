@@ -1,0 +1,2 @@
+{% load ui %}<span class="brand-mark{% if logo_url %} has-logo{% endif %}">{% if logo_url %}<img src="{{ logo_url }}" alt="">{% else %}{% icon "globe" size=20 stroke=2 %}{% endif %}</span>
+<span class="brand-name">{{ parametres.nom_plateforme }}{% if parametres.suffixe %} <em>{{ parametres.suffixe }}</em>{% endif %}</span>

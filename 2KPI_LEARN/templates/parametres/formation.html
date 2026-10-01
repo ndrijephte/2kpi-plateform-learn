@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Paramètres — {{ formation.titre }}{% endblock %}
+{% block crumbs %}{% include "parametres/_fil.html" %}{% endblock %}
+{% block content %}
+{% include "parametres/_tete.html" with titre_page=formation.titre sous_titre="Modules de la formation : clique sur un module pour paramétrer ses séances et compétences." %}
+<div class="grid-2">
+  <div>
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead><tr><th class="num">Ordre</th><th>Module</th><th class="num">Séances</th><th class="num">Compétences</th><th></th></tr></thead>
+        <tbody>
+        {% for m in modules %}
+          <tr>
+            <td class="num">{{ m.ordre }}</td>
+            <td><a href="{% url 'core:module' m.pk %}"><span class="pill">{{ m.code }}</span> <strong>{{ m.titre }}</strong></a></td>
+            <td class="num">{{ m.nb_seances }}</td><td class="num">{{ m.nb_competences }}</td>
+            <td><div class="actions"><a class="btn btn-sm btn-secondary" href="{% url 'core:module' m.pk %}">{% icon "sliders" size=14 %}<span class="sr-only">Paramétrer</span></a>
+              {% include "partials/supprimer.html" with modele="module" pk=m.pk next=request.path quoi=m.code %}</div></td>
+          </tr>
+        {% empty %}<tr><td colspan="5"><div class="empty"><strong>Aucun module</strong>Ajoute le premier avec le formulaire.</div></td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div>
+    <details class="card panel" {% if module_form.errors %}open{% endif %} open>
+      <summary class="card-head" style="margin:0"><h2 class="section-title">{% icon "plus" size=18 %} Ajouter un module</h2><span class="chev">{% icon "chevron-right" size=18 %}</span></summary>
+      <form method="post" class="stack-sm">{% csrf_token %}<input type="hidden" name="quoi" value="module">
+        {% include "partials/form_fields.html" with form=module_form %}
+        <button class="btn" type="submit">{% icon "plus" size=16 %} Ajouter</button>
+      </form>
+    </details>
+    <details class="card panel" {% if form.errors %}open{% endif %}>
+      <summary class="card-head" style="margin:0"><h2 class="section-title">{% icon "sliders" size=18 %} Informations de la formation</h2><span class="chev">{% icon "chevron-right" size=18 %}</span></summary>
+      <form method="post" class="stack-sm">{% csrf_token %}<input type="hidden" name="quoi" value="formation">
+        {% include "partials/form_fields.html" %}
+        <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
+      </form>
+    </details>
+  </div>
+</div>
+{% endblock %}

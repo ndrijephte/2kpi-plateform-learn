@@ -2,6 +2,7 @@
 from decimal import Decimal
 from apps.formation.models import Seance, Competence
 from apps.evaluation.models import Presence, Livrable, EvaluationCompetence
+from apps.evaluation.utils import meilleurs_scores
 
 
 def synthese(inscription):
@@ -32,6 +33,10 @@ def synthese(inscription):
     rendus = Livrable.objects.filter(inscription=inscription, rendu=True).count()
     progression = round(100 * rendus / total_seances) if total_seances else 0
 
+    # Quiz : moyenne des meilleurs scores par quiz (indicatif, hors note globale)
+    scores = [float(v) for v in meilleurs_scores(inscription).values()]
+    moyenne_quiz = round(sum(scores) / len(scores), 2) if scores else 0.0
+
     return {
         "taux_presence": taux_presence,
         "moyenne_seances": moyenne_seances,
@@ -42,4 +47,6 @@ def synthese(inscription):
         "note_soutenance": note_soutenance,
         "note_globale": note_globale,
         "progression": progression,
+        "moyenne_quiz": moyenne_quiz,
+        "quiz_passes": len(scores),
     }

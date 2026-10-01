@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Pilotage — {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "dashboard" size=16 %}<span>Pilotage</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "shield" size=14 %} Administration · {% now "l j F Y" %}</span>
+    <h1>Pilotage de la plateforme</h1>
+    <p class="muted">Vue d'ensemble des comptes, des promotions et de l'activité pédagogique.</p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-secondary" href="{% url 'agenda:promotions' %}">{% icon "calendar-plus" size=16 %} Nouvelle promotion</a>
+    <a class="btn" href="{% url 'comptes:utilisateurs' %}?nouveau=1">{% icon "plus" size=16 %} Nouveau compte</a>
+  </div>
+</div>
+
+<div class="kpi-grid kpi-4">
+  <div class="kpi"><span class="kpi-icon green">{% icon "graduation-cap" %}</span><div><strong>{{ stats.apprenants }}</strong><span>Apprenants actifs</span></div></div>
+  <div class="kpi"><span class="kpi-icon">{% icon "briefcase" %}</span><div><strong>{{ stats.formateurs }}</strong><span>Formateurs</span></div></div>
+  <div class="kpi"><span class="kpi-icon coral">{% icon "users" %}</span><div><strong>{{ stats.promotions }}</strong><span>Promotions actives</span></div></div>
+  <div class="kpi"><span class="kpi-icon amber">{% icon "clipboard-check" %}</span><div><strong>{{ nb_a_corriger }}</strong><span>Livrables à corriger</span></div></div>
+</div>
+
+{% if sans_formateur or sans_promotion %}
+<div class="card highlight">
+  <h2 class="section-title">{% icon "alert" size=18 %} Points d'attention</h2>
+  <ul class="list">
+    {% for p in sans_formateur %}
+    <li><a class="list-item" href="{% url 'agenda:promotions' %}"><span class="ico-tile coral">{% icon "briefcase" size=18 %}</span>
+      <span class="grow"><strong>{{ p.nom }}</strong><small>Aucun formateur affecté</small></span><span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
+    {% endfor %}
+    {% if sans_promotion %}
+    <li><a class="list-item" href="{% url 'comptes:utilisateurs' %}?role=apprenant"><span class="ico-tile coral">{% icon "graduation-cap" size=18 %}</span>
+      <span class="grow"><strong>{{ sans_promotion }} apprenant{{ sans_promotion|pluralize }} sans promotion</strong><small>Ils ne voient ni agenda ni progression</small></span><span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
+    {% endif %}
+  </ul>
+</div>
+{% endif %}
+
+{% include "tableau_bord/_pilotage.html" with admin=True %}
+
+<div class="card">
+  <div class="card-head">
+    <h2 class="section-title">{% icon "user-check" size=18 %} Derniers comptes créés</h2>
+    <a class="link" href="{% url 'comptes:utilisateurs' %}">Gérer les utilisateurs {% icon "arrow-right" size=16 %}</a>
+  </div>
+  <ul class="list">
+    {% for u in derniers_comptes %}
+    <li class="list-item">{% avatar u %}
+      <span class="grow"><strong>{{ u.get_full_name|default:u.username }}</strong><small>{{ u.email|default:"—" }} · {{ u.date_joined|date:"d/m/Y" }}</small></span>
+      <span class="pill pill-role-{{ u.profil.role }}">{{ u.profil.get_role_display }}</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

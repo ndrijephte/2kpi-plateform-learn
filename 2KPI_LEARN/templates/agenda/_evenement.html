@@ -1,0 +1,14 @@
+{% load ui %}{# Ligne d'agenda. Paramètres : ev ; promo=True (vue formateur : affiche la promotion, lien vers le planning) #}
+{% if promo %}<a class="event statut-{{ ev.statut }}" href="{% url 'agenda:planning' ev.promotion_id %}">{% elif ev.seance_id %}<a class="event statut-{{ ev.statut }}" href="{% url 'formation:seance' ev.seance_id %}">{% else %}<div class="event statut-{{ ev.statut }}">{% endif %}
+  <span class="event-date"><small>{{ ev.date_debut|date:"D" }}</small><b>{{ ev.date_debut|date:"d" }}</b><small>{{ ev.date_debut|date:"M" }}</small></span>
+  <span class="event-body">
+    <span class="event-title">{{ ev.libelle }}</span>
+    <span class="event-meta">
+      <span>{% icon "clock" size=14 %} {{ ev.date_debut|time:"H:i" }} · {{ ev.duree_h }} h</span>
+      <span>{% if ev.mode == "presentiel" %}{% icon "map-pin" size=14 %}{% else %}{% icon "video" size=14 %}{% endif %} {{ ev.get_mode_display }}{% if ev.lieu %} · {{ ev.lieu }}{% endif %}</span>
+      {% if ev.module_code %}<span>{% icon "layers" size=14 %} {{ ev.module_code }}</span>{% endif %}
+      {% if promo %}<span>{% icon "users" size=14 %} {{ ev.promotion.nom }}</span>{% endif %}
+    </span>
+  </span>
+  <span class="pill pill-{{ ev.statut }}">{{ ev.get_statut_display }}</span>
+{% if promo or ev.seance_id %}</a>{% else %}</div>{% endif %}

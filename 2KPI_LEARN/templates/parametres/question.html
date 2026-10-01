@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Paramètres — {{ libelle }}{% endblock %}
+{% block crumbs %}{% include "parametres/_fil.html" %}{% endblock %}
+{% block content %}
+{% include "parametres/_tete.html" with titre_page=libelle sous_titre=quiz.titre %}
+<form method="post" id="form-question">{% csrf_token %}
+  {{ formset.management_form }}
+  {% if erreurs %}<ul class="errorlist nonfield">{% for e in erreurs %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+  {% if formset.non_form_errors %}<ul class="errorlist nonfield">{% for e in formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+  <div class="grid-2">
+    <div class="card">
+      <div class="field"><label for="{{ form.intitule.id_for_label }}">{{ form.intitule.label }}</label>{{ form.intitule }}{{ form.intitule.errors }}</div>
+      <div class="form-grid">
+        <div class="field"><label for="{{ form.type.id_for_label }}">{{ form.type.label }}</label>{{ form.type }}{{ form.type.errors }}</div>
+        <div class="field"><label for="{{ form.categorie.id_for_label }}">{{ form.categorie.label }}</label>{{ form.categorie }}{{ form.categorie.errors }}</div>
+      </div>
+      <p class="aide-type" data-aide></p>
+      <div class="field" data-pour="court num">
+        <label for="{{ form.reponse_courte.id_for_label }}">{{ form.reponse_courte.label }}</label>{{ form.reponse_courte }}{{ form.reponse_courte.errors }}
+      </div>
+      <div data-pour="qcm vf appariement">
+        <label class="field-label">Réponses proposées</label>
+        <table class="tbl choix-tbl">
+          <thead><tr><th>Réponse</th><th class="col-correct">Correcte</th><th class="num">Retirer</th></tr></thead>
+          <tbody>
+          {% for f in formset %}
+            <tr>{{ f.id }}
+              <td>{{ f.texte }}{{ f.texte.errors }}</td>
+              <td class="col-correct">{{ f.correct }}</td>
+              <td class="num">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        <p class="muted"><small>Lignes vides ignorées. Enregistre puis rouvre la question pour en ajouter d'autres.</small></p>
+      </div>
+      <div class="btn-row">
+        <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
+        {% if not question.pk %}<button class="btn btn-secondary" type="submit" name="suite" value="1">{% icon "plus" size=16 %} Enregistrer et ajouter une autre</button>{% endif %}
+        <a class="btn btn-secondary" href="{% url 'core:quiz' quiz.pk %}">Annuler</a>
+      </div>
+    </div>
+    <div class="card">
+      <h2 class="section-title">{% icon "info" size=18 %} Types de questions</h2>
+      <ul class="list">
+        {% for libelle_type, texte in aide_liste %}<li class="list-item" style="display:block"><strong>{{ libelle_type }}</strong><small class="muted" style="display:block">{{ texte }}</small></li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</form>
+{{ aide_types|json_script:"aides-types" }}
+<script>
+(function () {
+  var aides = JSON.parse(document.getElementById("aides-types").textContent);
+  var sel = document.getElementById("{{ form.type.id_for_label }}"), aide = document.querySelector("[data-aide]");
+  function maj() {
+    var t = sel.value;
+    document.querySelectorAll("[data-pour]").forEach(function (b) { b.hidden = b.dataset.pour.split(" ").indexOf(t) < 0; });
+    document.querySelectorAll(".col-correct").forEach(function (c) { c.hidden = t === "appariement"; });
+    aide.textContent = aides[t] || "";
+  }
+  sel.addEventListener("change", maj); maj();
+})();
+</script>
+{% endblock %}

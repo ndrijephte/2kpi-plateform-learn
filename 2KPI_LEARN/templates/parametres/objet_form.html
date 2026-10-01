@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Paramètres — {{ libelle }}{% endblock %}
+{% block crumbs %}{% include "parametres/_fil.html" %}{% endblock %}
+{% block content %}
+{% include "parametres/_tete.html" %}
+<div class="card" style="max-width:760px">
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ retour }}">
+    <div class="form-grid">{% include "partials/form_fields.html" %}</div>
+    <div class="btn-row">
+      <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
+      <a class="btn btn-secondary" href="{{ retour }}">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

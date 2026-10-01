@@ -109,11 +109,13 @@ note projet · note soutenance · **NOTE GLOBALE = 40 % continu + 40 % projet + 
 ├── .gitignore
 ├── config/                  # settings.py, urls.py, wsgi.py
 ├── apps/
+│   ├── core/                # Transversal : icônes {% icon %}, navigation, permissions
 │   ├── comptes/             # Profil, rôles, prérequis, auth
 │   ├── formation/           # Formation, Module, Seance, Competence, Ressource
 │   ├── evaluation/          # Quiz, Presence, Livrable, EvaluationCompetence, Projet, Soutenance
+│   ├── agenda/              # Promotion, Evenement (séance datée), Indisponibilite, Notification
 │   └── tableau_bord/        # calculs & pages de synthèse
-├── templates/               # gabarits HTML (charte 2KPI)
+├── templates/               # base.html (barre latérale) · base_auth.html · partials/ · 1 dossier par app
 ├── static/                  # CSS/JS 2KPI
 └── docs/ARCHITECTURE.md     # ce document
 ```
@@ -149,3 +151,74 @@ note projet · note soutenance · **NOTE GLOBALE = 40 % continu + 40 % projet + 
 Réemploi : la structure des 12 modules, le référentiel de compétences (`referentiel_competences_geoai.csv`)
 et les 22 questions (`Test_S1_banque_questions.gift`) déjà produits alimentent directement la
 Phase A (scripts d'import).
+
+---
+
+## 7. Liaisons entre modules (flux)
+
+```
+Formation ─┬─ Module ─┬─ Seance ──────────────┐
+           │          ├─ Competence           │ (1 séance → 1 événement par promotion)
+           │          └─ Quiz → TentativeQuiz │
+           └─ Promotion ── Evenement ◄────────┘
+                 │            ├── Presence  (saisie formateur : /agenda/evenement/<id>/presences/)
+                 │            └── Notification (in-app + e-mail)
+                 └── Inscription (apprenant) ── Livrable · Presence · TentativeQuiz · Évaluations
+                                    │
+                                    └──► Tableau de bord (synthèse calculée)
+```
+
+- **Mon cours** : modules de la formation de l'inscription, progression par livrables, meilleur score de quiz.
+- **Séance** : ressources, dépôt du livrable, date réelle issue de l'agenda de la promotion, navigation précédente/suivante.
+- **Agenda / notifications** : chaque événement renvoie vers sa séance.
+- **Planning formateur** : statut, report (avec décalage de la suite), notification, feuille de présence
+  → alimente le taux de présence du tableau de bord.
+- **Interface** : barre latérale à sections (Apprentissage / Espace formateur / Compte), rubrique active
+  calculée par `apps.core.context_processors.interface`, icônes Lucide (ISC) rendues en SVG par
+  `{% load ui %}{% icon "nom" %}` — aucune dépendance externe.
+
+---
+
+## 8. Rôles et contrôle d'accès
+
+`apps/core/permissions.py` centralise les règles :
+
+- `role_de(user)` → `apprenant` · `formateur` · `admin` (super-utilisateur = admin) ;
+- décorateurs `formateur_requis` (formateur + admin) et `admin_requis` → **403** sinon ;
+- `promotions_visibles(user)` → toutes (admin) / celles dont il est le formateur / aucune :
+  appliqué à **chaque** vue de pilotage (planning, actions, présences, calendrier, livrables),
+  un formateur qui vise la promotion d'un autre obtient une 404 ;
+- `appliquer_role(user, role)` synchronise `is_staff` (accès admin Django) avec le rôle.
+
+Le tableau de bord (`/`) est unique mais rend un gabarit par rôle
+(`tableau_bord/apprenant.html`, `formateur.html`, `admin.html`) ; la barre latérale affiche
+les rubriques du rôle (`base.html`, variables `est_admin` / `est_formateur` / `est_apprenant`).
+
+---
+
+## 9. Paramétrage, ressources et profils
+
+- **`core.Parametres`** (enregistrement unique, cache 60 s) : identité, logo, page de connexion,
+  règles de fichiers. Exposé à tous les gabarits par `apps.core.context_processors.interface`
+  (`parametres`, `site_nom`, `logo_url`, `image_connexion_url`).
+- **Espace `/parametres/`** (`apps/core/views.py`, admin) : formations, modules, séances, compétences,
+  jours non travaillés. Les suppressions qui effaceraient des données d'apprenants sont refusées.
+- **Séance paramétrable** : `semaine`, `jour` (0–6), `heure_debut`, `duree_prevue_h`, `mode`, `lieu`,
+  `objectifs`. `agenda.services.generer_agenda` / `synchroniser_agenda` en déduisent les événements.
+- **Ressources** : fichier (tout format autorisé) et/ou lien et/ou lien Colab + consignes, type
+  détecté automatiquement (`core.fichiers`). Un formateur gère les formations de ses promotions
+  (`permissions.formations_gerables`). Les livrables passent par la même validation.
+- **Profils** : `/comptes/profil/modifier/` (chacun, admin compris) ; `/comptes/utilisateurs/<id>/editer/`
+  (admin : identifiant, rôle, activation, promotion, mot de passe, profil, prérequis).
+
+---
+
+## 10. Autorisation d'accès aux contenus
+
+- `apps/formation/acces.py` : `etats_modules(inscription, modules)` / `etats_promotion(promo, modules)`
+  → `EtatAcces(ouvert, motif, date, source)` ; `acces_module(user, module)` (staff : toujours ouvert).
+- Décisions par promotion : `agenda.AccesModule` (auto / ouvert / fermé) + `Promotion.ouverture_auto`.
+- Contrôle appliqué à : détail module, séance (et dépôt), quiz, téléchargement de ressource ; un
+  contenu fermé rend `formation/verrouille.html` (HTTP 403) avec le motif.
+- Fichiers privés : `core.stockage.StockagePrive` (`PRIVATE_ROOT`), servis par
+  `formation:ressource_fichier` et `evaluation:livrable_fichier` (auteur, formateur de la promotion, admin).

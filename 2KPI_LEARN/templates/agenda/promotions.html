@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Promotions — {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "users" size=16 %}<span>{% if peut_gerer %}Promotions{% else %}Mes promotions{% endif %}</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% if peut_gerer %}{% icon "shield" size=14 %} Administration{% else %}{% icon "briefcase" size=14 %} Espace formateur{% endif %}</span>
+    <h1>{% if peut_gerer %}Promotions{% else %}Mes promotions{% endif %}</h1>
+    <p class="muted">{% if peut_gerer %}Crée les promotions, affecte un formateur, puis génère leur calendrier.{% else %}Les promotions qui te sont confiées : planning, présences et calendrier.{% endif %}</p>
+  </div>
+</div>
+
+{% if peut_gerer %}
+<div class="card">
+  <h2 class="section-title">{% icon "plus" size=18 %} Nouvelle promotion</h2>
+  <form method="post" class="form-inline">{% csrf_token %}
+    <div class="field"><label for="p-nom">Nom</label><input id="p-nom" type="text" name="nom" placeholder="GéoAI Sassandra — Promo 2026" required></div>
+    <div class="field"><label for="p-formation">Formation</label>
+      <select id="p-formation" name="formation" required>
+        {% for f in formations %}<option value="{{ f.id }}">{{ f.titre }}</option>{% empty %}<option value="">Aucune formation</option>{% endfor %}
+      </select></div>
+    <div class="field"><label for="p-ens">Formateur</label>
+      <select id="p-ens" name="formateur">
+        <option value="">— à affecter —</option>
+        {% for e in formateurs %}<option value="{{ e.id }}">{{ e.get_full_name|default:e.username }}</option>{% endfor %}
+      </select></div>
+    <div class="field" style="flex:0 1 170px"><label for="p-date">Date de début</label><input id="p-date" type="date" name="date_debut" required></div>
+    <button class="btn" type="submit">{% icon "plus" size=16 %} Créer</button>
+  </form>
+</div>
+<h2 class="section-title">{% icon "users" size=18 %} Promotions existantes</h2>
+{% endif %}
+
+<div class="table-wrap">
+<table class="tbl">
+  <thead><tr><th>Promotion</th><th>Formateur</th><th>Début</th><th class="num">Apprenants</th><th class="num">Séances</th><th>Actions</th></tr></thead>
+  <tbody>
+  {% for p in promotions %}
+    <tr>
+      <td><strong>{{ p.nom }}</strong>{% if not p.active %} <span class="pill">Archivée</span>{% endif %}<br><small class="muted">{{ p.formation.titre }}</small></td>
+      <td>
+        {% if peut_gerer %}
+        <form method="post" class="inline-form">{% csrf_token %}
+          <input type="hidden" name="action" value="affecter"><input type="hidden" name="promotion" value="{{ p.id }}">
+          <select name="formateur" aria-label="Formateur de {{ p.nom }}" onchange="this.form.submit()">
+            <option value="">— à affecter —</option>
+            {% for e in formateurs %}<option value="{{ e.id }}" {% if p.formateur_id == e.id %}selected{% endif %}>{{ e.get_full_name|default:e.username }}</option>{% endfor %}
+          </select>
+          <noscript><button class="btn btn-sm btn-secondary">OK</button></noscript>
+        </form>
+        {% else %}{{ p.formateur.get_full_name|default:p.formateur.username }}{% endif %}
+      </td>
+      <td>{{ p.date_debut|date:"d M Y" }}</td>
+      <td class="num">{{ p.nb_apprenants }}</td>
+      <td class="num">{{ p.nb_evenements }}</td>
+      <td><div class="actions">
+        <form method="post" action="{% url 'agenda:generer_promo' p.id %}" class="inline">{% csrf_token %}
+          <button class="btn btn-sm btn-secondary" type="submit" title="Ajoute les séances manquantes">{% icon "calendar-plus" size=14 %} Calendrier</button>
+        </form>
+        <a class="btn btn-sm btn-navy" href="{% url 'agenda:planning' p.id %}">{% icon "calendar-days" size=14 %} Planning</a>
+        <a class="btn btn-sm btn-secondary" href="{% url 'agenda:acces' p.id %}" title="Ouverture des modules aux apprenants">{% icon "lock" size=14 %} Accès</a>
+      </div></td>
+    </tr>
+  {% empty %}<tr><td colspan="6"><div class="empty"><span class="ico-tile">{% icon "users" %}</span>
+    {% if peut_gerer %}<strong>Aucune promotion pour l'instant</strong>Crée la première avec le formulaire ci-dessus.
+    {% else %}<strong>Aucune promotion ne t'est encore confiée</strong>L'administration t'affectera tes promotions.{% endif %}</div></td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% if peut_gerer %}<p class="muted" style="margin-top:12px">{% icon "info" size=14 %} Les apprenants sont rattachés à une promotion depuis la page <a href="{% url 'comptes:utilisateurs' %}?role=apprenant">Utilisateurs</a>.</p>{% endif %}
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Accès refusé — {{ site_nom }}{% endblock %}
+{% block content %}
+<div class="card empty" style="margin-top:40px">
+  <span class="ico-tile coral">{% icon "lock" %}</span>
+  <strong>Accès réservé</strong>
+  Cette page n'est pas accessible avec ton profil{% if role_libelle %} ({{ role_libelle }}){% endif %}.
+  <div class="btn-row" style="justify-content:center"><a class="btn" href="{% url 'tableau_bord:accueil' %}">{% icon "dashboard" size=16 %} Retour au tableau de bord</a></div>
+</div>
+{% endblock %}

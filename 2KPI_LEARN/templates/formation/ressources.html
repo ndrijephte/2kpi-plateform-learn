@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Ressources — {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "folder" size=16 %}<span>Ressources pédagogiques</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "briefcase" size=14 %} {% if est_admin %}Pédagogie{% else %}Espace formateur{% endif %}</span>
+    <h1>Ressources pédagogiques</h1>
+    <p class="muted">Supports, notebooks, archives, données et liens mis à disposition des apprenants, avec leurs consignes.</p>
+  </div>
+  <a class="btn" href="{% url 'formation:ressource_ajouter' %}">{% icon "upload" size=16 %} Ajouter une ressource</a>
+</div>
+<div class="toolbar">
+  <span class="muted">{{ total }} ressource{{ total|pluralize }}</span>
+  <form method="get" role="search">
+    {% if formations|length > 1 %}
+    <select name="formation" aria-label="Formation" onchange="this.form.submit()">
+      <option value="">Toutes les formations</option>
+      {% for f in formations %}<option value="{{ f.id }}" {% if f_id == f.id|stringformat:"d" %}selected{% endif %}>{{ f.titre }}</option>{% endfor %}
+    </select>
+    {% endif %}
+    <input type="text" name="q" value="{{ q }}" placeholder="Titre, consigne…" aria-label="Rechercher">
+    <button class="btn btn-secondary btn-sm" type="submit">Rechercher</button>
+  </form>
+</div>
+{% for module, liste in groupes %}
+  <div class="card">
+    <div class="card-head">
+      <h2 class="section-title"><span class="pill">{{ module.code }}</span> {{ module.titre }}</h2>
+      <a class="link" href="{% url 'formation:ressource_ajouter' %}?module={{ module.pk }}&next={{ request.get_full_path|urlencode }}">{% icon "plus" size=14 %} Ajouter</a>
+    </div>
+    {% include "formation/_ressources.html" with ressources=liste peut_gerer=True %}
+  </div>
+{% empty %}
+  <div class="card empty"><span class="ico-tile">{% icon "folder" %}</span><strong>Aucune ressource</strong>
+    {% if formations %}Dépose le premier support avec le bouton « Ajouter une ressource ».{% else %}Aucune formation ne t'est encore rattachée (via une promotion).{% endif %}</div>
+{% endfor %}
+{% endblock %}

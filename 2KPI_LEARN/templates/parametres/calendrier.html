@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Paramètres — Jours non travaillés{% endblock %}
+{% block crumbs %}{% include "parametres/_fil.html" %}{% endblock %}
+{% block content %}
+{% include "parametres/_tete.html" with titre_page="Jours non travaillés" sous_titre="Fériés, congés, fermetures : les séances qui y tombent sont décalées d'une semaine à la génération." %}
+<div class="grid-2">
+  <div class="table-wrap">
+    <table class="tbl">
+      <thead><tr><th>Période</th><th>Motif</th><th>Portée</th><th></th></tr></thead>
+      <tbody>
+      {% for i in indisponibilites %}
+        <tr>
+          <td><strong>{{ i.date_debut|date:"d M Y" }}</strong>{% if i.date_fin %} → {{ i.date_fin|date:"d M Y" }}{% endif %}</td>
+          <td>{{ i.motif|default:"—" }}</td>
+          <td>{% if i.promotion %}{{ i.promotion.nom }}{% else %}<span class="pill">Toutes</span>{% endif %}</td>
+          <td><div class="actions"><a class="btn btn-sm btn-secondary" href="{% url 'core:modifier' 'indisponibilite' i.pk %}?next={{ request.path|urlencode }}">{% icon "sliders" size=14 %}<span class="sr-only">Modifier</span></a>
+            {% include "partials/supprimer.html" with modele="indisponibilite" pk=i.pk next=request.path quoi=i.motif|default:"ce jour" %}</div></td>
+        </tr>
+      {% empty %}<tr><td colspan="4"><div class="empty"><span class="ico-tile">{% icon "calendar" %}</span><strong>Aucun jour non travaillé</strong></div></td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2 class="section-title">{% icon "plus" size=18 %} Ajouter</h2>
+    <form method="post">{% csrf_token %}
+      {% include "partials/form_fields.html" %}
+      <button class="btn" type="submit">{% icon "plus" size=16 %} Ajouter</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

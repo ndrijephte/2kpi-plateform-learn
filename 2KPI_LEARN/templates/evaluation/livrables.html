@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Livrables — {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "clipboard-check" size=16 %}<span>Livrables</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "briefcase" size=14 %} {% if est_admin %}Pédagogie{% else %}Espace formateur{% endif %}</span>
+    <h1>Correction des livrables</h1>
+    <p class="muted">Note sur 20 et observations ; l'apprenant est notifié dès l'enregistrement.</p>
+  </div>
+</div>
+
+<div class="toolbar">
+  <nav class="tabs" aria-label="Filtrer par statut">
+    <a href="?statut=a_corriger{% if promo_id %}&promotion={{ promo_id }}{% endif %}" {% if filtre == "a_corriger" %}class="on"{% endif %}>{% icon "clock" size=14 %} À corriger {% if nb_a_corriger %}<span class="badge">{{ nb_a_corriger }}</span>{% endif %}</a>
+    <a href="?statut=corriges{% if promo_id %}&promotion={{ promo_id }}{% endif %}" {% if filtre == "corriges" %}class="on"{% endif %}>{% icon "circle-check" size=14 %} Corrigés</a>
+    <a href="?statut=tous{% if promo_id %}&promotion={{ promo_id }}{% endif %}" {% if filtre == "tous" %}class="on"{% endif %}>Tous</a>
+  </nav>
+  {% if promotions|length > 1 %}
+  <form method="get">
+    <input type="hidden" name="statut" value="{{ filtre }}">
+    <select name="promotion" aria-label="Promotion" onchange="this.form.submit()">
+      <option value="">Toutes les promotions</option>
+      {% for p in promotions %}<option value="{{ p.id }}" {% if promo_id == p.id|stringformat:"d" %}selected{% endif %}>{{ p.nom }}</option>{% endfor %}
+    </select>
+  </form>
+  {% endif %}
+</div>
+
+<div class="table-wrap">
+<table class="tbl">
+  <thead><tr><th>Apprenant</th><th>Séance</th><th>Fichier</th><th style="min-width:360px">Évaluation</th></tr></thead>
+  <tbody>
+  {% for l in livrables %}
+    <tr>
+      <td><div class="list-item" style="padding:0;border:0">{% avatar l.inscription.apprenant %}
+        <span class="grow"><strong>{{ l.inscription.apprenant.get_full_name|default:l.inscription.apprenant.username }}</strong><small>{{ l.inscription.promotion.nom }}</small></span></div></td>
+      <td><strong>{{ l.seance.module.code }}</strong> · {{ l.seance.get_jour_display }}<br><small class="muted">{{ l.seance.theme|default:"Séance" }}</small></td>
+      <td>{% if l.fichier %}<a class="btn btn-sm btn-secondary" href="{% url 'evaluation:livrable_fichier' l.pk %}">{% icon "download" size=14 %} Ouvrir</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+      <td>
+        <form method="post" class="grade-form">{% csrf_token %}
+          <input type="hidden" name="livrable" value="{{ l.id }}">
+          <input type="text" inputmode="decimal" name="note" value="{{ l.note_sur_20|default_if_none:'' }}" placeholder="/20" aria-label="Note sur 20" required>
+          <input type="text" name="observations" value="{{ l.observations }}" placeholder="Observations (optionnel)" aria-label="Observations">
+          <button class="btn btn-sm" type="submit">{% icon "check" size=14 %} {% if l.note_sur_20 is not None %}Mettre à jour{% else %}Noter{% endif %}</button>
+        </form>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4"><div class="empty"><span class="ico-tile done">{% icon "check-check" %}</span><strong>Rien à afficher</strong>{% if filtre == "a_corriger" %}Tous les livrables rendus sont corrigés.{% else %}Aucun livrable rendu pour l'instant.{% endif %}</div></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

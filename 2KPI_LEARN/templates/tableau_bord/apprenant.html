@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Tableau de bord — {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "dashboard" size=16 %}<span>Tableau de bord</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% now "l j F Y" %}</span>
+    <h1>Bonjour {{ user.first_name|default:user.username }}</h1>
+    {% if inscription %}<p class="muted">{{ inscription.formation.titre }}{% if inscription.promotion %} · {{ inscription.promotion.nom }}{% endif %}</p>{% endif %}
+  </div>
+  {% if reprendre %}
+  <a class="btn" href="{% url 'formation:seance' reprendre.pk %}">{% icon "play" size=16 %} Reprendre : {{ reprendre.module.code }}</a>
+  {% endif %}
+</div>
+
+{% if synthese %}
+<div class="card">
+  <div class="progress-label"><span>Progression de la formation</span><strong>{{ synthese.progression }} %</strong></div>
+  <div class="progress" role="progressbar" aria-valuenow="{{ synthese.progression }}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{ synthese.progression }}%"></span></div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi"><span class="kpi-icon coral">{% icon "award" %}</span>
+    <div><strong>{{ synthese.note_globale }}<small>/20</small></strong><span>Note globale</span></div></div>
+  <div class="kpi"><span class="kpi-icon green">{% icon "user-check" %}</span>
+    <div><strong>{{ synthese.taux_presence }}<small> %</small></strong><span>Présence</span></div></div>
+  <div class="kpi"><span class="kpi-icon">{% icon "target" %}</span>
+    <div><strong>{{ synthese.competences_validees }}<small>/{{ synthese.total_competences }}</small></strong><span>Compétences validées</span></div></div>
+  <div class="kpi"><span class="kpi-icon amber">{% icon "clipboard-check" %}</span>
+    <div><strong>{{ synthese.moyenne_seances }}<small>/20</small></strong><span>Moyenne des livrables</span></div></div>
+  <div class="kpi"><span class="kpi-icon">{% icon "quiz" %}</span>
+    <div><strong>{{ synthese.moyenne_quiz }}<small>/20</small></strong><span>Moyenne quiz ({{ synthese.quiz_passes }})</span></div></div>
+  <div class="kpi"><span class="kpi-icon">{% icon "gauge" %}</span>
+    <div><strong>{{ synthese.niveau_moyen }}<small>/4</small></strong><span>Niveau moyen</span></div></div>
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <div>
+    {% if inscription %}
+    <div class="card">
+      <div class="card-head">
+        <h2 class="section-title">{% icon "calendar-days" size=18 %} Prochaines séances</h2>
+        <a class="link" href="{% url 'agenda:mon_agenda' %}">Tout l'agenda {% icon "arrow-right" size=16 %}</a>
+      </div>
+      {% for ev in a_venir %}
+        {% include "agenda/_evenement.html" with ev=ev %}
+      {% empty %}
+        <div class="empty"><span class="ico-tile">{% icon "calendar" %}</span><strong>Aucune séance planifiée</strong>Ton calendrier sera publié par ton formateur.</div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card empty">
+      <span class="ico-tile coral">{% icon "graduation-cap" %}</span>
+      <strong>Aucune inscription active</strong>
+      Contacte l'administration pour être rattaché à une promotion.
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-head">
+        <h2 class="section-title">{% icon "bell" size=18 %} À lire</h2>
+        <a class="link" href="{% url 'agenda:notifications' %}">Tout voir</a>
+      </div>
+      <ul class="list">
+        {% for n in notifications %}
+        <li class="list-item"><span class="ico-tile coral">{% icon "bell" size=18 %}</span>
+          <span class="grow"><strong>{{ n.titre }}</strong><small>il y a {{ n.date_creation|timesince }}</small></span></li>
+        {% empty %}
+        <li class="list-item"><span class="ico-tile done">{% icon "check-check" size=18 %}</span><span class="grow muted">Tu es à jour.</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="card">
+      <h2 class="section-title">{% icon "layers" size=18 %} Raccourcis</h2>
+      <ul class="list">
+        <li><a class="list-item" href="{% url 'formation:modules' %}"><span class="ico-tile">{% icon "book-open" size=18 %}</span><span class="grow"><strong>Mon cours</strong><small>Modules, séances et quiz</small></span><span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
+        <li><a class="list-item" href="{% url 'comptes:profil' %}"><span class="ico-tile">{% icon "list-checks" size=18 %}</span><span class="grow"><strong>Mes prérequis</strong><small>GEE, GitHub, QGIS…</small></span><span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Présences — {{ evenement.libelle }}{% endblock %}
+{% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<a href="{% url 'agenda:planning' evenement.promotion_id %}">{{ evenement.promotion.nom }}</a>{% icon "chevron-right" size=14 %}<span>Présences</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "user-check" size=14 %} Feuille de présence</span>
+    <h1>{{ evenement.libelle }}</h1>
+    <p class="muted">{{ evenement.date_debut|date:"l d F Y, H:i" }} · {{ evenement.duree_h }} h · {{ evenement.get_mode_display }}</p>
+  </div>
+</div>
+<form method="post">{% csrf_token %}
+  <div class="table-wrap">
+  <table class="tbl">
+    <thead><tr><th>Apprenant</th><th>Statut</th></tr></thead>
+    <tbody>
+    {% for l in lignes %}{% with i=l.inscription %}
+      <tr>
+        <td><div class="list-item" style="padding:0;border:0">{% avatar i.apprenant %}
+          <span class="grow"><strong>{{ i.apprenant.get_full_name|default:i.apprenant.username }}</strong><small>{{ i.apprenant.email }}</small></span></div></td>
+        <td><div class="seg" role="radiogroup" aria-label="Statut de {{ i.apprenant.username }}">
+          {% for val, lib in statuts %}
+            <input type="radio" id="s{{ i.id }}-{{ val }}" name="statut_{{ i.id }}" value="{{ val }}" {% if l.statut == val %}checked{% endif %}>
+            <label for="s{{ i.id }}-{{ val }}">{{ lib }}</label>
+          {% endfor %}
+        </div></td>
+      </tr>
+    {% endwith %}{% empty %}
+      <tr><td colspan="2"><div class="empty"><span class="ico-tile">{% icon "users" %}</span><strong>Aucun apprenant inscrit à cette promotion</strong></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <div class="btn-row">
+    {% if lignes %}<button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer les présences</button>{% endif %}
+    <a class="btn btn-secondary" href="{% url 'agenda:planning' evenement.promotion_id %}">{% icon "arrow-left" size=16 %} Retour au planning</a>
+  </div>
+</form>
+{% endblock %}

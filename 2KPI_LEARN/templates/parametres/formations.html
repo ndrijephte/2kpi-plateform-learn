@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Paramètres — Formations{% endblock %}
+{% block crumbs %}{% include "parametres/_fil.html" %}{% endblock %}
+{% block content %}
+{% include "parametres/_tete.html" with titre_page="Formations & séances" sous_titre="Catalogue : formations, modules, séances (créneaux) et compétences." %}
+<div class="grid-2">
+  <div class="table-wrap">
+    <table class="tbl">
+      <thead><tr><th>Formation</th><th class="num">Modules</th><th class="num">Promotions</th><th>État</th><th></th></tr></thead>
+      <tbody>
+      {% for f in formations %}
+        <tr>
+          <td><a href="{% url 'core:formation' f.pk %}"><strong>{{ f.titre }}</strong></a><br><small class="muted">{{ f.slug }}</small></td>
+          <td class="num">{{ f.nb_modules }}</td><td class="num">{{ f.nb_promos }}</td>
+          <td>{% if f.active %}<span class="pill pill-ok">Active</span>{% else %}<span class="pill">Inactive</span>{% endif %}</td>
+          <td><div class="actions"><a class="btn btn-sm btn-secondary" href="{% url 'core:formation' f.pk %}">{% icon "sliders" size=14 %} Paramétrer</a>
+            {% include "partials/supprimer.html" with modele="formation" pk=f.pk next=request.path quoi=f.titre %}</div></td>
+        </tr>
+      {% empty %}<tr><td colspan="5"><div class="empty"><strong>Aucune formation</strong></div></td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2 class="section-title">{% icon "plus" size=18 %} Nouvelle formation</h2>
+    <form method="post">{% csrf_token %}
+      {% include "partials/form_fields.html" %}
+      <button class="btn" type="submit">{% icon "plus" size=16 %} Créer</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

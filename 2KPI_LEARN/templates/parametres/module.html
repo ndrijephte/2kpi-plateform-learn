@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Paramètres — {{ module.code }}{% endblock %}
+{% block crumbs %}{% include "parametres/_fil.html" %}{% endblock %}
+{% block content %}
+{% include "parametres/_tete.html" with titre_page=module.code|add:" — "|add:module.titre sous_titre="Chaque séance porte son propre créneau : semaine, jour, heure, durée, mode et lieu." %}
+
+<div class="card-head"><h2 class="section-title">{% icon "calendar-days" size=18 %} Séances</h2></div>
+<div class="table-wrap">
+  <table class="tbl">
+    <thead><tr><th class="num">#</th><th>Séance</th><th>Créneau</th><th>Mode</th><th></th></tr></thead>
+    <tbody>
+    {% for s in seances %}
+      <tr>
+        <td class="num">{{ s.ordre }}</td>
+        <td><strong>{{ s.theme|default:"(sans titre)" }}</strong>{% if s.objectifs %}<br><small class="muted">{{ s.objectifs|truncatechars:90 }}</small>{% endif %}</td>
+        <td>Semaine {{ s.semaine_effective }} · {{ s.get_jour_display }} {{ s.heure_debut|time:"H:i" }}<br><small class="muted">{{ s.duree_prevue_h }} h</small></td>
+        <td>{{ s.get_mode_display }}{% if s.lieu %}<br><small class="muted">{{ s.lieu }}</small>{% endif %}</td>
+        <td><div class="actions"><a class="btn btn-sm btn-secondary" href="{% url 'core:modifier' 'seance' s.pk %}?next={{ request.path|urlencode }}">{% icon "sliders" size=14 %} Modifier</a>
+          {% include "partials/supprimer.html" with modele="seance" pk=s.pk next=request.path quoi=s.theme|default:"cette séance" %}</div></td>
+      </tr>
+    {% empty %}<tr><td colspan="5"><div class="empty"><strong>Aucune séance</strong></div></td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="grid-2 stack">
+  <div>
+    <details class="card panel" {% if ouvrir == "seance" %}open{% endif %}>
+      <summary class="card-head" style="margin:0"><h2 class="section-title">{% icon "plus" size=18 %} Ajouter une séance</h2><span class="chev">{% icon "chevron-right" size=18 %}</span></summary>
+      <form method="post" class="stack-sm">{% csrf_token %}<input type="hidden" name="quoi" value="seance">
+        <div class="form-grid">{% include "partials/form_fields.html" with form=seance_form %}</div>
+        <button class="btn" type="submit">{% icon "plus" size=16 %} Ajouter la séance</button>
+      </form>
+    </details>
+    <div class="card">
+      <h2 class="section-title">{% icon "target" size=18 %} Compétences</h2>
+      <ul class="list">
+        {% for c in competences %}
+        <li class="list-item"><span class="pill">{{ c.code }}</span><span class="grow">{{ c.libelle }}<small class="muted"> · niveau visé {{ c.niveau_vise }}/4</small></span>
+          <a class="btn btn-sm btn-secondary" href="{% url 'core:modifier' 'competence' c.pk %}?next={{ request.path|urlencode }}">{% icon "sliders" size=14 %}<span class="sr-only">Modifier</span></a>
+          {% include "partials/supprimer.html" with modele="competence" pk=c.pk next=request.path quoi=c.code %}</li>
+        {% empty %}<li class="list-item muted">Aucune compétence.</li>{% endfor %}
+      </ul>
+      <details class="panel stack-sm" {% if ouvrir == "competence" %}open{% endif %}>
+        <summary class="link">{% icon "plus" size=14 %} Ajouter une compétence</summary>
+        <form method="post" class="stack-sm">{% csrf_token %}<input type="hidden" name="quoi" value="competence">
+          {% include "partials/form_fields.html" with form=comp_form %}
+          <button class="btn btn-sm" type="submit">{% icon "plus" size=14 %} Ajouter</button>
+        </form>
+      </details>
+    </div>
+  </div>
+  <div>
+    <details class="card panel" {% if ouvrir == "module" %}open{% endif %}>
+      <summary class="card-head" style="margin:0"><h2 class="section-title">{% icon "layers" size=18 %} Informations du module</h2><span class="chev">{% icon "chevron-right" size=18 %}</span></summary>
+      <form method="post" class="stack-sm">{% csrf_token %}<input type="hidden" name="quoi" value="module">
+        {% include "partials/form_fields.html" %}
+        <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
+      </form>
+    </details>
+    <div class="card">
+      <h2 class="section-title">{% icon "info" size=18 %} Effet sur les agendas</h2>
+      <p class="muted"><small>Les nouvelles promotions utilisent directement ces créneaux. Pour une promotion déjà planifiée, le formateur ou l'admin clique sur « Appliquer le paramétrage » dans son planning : seules les séances encore « planifiées » sont recalées.</small></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

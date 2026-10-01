@@ -1,0 +1,16 @@
+{% load ui %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "sliders" size=14 %} Paramètres</span>
+    <h1>{{ titre_page }}</h1>
+    {% if sous_titre %}<p class="muted">{{ sous_titre }}</p>{% endif %}
+  </div>
+</div>
+<nav class="tabs" aria-label="Rubriques de paramétrage">
+  <a href="{% url 'core:section' 'identite' %}" {% if section == "identite" %}class="on"{% endif %}>{% icon "globe" size=14 %} Identité &amp; logo</a>
+  <a href="{% url 'core:section' 'connexion' %}" {% if section == "connexion" %}class="on"{% endif %}>{% icon "log-in" size=14 %} Page de connexion</a>
+  <a href="{% url 'core:formations' %}" {% if section == "formations" %}class="on"{% endif %}>{% icon "layers" size=14 %} Formations &amp; séances</a>
+  <a href="{% url 'core:calendrier' %}" {% if section == "calendrier" %}class="on"{% endif %}>{% icon "calendar" size=14 %} Jours non travaillés</a>
+  <a href="{% url 'core:section' 'fichiers' %}" {% if section == "fichiers" %}class="on"{% endif %}>{% icon "upload" size=14 %} Fichiers déposés</a>
+  <a href="{% url 'core:quiz_liste' %}" {% if section == "quiz" %}class="on"{% endif %}>{% icon "quiz" size=14 %} Quiz</a>
+</nav>

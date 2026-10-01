@@ -1,0 +1,1 @@
+{% load ui %}{% icon "sliders" size=16 %}{% for libelle, url in fil %}{% if url %}<a href="{{ url }}" title="{{ libelle }}">{{ libelle|truncatechars:34 }}</a>{% icon "chevron-right" size=14 %}{% else %}<span title="{{ libelle }}">{{ libelle }}</span>{% endif %}{% endfor %}

@@ -1,0 +1,29 @@
+{% load ui %}{# Liste de ressources. Paramètres : ressources ; peut_gerer (afficher modifier/supprimer) #}
+<div>
+  {% for r in ressources %}
+  <div class="res">
+    <span class="ico-tile">{% icone_ressource r.type %}</span>
+    <div class="grow">
+      <strong>{{ r.titre }}</strong>
+      <span class="res-meta">
+        <span>{{ r.get_type_display }}</span>
+        {% if r.fichier %}<span>{% icon "file" size=12 %} {{ r.extension }} · {{ r.taille }}</span>{% endif %}
+        {% if peut_gerer and r.ajoute_par %}<span>{% icon "user" size=12 %} {{ r.ajoute_par.get_full_name|default:r.ajoute_par.username }} · {{ r.date_ajout|date:"d/m/Y" }}</span>{% endif %}
+      </span>
+      {% if r.instructions %}<div class="res-consignes"><strong>{% icon "info" size=13 %} Consignes</strong><span>{{ r.instructions }}</span></div>{% endif %}
+      <div class="res-actions">
+        {% if r.fichier %}<a class="btn btn-sm" href="{% url 'formation:ressource_fichier' r.pk %}">{% icon "download" size=14 %} Télécharger</a>{% endif %}
+        {% if r.colab_url %}<a class="btn btn-sm btn-navy" href="{{ r.colab_url }}" target="_blank" rel="noopener">{% icon "play" size=14 %} Ouvrir dans Colab</a>{% endif %}
+        {% if r.url %}<a class="btn btn-sm btn-secondary" href="{{ r.url }}" target="_blank" rel="noopener">{% icon "external-link" size=14 %} Ouvrir le lien</a>{% endif %}
+        {% if peut_gerer %}
+          <a class="btn btn-sm btn-secondary" href="{% url 'formation:ressource_modifier' r.pk %}?next={{ request.path|urlencode }}">{% icon "pencil" size=14 %} Modifier</a>
+          <form method="post" action="{% url 'formation:ressource_supprimer' r.pk %}" class="inline" onsubmit="return confirm('Supprimer « {{ r.titre|escapejs }} » et son fichier ?')">{% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button class="btn btn-sm btn-ghost-danger" type="submit">{% icon "trash" size=14 %}<span class="sr-only">Supprimer</span></button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>

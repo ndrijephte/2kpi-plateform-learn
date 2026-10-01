@@ -8,13 +8,14 @@ class ChoixInline(admin.TabularInline):
 
 @admin.register(Inscription)
 class InscriptionAdmin(admin.ModelAdmin):
-    list_display = ("apprenant", "formation", "statut", "date_debut", "date_fin_prevue")
-    list_filter = ("formation", "statut")
+    list_display = ("apprenant", "formation", "promotion", "statut", "date_debut", "date_fin_prevue")
+    list_filter = ("formation", "promotion", "statut")
+    search_fields = ("apprenant__username", "apprenant__first_name", "apprenant__last_name")
 
 @admin.register(Presence)
 class PresenceAdmin(admin.ModelAdmin):
-    list_display = ("inscription", "seance", "statut", "duree_realisee_h")
-    list_filter = ("statut", "seance__module")
+    list_display = ("inscription", "evenement", "seance", "statut", "duree_realisee_h")
+    list_filter = ("statut", "evenement__promotion", "seance__module")
 
 @admin.register(Livrable)
 class LivrableAdmin(admin.ModelAdmin):

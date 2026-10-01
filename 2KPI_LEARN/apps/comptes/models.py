@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import FileExtensionValidator
 from django.db import models
 
 class Profil(models.Model):
@@ -12,9 +13,12 @@ class Profil(models.Model):
     )
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.APPRENANT)
     structure = models.CharField("Structure / Université", max_length=200, blank=True)
-    specialite = models.CharField(max_length=200, blank=True,
+    specialite = models.CharField("Spécialité", max_length=200, blank=True,
                                   default="Géomatique / Bases de données spatiales")
-    telephone = models.CharField(max_length=40, blank=True)
+    telephone = models.CharField("Téléphone", max_length=40, blank=True)
+    photo = models.FileField(upload_to="profils/", blank=True,
+                             validators=[FileExtensionValidator(["png", "jpg", "jpeg", "webp"])])
+    bio = models.TextField("Présentation", blank=True)
 
     class Meta:
         verbose_name = "Profil"

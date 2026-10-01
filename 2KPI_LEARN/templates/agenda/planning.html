@@ -1,36 +1,56 @@
 {% extends "base.html" %}
+{% load ui %}
 {% block title %}Planning — {{ promotion.nom }}{% endblock %}
+{% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<span>{{ promotion.nom }}</span>{% endblock %}
 {% block content %}
-<h1>Planning — {{ promotion.nom }}</h1>
-<p class="muted">Espace formateur. Génère l'agenda depuis l'admin, puis ajuste ici et notifie l'apprenant.</p>
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "briefcase" size=14 %} {% if est_admin %}Administration{% else %}Espace formateur{% endif %} · {{ nb_apprenants }} apprenant{{ nb_apprenants|pluralize }}</span>
+    <h1>Planning — {{ promotion.nom }}</h1>
+    <p class="muted">Confirme, reporte ou annule les séances, notifie la promotion et saisis les présences.</p>
+  </div>
+  <div class="actions">
+  <a class="btn btn-navy" href="{% url 'agenda:acces' promotion.pk %}">{% icon "lock" size=16 %} Accès aux contenus</a>
+  <form method="post" action="{% url 'agenda:synchroniser' promotion.pk %}" onsubmit="return confirm('Recaler les séances encore « planifiées » sur le paramétrage actuel des séances ?')">{% csrf_token %}
+    <button class="btn btn-secondary" type="submit" title="Applique les créneaux définis dans Paramètres > Formations">{% icon "rotate-ccw" size=16 %} Appliquer le paramétrage</button>
+  </form>
+  </div>
+</div>
+<div class="table-wrap">
 <table class="tbl">
-  <thead><tr><th>Date</th><th>Séance</th><th>Statut</th><th>Actions</th></tr></thead>
+  <thead><tr><th>Date</th><th>Séance</th><th>Statut</th><th class="num">Présences</th><th>Actions</th></tr></thead>
   <tbody>
   {% for ev in evenements %}
     <tr class="statut-{{ ev.statut }}">
-      <td>{{ ev.date_debut|date:"D d/m H:i" }}</td>
-      <td>{{ ev.libelle }} {% if ev.module_code %}<small class="muted">{{ ev.module_code }}</small>{% endif %}</td>
-      <td>{{ ev.get_statut_display }}</td>
-      <td class="actions">
-        <form method="post" action="{% url 'agenda:evenement_action' ev.id %}" class="inline">{% csrf_token %}
-          <button class="mini" name="action" value="confirmer">Confirmer</button>
-          <button class="mini" name="action" value="realiser">Réalisée</button>
-          <button class="mini" name="action" value="annuler">Annuler</button>
-          <button class="mini primary" name="action" value="notifier">Notifier</button>
+      <td><strong>{{ ev.date_debut|date:"D d/m" }}</strong><br><small class="muted">{{ ev.date_debut|time:"H:i" }} · {{ ev.duree_h }} h</small></td>
+      <td>{{ ev.libelle }}{% if ev.module_code %}<br><small class="muted">{{ ev.module_code }} · {{ ev.get_mode_display }}</small>{% endif %}
+        {% if ev.note %}<br><small class="muted">{% icon "info" size=12 %} {{ ev.note }}</small>{% endif %}</td>
+      <td><span class="pill pill-{{ ev.statut }}">{{ ev.get_statut_display }}</span></td>
+      <td class="num">{{ ev.nb_presences }}/{{ nb_apprenants }}</td>
+      <td>
+        <form method="post" action="{% url 'agenda:evenement_action' ev.id %}" class="actions">{% csrf_token %}
+          <button class="btn btn-sm btn-secondary" name="action" value="confirmer" title="Confirmer">{% icon "check" size=14 %}<span class="sr-only">Confirmer</span></button>
+          <button class="btn btn-sm btn-secondary" name="action" value="realiser" title="Marquer réalisée">{% icon "circle-check" size=14 %}<span class="sr-only">Réalisée</span></button>
+          <button class="btn btn-sm btn-secondary" name="action" value="annuler" title="Annuler">{% icon "ban" size=14 %}<span class="sr-only">Annuler</span></button>
+          <button class="btn btn-sm btn-navy" name="action" value="notifier" title="Notifier la promotion">{% icon "send" size=14 %} Notifier</button>
+          <a class="btn btn-sm" href="{% url 'agenda:presences' ev.id %}" title="Saisir les présences">{% icon "user-check" size=14 %} Présences</a>
         </form>
         <details class="report">
-          <summary>Reporter</summary>
+          <summary class="link" style="font-size:.82rem;margin-top:6px">{% icon "clock" size=14 %} Reporter</summary>
           <form method="post" action="{% url 'agenda:evenement_action' ev.id %}">{% csrf_token %}
             <input type="hidden" name="action" value="reporter">
-            <input type="datetime-local" name="nouvelle_date" required>
-            <input type="text" name="motif" placeholder="Motif (optionnel)">
-            <label class="chk"><input type="checkbox" name="decaler_suite"> décaler la suite</label>
-            <button class="mini" type="submit">Reporter</button>
+            <input type="datetime-local" name="nouvelle_date" required aria-label="Nouvelle date" style="width:auto">
+            <input type="text" name="motif" placeholder="Motif (optionnel)" style="width:auto;flex:1">
+            <label class="muted" style="font-size:.82rem"><input type="checkbox" name="decaler_suite"> décaler la suite</label>
+            <button class="btn btn-sm" type="submit">Reporter</button>
           </form>
         </details>
       </td>
     </tr>
+  {% empty %}
+    <tr><td colspan="5"><div class="empty"><span class="ico-tile">{% icon "calendar-plus" %}</span><strong>Aucune séance datée</strong>Génère le calendrier depuis <a href="{% url 'agenda:promotions' %}">la liste des promotions</a>.</div></td></tr>
   {% endfor %}
   </tbody>
 </table>
+</div>
 {% endblock %}

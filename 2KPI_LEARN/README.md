@@ -9,8 +9,10 @@ Déploiement visé : `learn.2kpinnov.org` via cPanel **Setup Python App** (Passe
 python -m venv .venv && source .venv/bin/activate      # Windows : .venv\Scripts\activate
 pip install -r requirements.txt
 
-# Créer un .env LOCAL (SQLite, pas de PostgreSQL nécessaire) :
-printf 'DEBUG=True\nSECRET_KEY=dev-local\nALLOWED_HOSTS=127.0.0.1,localhost\nDB_ENGINE=\n' > .env
+# Créer la base PostgreSQL locale (une fois) :
+createdb -h 127.0.0.1 -U postgres formation2kpi
+# Puis un .env LOCAL (copie de .env.example) avec DEBUG=True et DB_ENGINE=postgresql,
+# DB_NAME / DB_USER / DB_PASSWORD de ta base locale. EMAIL_HOST vide = e-mails dans la console.
 
 python manage.py migrate
 python manage.py seed_geoai   # 12 modules, 24 compétences, 48 séances
@@ -19,10 +21,54 @@ python manage.py createsuperuser
 python manage.py runserver     # http://127.0.0.1:8000
 ```
 
-> En local, `DEBUG=True` et `DB_ENGINE` vide : SQLite est utilisé et aucun `collectstatic`
-> n'est nécessaire. PostgreSQL et `psycopg` ne servent qu'en production.
+> Local et production utilisent **PostgreSQL** (même moteur = pas de surprise au déploiement).
+> `DB_ENGINE` vide bascule sur SQLite (repli de secours uniquement). En local (`DEBUG=True`),
+> aucun `collectstatic` n'est nécessaire.
 
-Pages : `/` (tableau de bord) · `/formation/modules/` · `/comptes/profil/` · `/admin/`.
+Pages : `/` (tableau de bord) · `/formation/modules/` · `/agenda/` · `/agenda/notifications/` ·
+`/comptes/profil/` · espace formateur `/agenda/promotions/` (planning, présences) · `/admin/`.
+
+### Profils et accès
+
+| | Apprenant | Formateur | Admin |
+|---|---|---|---|
+| Tableau de bord | sa progression | ses promotions, séances, livrables à corriger | indicateurs plateforme + points d'attention |
+| Cours / quiz | suivre, déposer | consultation, quiz en aperçu | consultation |
+| Agenda | sa promotion | ses séances | toutes les séances |
+| Planning, présences, correction | — | **ses** promotions | toutes |
+| Utilisateurs, rôles, rattachement | — | — | `/comptes/utilisateurs/` |
+| Créer une promotion, affecter le formateur | — | — | `/agenda/promotions/` |
+| Admin Django | — | — | ✔ (accès synchronisé avec le rôle) |
+
+| Ressources pédagogiques (fichiers + consignes) | consultation | dépôt sur **ses** formations | toutes |
+| Paramètres (identité, logo, page de connexion, formations/séances, jours non travaillés, fichiers) | — | — | `/parametres/` |
+| Modifier son profil | ✔ | ✔ | ✔ (+ tout compte via Utilisateurs) |
+
+Le super-utilisateur est toujours administrateur. Un accès interdit renvoie une page 403.
+
+### Accès des apprenants aux contenus (autorisation)
+
+Un apprenant n'ouvre un module (séances, ressources, quiz, dépôt de livrable) que si :
+1. son **inscription** à la formation est « En cours » et rattachée à une promotion (réglable par l'admin) ;
+2. le module est **ouvert** pour sa promotion — Promotions › *Accès* : « Ouvert », « Fermé » ou
+   « Auto » (ouverture le lundi de la semaine de la 1re séance, si l'ouverture automatique est active).
+
+Les fichiers des ressources et des livrables sont stockés dans `prive/` (jamais servis par le serveur
+web) et téléchargés uniquement via l'application après contrôle des droits.
+
+### Paramétrage (admin)
+
+- **Identité & logo** : nom, suffixe, logo (barre latérale, connexion, favicon), signature, e-mail de contact.
+- **Page de connexion** : image de fond (défaut : `static/img/connexion.jpg`, issue de `docs/accueil.png`),
+  titre et accroche ; un voile sombre garantit la lisibilité.
+- **Formations & séances** : chaque séance a son créneau (semaine, jour, heure, durée, mode, lieu)
+  et ses objectifs. Planning d'une promotion existante : bouton « Appliquer le paramétrage ».
+- **Jours non travaillés** : globaux ou par promotion, évités à la génération.
+- **Fichiers déposés** : extensions autorisées et taille max (les formats exécutables/HTML/SVG restent refusés).
+
+> Production : `media/` (logo, image de connexion, photos) est servi par Apache ; `prive/` ne doit
+> **pas** être exposé (le placer hors du dossier public) ; aligner la limite d'upload du serveur sur
+> « Taille maximale ».
 
 ## Déploiement (cPanel Setup Python App)
 
@@ -38,10 +84,12 @@ Pages : `/` (tableau de bord) · `/formation/modules/` · `/comptes/profil/` · 
 ## Structure
 
 - `config/` — réglages, URLs, WSGI
+- `apps/core` — transversal : rôles & permissions (`permissions.py`), icônes SVG (`{% icon %}`), navigation
 - `apps/comptes` — profils, rôles, prérequis
 - `apps/formation` — formation, modules, séances, compétences, ressources (+ `seed_geoai`)
 - `apps/evaluation` — présence, livrables, quiz, compétences, projet, soutenance (+ `import_gift`)
-- `apps/tableau_bord` — synthèse (note globale 40/40/20)
+- `apps/agenda` — promotions, calendrier, planning formateur, présences, notifications
+- `apps/tableau_bord` — synthèse (note globale 40/40/20) + vue formateur
 - `docs/ARCHITECTURE.md` — architecture détaillée
 
 ## Commandes de données

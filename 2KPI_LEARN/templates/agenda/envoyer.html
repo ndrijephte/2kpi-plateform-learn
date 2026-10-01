@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Envoyer une notification — {{ site_nom }}{% endblock %}
+{% block crumbs %}<a href="{% url 'agenda:notifications' %}">Notifications</a>{% icon "chevron-right" size=14 %}<span>Envoyer</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "send" size=14 %} {% if est_admin %}Administration{% else %}Espace formateur{% endif %}</span>
+    <h1>Envoyer une notification</h1>
+    <p class="muted">{% if est_admin %}Diffuse un message à toute la plateforme, à un profil, à une promotion ou à des personnes choisies.{% else %}Diffuse un message aux apprenants de tes promotions.{% endif %}</p>
+  </div>
+</div>
+<div class="grid-2">
+  <form method="post" class="card" id="envoi">{% csrf_token %}
+    {% if form.non_field_errors %}<ul class="errorlist nonfield">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    <div class="field">
+      <label>{{ form.cible.label }}</label>
+      <div class="choice-list">{% for r in form.cible %}<label class="opt">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}</div>
+      {{ form.cible.errors }}
+    </div>
+    <div class="field" data-si="promotion">
+      <label for="{{ form.promotion.id_for_label }}">{{ form.promotion.label }}</label>
+      {{ form.promotion }}{{ form.promotion.errors }}
+    </div>
+    <div class="field" data-si="personnes">
+      <label>{{ form.destinataires.label }}</label>
+      <input type="search" placeholder="Filtrer par nom…" data-filtre aria-label="Filtrer les destinataires">
+      <div class="pick-list">
+        {% for c in form.destinataires %}<label class="pick">{{ c.tag }} <span>{{ c.choice_label }}</span></label>
+        {% empty %}<p class="muted">Aucun destinataire disponible.</p>{% endfor %}
+      </div>
+      {{ form.destinataires.errors }}
+    </div>
+    <div class="field"><label for="{{ form.titre.id_for_label }}">Titre</label>{{ form.titre }}{{ form.titre.errors }}</div>
+    <div class="field"><label for="{{ form.message.id_for_label }}">Message</label>{{ form.message }}{{ form.message.errors }}</div>
+    <label class="opt">{{ form.par_email }} {% icon "mail" size=16 %} Envoyer aussi par e-mail</label>
+    <div class="btn-row"><button class="btn" type="submit">{% icon "send" size=16 %} Envoyer</button></div>
+  </form>
+
+  <div class="card">
+    <h2 class="section-title">{% icon "inbox" size=18 %} {% if est_admin %}Derniers envois{% else %}Mes envois{% endif %}</h2>
+    <ul class="list">
+      {% for a in historique %}
+      <li class="list-item" style="align-items:flex-start">
+        <span class="ico-tile coral">{% icon "send" size=16 %}</span>
+        <span class="grow"><strong>{{ a.titre }}</strong>
+          <small>{{ a.date_envoi|date:"d/m/Y H:i" }} · {% if a.cible == "promotion" and a.promotion %}{{ a.promotion.nom }}{% else %}{{ a.get_cible_display }}{% endif %} · {{ a.nb_destinataires }} destinataire{{ a.nb_destinataires|pluralize }}{% if a.par_email %} · e-mail{% endif %}{% if est_admin and a.expediteur %} · par {{ a.expediteur.get_full_name|default:a.expediteur.username }}{% endif %}</small>
+          <small class="muted msg-apercu">« {{ a.message|truncatechars:120 }} »</small></span>
+      </li>
+      {% empty %}<li class="list-item muted">Aucun envoi pour l'instant.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+<script>
+(function () {
+  var form = document.getElementById("envoi");
+  function maj() {
+    var c = (form.querySelector("input[name=cible]:checked") || {}).value;
+    form.querySelectorAll("[data-si]").forEach(function (b) { b.hidden = b.dataset.si !== c; });
+  }
+  form.addEventListener("change", maj); maj();
+  var f = form.querySelector("[data-filtre]");
+  if (f) f.addEventListener("input", function () {
+    var q = f.value.toLowerCase();
+    form.querySelectorAll(".pick").forEach(function (l) { l.hidden = l.textContent.toLowerCase().indexOf(q) < 0; });
+  });
+})();
+</script>
+{% endblock %}

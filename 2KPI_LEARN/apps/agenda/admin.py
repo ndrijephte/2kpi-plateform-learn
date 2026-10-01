@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib import messages
-from .models import Promotion, Indisponibilite, Evenement, Notification
+from .models import AccesModule, Annonce, Promotion, Indisponibilite, Evenement, Notification
 from .services import generer_agenda
 
 class IndispoInline(admin.TabularInline):
@@ -9,7 +9,7 @@ class IndispoInline(admin.TabularInline):
 
 @admin.register(Promotion)
 class PromotionAdmin(admin.ModelAdmin):
-    list_display = ("nom", "formation", "date_debut", "formateur", "active")
+    list_display = ("nom", "formation", "date_debut", "formateur", "active", "ouverture_auto")
     list_filter = ("active", "formation")
     inlines = [IndispoInline]
     actions = ["action_generer_agenda"]
@@ -33,5 +33,17 @@ class IndispoAdmin(admin.ModelAdmin):
 
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
-    list_display = ("titre", "destinataire", "type", "lu", "date_creation")
+    list_display = ("titre", "destinataire", "expediteur", "type", "lu", "date_creation")
     list_filter = ("type", "lu")
+
+
+@admin.register(Annonce)
+class AnnonceAdmin(admin.ModelAdmin):
+    list_display = ("titre", "expediteur", "cible", "promotion", "nb_destinataires", "date_envoi")
+    list_filter = ("cible",)
+
+
+@admin.register(AccesModule)
+class AccesModuleAdmin(admin.ModelAdmin):
+    list_display = ("module", "promotion", "etat", "modifie_par", "modifie_le")
+    list_filter = ("etat", "promotion")

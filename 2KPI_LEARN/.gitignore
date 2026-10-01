@@ -8,3 +8,4 @@ db.sqlite3
 venv/
 *.log
 .DS_Store
+/prive/

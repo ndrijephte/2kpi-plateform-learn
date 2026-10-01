@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Paramètres — {{ titre }}{% endblock %}
+{% block crumbs %}{% include "parametres/_fil.html" %}{% endblock %}
+{% block content %}
+{% include "parametres/_tete.html" with titre_page=titre %}
+<div class="grid-2">
+  <div class="card">
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+      {% include "partials/form_fields.html" %}
+      <div class="btn-row"><button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button></div>
+    </form>
+  </div>
+  <div>
+    {% if section == "identite" %}
+    <div class="card">
+      <h2 class="section-title">{% icon "info" size=18 %} Aperçu</h2>
+      <div class="brand-preview">{% include "partials/brand.html" %}</div>
+      <p class="muted"><small>Le logo et le nom s'affichent dans la barre latérale, sur la page de connexion et dans l'onglet du navigateur.</small></p>
+    </div>
+    {% elif section == "connexion" %}
+    <div class="card">
+      <h2 class="section-title">{% icon "info" size=18 %} Aperçu</h2>
+      <div class="login-preview" style="background-image:url('{{ image_connexion_url }}')">
+        <div><strong>{{ parametres.titre_connexion }}</strong><p>{{ parametres.texte_connexion }}</p></div>
+      </div>
+      <p class="muted"><small>Un voile sombre est appliqué automatiquement pour garantir la lisibilité du texte.</small></p>
+    </div>
+    {% elif section == "fichiers" %}
+    <div class="card">
+      <h2 class="section-title">{% icon "shield" size=18 %} Sécurité</h2>
+      <p class="muted">Ces règles s'appliquent aux ressources déposées par les formateurs et aux livrables des apprenants.</p>
+      <p class="muted">Par sécurité, les formats exécutables ou interprétés par le navigateur (<code>exe</code>, <code>sh</code>, <code>js</code>, <code>html</code>, <code>svg</code>, <code>php</code>…) restent toujours refusés, même s'ils sont ajoutés à la liste.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

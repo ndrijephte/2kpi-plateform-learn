@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{% if soi %}Modifier mon profil{% else %}Modifier {{ cible.username }}{% endif %} — {{ site_nom }}{% endblock %}
+{% block crumbs %}<a href="{{ retour_url }}">{{ retour_label }}</a>{% icon "chevron-right" size=14 %}<span>Modifier</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="profile-head">
+    {% avatar cible "avatar-lg" %}
+    <div>
+      <span class="eyebrow">{% icon "pencil" size=14 %} {% if soi %}Mon profil{% else %}Administration · compte{% endif %}</span>
+      <h1 style="margin:0">{{ cible.get_full_name|default:cible.username }}</h1>
+      <p class="muted">{{ cible.username }}</p>
+    </div>
+  </div>
+</div>
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
+  <div class="grid-2">
+    <div>
+      <div class="card">
+        <h2 class="section-title">{% icon "user" size=18 %} Compte</h2>
+        <div class="form-grid">{% include "partials/form_fields.html" with form=compte_form %}</div>
+      </div>
+      <div class="card">
+        <h2 class="section-title">{% icon "briefcase" size=18 %} Profil</h2>
+        <div class="form-grid">{% include "partials/form_fields.html" with form=profil_form %}</div>
+      </div>
+    </div>
+    <div>
+      {% if prerequis_form %}
+      <div class="card">
+        <h2 class="section-title">{% icon "list-checks" size=18 %} Prérequis techniques</h2>
+        {% include "partials/form_fields.html" with form=prerequis_form %}
+      </div>
+      {% endif %}
+      {% if soi %}
+      <div class="card">
+        <h2 class="section-title">{% icon "lock" size=18 %} Sécurité</h2>
+        <a class="btn btn-secondary btn-sm" href="{% url 'password_change' %}">{% icon "lock" size=14 %} Changer mon mot de passe</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
+    <a class="btn btn-secondary" href="{{ retour_url }}">Annuler</a>
+  </div>
+</form>
+{% endblock %}

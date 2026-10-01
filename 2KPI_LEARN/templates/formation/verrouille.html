@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Contenu verrouillé — {{ site_nom }}{% endblock %}
+{% block crumbs %}<a href="{% url 'formation:modules' %}">Mon cours</a>{% icon "chevron-right" size=14 %}<span>{{ module.code }}</span>{% endblock %}
+{% block content %}
+<div class="card empty verrou">
+  <span class="ico-tile coral">{% icon "lock" %}</span>
+  <strong>{{ module.code }} — {{ module.titre }}</strong>
+  <p>Ce contenu n'est pas encore accessible.</p>
+  <p class="muted">{{ etat.motif }}</p>
+  <div class="btn-row" style="justify-content:center">
+    <a class="btn" href="{% url 'formation:modules' %}">{% icon "book-open" size=16 %} Retour à mon cours</a>
+    <a class="btn btn-secondary" href="{% url 'agenda:mon_agenda' %}">{% icon "calendar-days" size=16 %} Mon agenda</a>
+  </div>
+</div>
+{% endblock %}

@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Apps 2KPI
+    "apps.core",
     "apps.comptes",
     "apps.formation",
     "apps.evaluation",
@@ -47,7 +48,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "apps.agenda.context_processors.notifications",
+                "apps.core.context_processors.interface",
             ],
         },
     },
@@ -55,7 +56,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# Base de données : PostgreSQL en prod, SQLite en repli local
+# Base de données : PostgreSQL (local + prod) ; SQLite uniquement si DB_ENGINE est vide
 if config("DB_ENGINE", default="") == "postgresql":
     DATABASES = {
         "default": {
@@ -101,7 +102,8 @@ if DEBUG:
     STORAGES["staticfiles"]["BACKEND"] = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
 MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = BASE_DIR / "media"          # public : logo, image de connexion, photos de profil
+PRIVATE_ROOT = BASE_DIR / "prive"        # privé : ressources et livrables (servis via contrôle d'accès)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

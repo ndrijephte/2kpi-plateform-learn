@@ -1,35 +1,135 @@
-{% load static %}
-<!doctype html>
+{% load static ui %}<!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block title %}2KPI Learn{% endblock %}</title>
+<title>{% block title %}{{ site_nom }}{% endblock %}</title>
+{% if logo_url %}<link rel="icon" href="{{ logo_url }}">{% endif %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body>
-<header class="topbar">
-  <a class="brand" href="{% url 'tableau_bord:accueil' %}">2KPI&nbsp;<span>Learn</span></a>
-  <nav>
-    {% if user.is_authenticated %}
-      <a href="{% url 'tableau_bord:accueil' %}">Tableau de bord</a>
-      <a href="{% url 'formation:modules' %}">Mon cours</a>
-      <a href="{% url 'agenda:mon_agenda' %}">Agenda</a>
-      <a href="{% url 'agenda:notifications' %}" class="bell">Notifications{% if notifs_non_lues %} <span class="badge">{{ notifs_non_lues }}</span>{% endif %}</a>
-      <a href="{% url 'comptes:profil' %}">Profil</a>
-      {% if user.is_staff %}<a href="/admin/">Admin</a>{% endif %}
-      <form method="post" action="{% url 'logout' %}" class="inline">{% csrf_token %}
-        <button class="link">Déconnexion</button>
+{% block body %}
+<a class="skip" href="#contenu">Aller au contenu</a>
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Navigation principale">
+    <div class="sidebar-head">
+      <a class="brand" href="{% url 'tableau_bord:accueil' %}">
+        {% include "partials/brand.html" %}
+      </a>
+      <button class="icon-btn sidebar-close" type="button" data-nav-close aria-label="Fermer le menu">{% icon "x" %}</button>
+    </div>
+
+    <nav class="nav">
+      {% if est_admin %}
+      <p class="nav-section">Pilotage</p>
+      <a href="{% url 'tableau_bord:accueil' %}" {% if rubrique == "accueil" %}class="active" aria-current="page"{% endif %}>
+        {% icon "dashboard" %}<span>Tableau de bord</span></a>
+      <a href="{% url 'comptes:utilisateurs' %}" {% if rubrique == "utilisateurs" %}class="active" aria-current="page"{% endif %}>
+        {% icon "user-check" %}<span>Utilisateurs</span></a>
+      <a href="{% url 'agenda:promotions' %}" {% if rubrique == "promotions" %}class="active" aria-current="page"{% endif %}>
+        {% icon "users" %}<span>Promotions</span></a>
+
+      <p class="nav-section">Pédagogie</p>
+      <a href="{% url 'agenda:mon_agenda' %}" {% if rubrique == "agenda" %}class="active" aria-current="page"{% endif %}>
+        {% icon "calendar-days" %}<span>Agenda des séances</span></a>
+      <a href="{% url 'evaluation:livrables' %}" {% if rubrique == "livrables" %}class="active" aria-current="page"{% endif %}>
+        {% icon "clipboard-check" %}<span>Livrables</span></a>
+      <a href="{% url 'formation:ressources' %}" {% if rubrique == "ressources" %}class="active" aria-current="page"{% endif %}>
+        {% icon "folder" %}<span>Ressources</span></a>
+      <a href="{% url 'formation:modules' %}" {% if rubrique == "cours" %}class="active" aria-current="page"{% endif %}>
+        {% icon "book-open" %}<span>Contenu des cours</span></a>
+
+      <p class="nav-section">Système</p>
+      <a href="{% url 'core:parametres' %}" {% if rubrique == "parametres" %}class="active" aria-current="page"{% endif %}>
+        {% icon "sliders" %}<span>Paramètres</span></a>
+      <a href="{% url 'admin:index' %}">{% icon "database" %}<span>Administration Django</span></a>
+
+      {% elif est_formateur %}
+      <p class="nav-section">Espace formateur</p>
+      <a href="{% url 'tableau_bord:accueil' %}" {% if rubrique == "accueil" %}class="active" aria-current="page"{% endif %}>
+        {% icon "dashboard" %}<span>Tableau de bord</span></a>
+      <a href="{% url 'agenda:promotions' %}" {% if rubrique == "promotions" %}class="active" aria-current="page"{% endif %}>
+        {% icon "users" %}<span>Mes promotions</span></a>
+      <a href="{% url 'agenda:mon_agenda' %}" {% if rubrique == "agenda" %}class="active" aria-current="page"{% endif %}>
+        {% icon "calendar-days" %}<span>Mes séances</span></a>
+      <a href="{% url 'evaluation:livrables' %}" {% if rubrique == "livrables" %}class="active" aria-current="page"{% endif %}>
+        {% icon "clipboard-check" %}<span>Livrables à corriger</span></a>
+      <a href="{% url 'formation:ressources' %}" {% if rubrique == "ressources" %}class="active" aria-current="page"{% endif %}>
+        {% icon "folder" %}<span>Mes ressources</span></a>
+      <a href="{% url 'formation:modules' %}" {% if rubrique == "cours" %}class="active" aria-current="page"{% endif %}>
+        {% icon "book-open" %}<span>Contenu des cours</span></a>
+
+      {% else %}
+      <p class="nav-section">Apprentissage</p>
+      <a href="{% url 'tableau_bord:accueil' %}" {% if rubrique == "accueil" %}class="active" aria-current="page"{% endif %}>
+        {% icon "dashboard" %}<span>Tableau de bord</span></a>
+      <a href="{% url 'formation:modules' %}" {% if rubrique == "cours" %}class="active" aria-current="page"{% endif %}>
+        {% icon "book-open" %}<span>Mon cours</span></a>
+      <a href="{% url 'agenda:mon_agenda' %}" {% if rubrique == "agenda" %}class="active" aria-current="page"{% endif %}>
+        {% icon "calendar-days" %}<span>Mon agenda</span></a>
+      {% endif %}
+
+      <p class="nav-section">Compte</p>
+      <a href="{% url 'agenda:notifications' %}" {% if rubrique == "notifications" %}class="active" aria-current="page"{% endif %}>
+        {% icon "bell" %}<span>Notifications</span>
+        {% if notifs_non_lues %}<span class="badge" aria-label="{{ notifs_non_lues }} non lues">{{ notifs_non_lues }}</span>{% endif %}</a>
+      {% if est_formateur %}
+      <a href="{% url 'agenda:envoyer' %}" {% if rubrique == "envoyer" %}class="active" aria-current="page"{% endif %}>
+        {% icon "send" %}<span>Envoyer une notification</span></a>
+      {% endif %}
+      <a href="{% url 'comptes:profil' %}" {% if rubrique == "profil" %}class="active" aria-current="page"{% endif %}>
+        {% icon "user" %}<span>Mon profil</span></a>
+    </nav>
+
+    <div class="sidebar-user">
+      {% avatar user %}
+      <div class="who">
+        <strong>{{ user.get_full_name|default:user.username }}</strong>
+        <span class="role-chip">{{ role_libelle }}</span>
+      </div>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}
+        <button class="icon-btn" type="submit" title="Déconnexion" aria-label="Déconnexion">{% icon "log-out" size=18 %}</button>
       </form>
-    {% else %}
-      <a href="{% url 'login' %}">Connexion</a>
-    {% endif %}
-  </nav>
-</header>
-<main class="container">
-  {% if messages %}{% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}{% endif %}
-  {% block content %}{% endblock %}
-</main>
-<footer class="foot">© {% now "Y" %} 2KPI — Knowledge · Key · Planning · Innovation</footer>
+    </div>
+  </aside>
+  <div class="scrim" data-nav-close></div>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-btn" type="button" data-nav-open aria-controls="sidebar" aria-expanded="false" aria-label="Ouvrir le menu">{% icon "menu" %}</button>
+      <nav class="crumbs" aria-label="Fil d'Ariane">{% block crumbs %}{% endblock %}</nav>
+      <a class="icon-btn bell" href="{% url 'agenda:notifications' %}" aria-label="Notifications">
+        {% icon "bell" %}{% if notifs_non_lues %}<span class="dot"></span>{% endif %}</a>
+    </header>
+
+    <main class="container" id="contenu">
+      {% if messages %}
+      <div class="messages">
+        {% for m in messages %}
+        <div class="msg msg-{{ m.tags|default:'info' }}" role="status">
+          {% if m.level_tag == "success" %}{% icon "circle-check" size=18 %}{% elif m.level_tag == "error" %}{% icon "alert" size=18 %}{% else %}{% icon "info" size=18 %}{% endif %}
+          <span>{{ m }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="foot">© {% now "Y" %} {{ parametres.nom_plateforme }}{% if parametres.slogan %} — {{ parametres.slogan }}{% endif %}</footer>
+  </div>
+</div>
+<script>
+(function () {
+  var body = document.body, btn = document.querySelector("[data-nav-open]");
+  function set(open) { body.classList.toggle("nav-open", open); if (btn) btn.setAttribute("aria-expanded", open); }
+  if (btn) btn.addEventListener("click", function () { set(true); });
+  document.querySelectorAll("[data-nav-close]").forEach(function (el) { el.addEventListener("click", function () { set(false); }); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") set(false); });
+})();
+</script>
+{% endblock %}
 </body>
 </html>

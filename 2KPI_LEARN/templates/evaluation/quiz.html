@@ -1,33 +1,50 @@
 {% extends "base.html" %}
-{% block title %}{{ quiz.titre }} — 2KPI Learn{% endblock %}
+{% load ui %}
+{% block title %}{{ quiz.titre }} — {{ site_nom }}{% endblock %}
+{% block crumbs %}<a href="{% url 'formation:modules' %}">Mon cours</a>{% icon "chevron-right" size=14 %}<a href="{% url 'formation:module_detail' quiz.module.code %}">{{ quiz.module.code }}</a>{% icon "chevron-right" size=14 %}<span>Quiz</span>{% endblock %}
 {% block content %}
-<h1>{{ quiz.titre }}</h1>
-<p>Réponds à toutes les questions puis valide. Correction automatique.</p>
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "quiz" size=14 %} Test auto-corrigé · {{ questions|length }} questions</span>
+    <h1>{{ quiz.titre }}</h1>
+    <p class="muted">Réponds à toutes les questions puis valide. La correction est immédiate.</p>
+  </div>
+  {% if tentatives %}
+  <div class="card" style="margin:0;padding:12px 16px">
+    <small class="muted">Dernières tentatives</small>
+    <div class="actions">{% for t in tentatives %}<span class="pill">{{ t.score|floatformat:1 }}/20</span>{% endfor %}</div>
+  </div>
+  {% endif %}
+</div>
+
 <form method="post">{% csrf_token %}
   {% for item in questions %}
-  <div class="card">
-    <p><strong>{{ forloop.counter }}.</strong> {{ item.q.intitule }}</p>
+  <fieldset class="card question" style="border-width:1px">
+    <legend class="sr-only">Question {{ forloop.counter }}</legend>
+    <p><span class="q-num">{{ forloop.counter }}</span>{{ item.q.intitule }}</p>
     {% if item.type == 'qcm' or item.type == 'vf' %}
       {% for c in item.choix %}
         <label class="opt"><input type="{% if item.multi %}checkbox{% else %}radio{% endif %}" name="q{{ item.q.id }}" value="{{ c.id }}"> {{ c.texte }}</label>
       {% endfor %}
-      {% if item.multi %}<small>(plusieurs réponses possibles)</small>{% endif %}
+      {% if item.multi %}<small class="muted">Plusieurs réponses possibles.</small>{% endif %}
     {% elif item.type == 'court' %}
-      <input type="text" name="q{{ item.q.id }}" placeholder="Ta réponse">
+      <input type="text" name="q{{ item.q.id }}" placeholder="Ta réponse" aria-label="Réponse à la question {{ forloop.counter }}">
     {% elif item.type == 'num' %}
-      <input type="text" name="q{{ item.q.id }}" placeholder="Valeur numérique">
+      <input type="text" inputmode="decimal" name="q{{ item.q.id }}" placeholder="Valeur numérique" aria-label="Réponse à la question {{ forloop.counter }}">
     {% elif item.type == 'appariement' %}
       {% for p in item.pairs %}
-        <div class="pair"><span>{{ p.gauche }}</span> →
-          <select name="q{{ item.q.id }}_{{ p.cid }}">
-            <option value=""></option>
+        <div class="pair"><span>{{ p.gauche }}</span>{% icon "arrow-right" size=16 class="muted" %}
+          <select name="q{{ item.q.id }}_{{ p.cid }}" aria-label="Associer : {{ p.gauche }}">
+            <option value="">— choisir —</option>
             {% for d in item.droites %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
           </select>
         </div>
       {% endfor %}
     {% endif %}
-  </div>
+  </fieldset>
+  {% empty %}
+  <div class="card empty"><span class="ico-tile">{% icon "quiz" %}</span><strong>Ce quiz ne contient pas encore de question.</strong></div>
   {% endfor %}
-  <button class="btn" type="submit">Valider mes réponses</button>
+  {% if questions %}<div class="btn-row"><button class="btn" type="submit">{% icon "check" size=18 %} Valider mes réponses</button></div>{% endif %}
 </form>
 {% endblock %}

@@ -1,17 +1,32 @@
 {% extends "base.html" %}
+{% load ui %}
 {% block title %}Résultat — {{ quiz.titre }}{% endblock %}
+{% block crumbs %}<a href="{% url 'formation:modules' %}">Mon cours</a>{% icon "chevron-right" size=14 %}<a href="{% url 'formation:module_detail' quiz.module.code %}">{{ quiz.module.code }}</a>{% icon "chevron-right" size=14 %}<span>Résultat</span>{% endblock %}
 {% block content %}
-<h1>Résultat — {{ quiz.titre }}</h1>
-<div class="kpi-grid">
-  <div class="kpi"><span>{{ score }}/20</span><label>Note</label></div>
-  <div class="kpi"><span>{{ bonnes }}/{{ total }}</span><label>Bonnes réponses</label></div>
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "award" size=14 %} Résultat</span>
+    <h1>{{ quiz.titre }}</h1>
+  </div>
 </div>
-<ul class="modules">
-  {% for r in resultats %}
-    <li>{% if r.ok %}✔{% else %}✗{% endif %} {{ forloop.counter }}. {{ r.q.intitule }}
-      <small>{% if r.ok %}Correct{% else %}À revoir{% endif %}</small></li>
-  {% endfor %}
-</ul>
-<p><a class="btn" href="{% url 'evaluation:quiz' quiz.id %}">Refaire le test</a>
-   <a href="{% url 'formation:module_detail' quiz.module.code %}">← Retour au module</a></p>
+<div class="kpi-grid">
+  <div class="kpi"><span class="kpi-icon coral">{% icon "award" %}</span><div><strong>{{ score }}<small>/20</small></strong><span>Note</span></div></div>
+  <div class="kpi"><span class="kpi-icon green">{% icon "circle-check" %}</span><div><strong>{{ bonnes }}<small>/{{ total }}</small></strong><span>Bonnes réponses</span></div></div>
+</div>
+<div class="card">
+  <h2 class="section-title">{% icon "list-checks" size=18 %} Détail</h2>
+  <ul class="list">
+    {% for r in resultats %}
+    <li class="list-item">
+      {% if r.ok %}<span class="result-ok">{% icon "circle-check" %}</span>{% else %}<span class="result-ko">{% icon "circle-x" %}</span>{% endif %}
+      <span class="grow">{{ forloop.counter }}. {{ r.q.intitule }}</span>
+      <span class="pill {% if r.ok %}pill-ok{% else %}pill-ko{% endif %}">{% if r.ok %}Correct{% else %}À revoir{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+<div class="btn-row">
+  <a class="btn" href="{% url 'evaluation:quiz' quiz.id %}">{% icon "rotate-ccw" size=16 %} Refaire le test</a>
+  <a class="btn btn-secondary" href="{% url 'formation:module_detail' quiz.module.code %}">{% icon "arrow-left" size=16 %} Retour au module</a>
+</div>
 {% endblock %}

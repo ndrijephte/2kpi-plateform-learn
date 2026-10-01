@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Paramètres — {{ quiz.titre }}{% endblock %}
+{% block crumbs %}{% include "parametres/_fil.html" %}{% endblock %}
+{% block content %}
+{% include "parametres/_tete.html" with titre_page=quiz.titre sous_titre=quiz.module.code|add:" — "|add:quiz.module.titre %}
+<div class="card-head">
+  <h2 class="section-title">{% icon "list-checks" size=18 %} Questions <span class="pill">{{ questions|length }}</span></h2>
+  <a class="btn" href="{% url 'core:question_ajouter' quiz.pk %}">{% icon "plus" size=16 %} Ajouter une question</a>
+</div>
+<div class="card">
+  <ol class="q-list">
+    {% for q in questions %}
+    <li>
+      <div class="grow">
+        <div class="q-tete"><span class="pill">{{ q.get_type_display }}</span>{% if q.categorie %}<small class="muted">{{ q.categorie }}</small>{% endif %}</div>
+        <strong>{{ q.intitule|truncatechars:180 }}</strong>
+        <div class="q-rep">
+          {% if q.type == "court" or q.type == "num" %}<span class="pill pill-ok">{% icon "check" size=12 %} {{ q.reponse_courte }}</span>
+          {% else %}{% for c in q.choix.all %}<span class="pill {% if c.correct and q.type != 'appariement' %}pill-ok{% endif %}">{% if c.correct and q.type != 'appariement' %}{% icon "check" size=12 %} {% endif %}{{ c.texte|truncatechars:60 }}</span>{% endfor %}{% endif %}
+        </div>
+      </div>
+      <div class="actions">
+        <a class="btn btn-sm btn-secondary" href="{% url 'core:question' quiz.pk q.pk %}">{% icon "pencil" size=14 %} Modifier</a>
+        {% include "partials/supprimer.html" with modele="question" pk=q.pk next=request.path quoi="cette question" %}
+      </div>
+    </li>
+    {% empty %}
+    <li class="empty"><span class="ico-tile">{% icon "quiz" %}</span><strong>Aucune question</strong>Ajoute-les une à une ou importe un fichier GIFT.</li>
+    {% endfor %}
+  </ol>
+</div>
+<div class="grid-2 stack">
+  <details class="card panel" {% if ouvrir == "gift" %}open{% endif %}>
+    <summary class="card-head" style="margin:0"><h2 class="section-title">{% icon "upload" size=18 %} Importer un fichier GIFT</h2><span class="chev">{% icon "chevron-right" size=18 %}</span></summary>
+    <p class="muted"><small>Format Moodle : QCM, Vrai/Faux, réponse courte, numérique, appariement.</small></p>
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="quoi" value="gift">
+      {% include "partials/form_fields.html" with form=gift %}
+      <button class="btn" type="submit">{% icon "upload" size=16 %} Importer</button>
+    </form>
+  </details>
+  <details class="card panel" {% if ouvrir == "quiz" %}open{% endif %}>
+    <summary class="card-head" style="margin:0"><h2 class="section-title">{% icon "sliders" size=18 %} Informations du quiz</h2><span class="chev">{% icon "chevron-right" size=18 %}</span></summary>
+    {% if nb_tentatives %}<p class="muted"><small>{% icon "info" size=12 %} {{ nb_tentatives }} tentative{{ nb_tentatives|pluralize }} déjà enregistrée{{ nb_tentatives|pluralize }} : les scores passés ne sont pas recalculés.</small></p>{% endif %}
+    <form method="post" class="stack-sm">{% csrf_token %}<input type="hidden" name="quoi" value="quiz">
+      {% include "partials/form_fields.html" %}
+      <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
+    </form>
+  </details>
+</div>
+{% endblock %}

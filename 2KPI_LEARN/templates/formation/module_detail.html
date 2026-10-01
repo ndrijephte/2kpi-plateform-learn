@@ -1,21 +1,77 @@
 {% extends "base.html" %}
-{% block title %}{{ module.code }} — 2KPI Learn{% endblock %}
+{% load ui %}
+{% block title %}{{ module.code }} — {{ site_nom }}{% endblock %}
+{% block crumbs %}<a href="{% url 'formation:modules' %}">{% if est_apprenant %}Mon cours{% else %}Contenu des cours{% endif %}</a>{% icon "chevron-right" size=14 %}<span>{{ module.code }}</span>{% endblock %}
 {% block content %}
-<p><a href="{% url 'formation:modules' %}">← Mon cours</a></p>
-<h1>{{ module.code }} — {{ module.titre }}</h1>
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "layers" size=14 %} Module {{ module.code }}</span>
+    <h1>{{ module.titre }}</h1>
+  </div>
+  {% if quiz %}
+    {% if est_apprenant %}
+    <a class="btn" href="{% url 'evaluation:quiz' quiz.id %}">{% icon "quiz" size=18 %} {% if score is not None %}Repasser le test{% else %}Passer le test{% endif %}</a>
+    {% else %}
+    <a class="btn btn-navy" href="{% url 'evaluation:quiz_resultats' quiz.id %}">{% icon "list-checks" size=18 %} Résultats du quiz</a>
+    {% endif %}
+  {% endif %}
+</div>
 
-<h2>Séances</h2>
-<ul class="modules">
-  {% for s in module.seances.all %}
-    <li><a href="{% url 'formation:seance' s.pk %}">{{ s.get_jour_display }} — {{ s.theme|default:"(à venir)" }}</a>
-      <small>{{ s.duree_prevue_h }} h</small></li>
-  {% endfor %}
-</ul>
+<div class="grid-2">
+  <div>
+    <div class="card">
+      <h2 class="section-title">{% icon "calendar-days" size=18 %} Séances</h2>
+      <ul class="list">
+        {% for item in seances %}{% with s=item.seance %}
+        <li><a class="list-item" href="{% url 'formation:seance' s.pk %}">
+          <span class="ico-tile {% if item.rendu %}done{% endif %}">{% if item.rendu %}{% icon "check" size=18 stroke=2.25 %}{% else %}{% icon "file-text" size=18 %}{% endif %}</span>
+          <span class="grow">
+            <strong>{{ s.theme|default:"Séance à venir" }}</strong>
+            <small>Sem. {{ s.semaine_effective }} · {{ s.get_jour_display }} {{ s.heure_debut|time:"H:i" }} · {{ s.duree_prevue_h }} h{% if item.evenement %} · {{ item.evenement.date_debut|date:"D d M, H:i" }}{% endif %}</small>
+          </span>
+          {% if item.rendu %}<span class="pill pill-ok">Livrable rendu</span>{% endif %}
+          <span class="chev">{% icon "chevron-right" size=18 %}</span>
+        </a></li>
+        {% endwith %}{% empty %}
+        <li class="empty">Aucune séance pour ce module.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
 
-{% if quiz %}
-<p><a class="btn" href="{% url 'evaluation:quiz' quiz.id %}">Passer le test — {{ quiz.titre }}</a></p>
-{% endif %}
+  <div>
+    {% if quiz %}
+    <div class="card highlight">
+      <h2 class="section-title">{% icon "quiz" size=18 %} {{ quiz.titre }}</h2>
+      {% if est_apprenant %}
+        {% if score is not None %}<p>Meilleur score : <strong>{{ score|floatformat:1 }}/20</strong></p>
+        {% else %}<p class="muted">Test auto-corrigé — tu peux le repasser autant que nécessaire.</p>{% endif %}
+      {% else %}
+        <p class="muted">Le test est réservé aux apprenants. Consulte leurs résultats.</p>
+        <a class="link" href="{% url 'evaluation:quiz_resultats' quiz.id %}">Voir les résultats {% icon "arrow-right" size=14 %}</a>
+      {% endif %}
+    </div>
+    {% endif %}
 
-<h2>Compétences visées</h2>
-<ul>{% for c in module.competences.all %}<li><strong>{{ c.code }}</strong> — {{ c.libelle }} <small>(niveau visé {{ c.niveau_vise }})</small></li>{% endfor %}</ul>
+    <div class="card">
+      <h2 class="section-title">{% icon "target" size=18 %} Compétences visées</h2>
+      <ul class="list">
+        {% for c in competences %}
+        <li class="list-item"><span class="pill">{{ c.code }}</span><span class="grow">{{ c.libelle }}<small class="muted"> · niveau visé {{ c.niveau_vise }}/4</small></span></li>
+        {% empty %}<li class="list-item muted">—</li>{% endfor %}
+      </ul>
+    </div>
+
+    {% if ressources or peut_gerer %}
+    <div class="card">
+      <div class="card-head">
+        <h2 class="section-title">{% icon "download" size=18 %} Ressources du module</h2>
+        {% if peut_gerer %}<a class="btn btn-sm" href="{% url 'formation:ressource_ajouter' %}?module={{ module.pk }}&next={{ request.path|urlencode }}">{% icon "upload" size=14 %} Ajouter</a>{% endif %}
+      </div>
+      {% include "formation/_ressources.html" %}
+      {% if not ressources %}<p class="muted">Aucune ressource commune au module.</p>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

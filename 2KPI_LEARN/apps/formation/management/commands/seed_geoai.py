@@ -1,6 +1,7 @@
 """Crée/actualise la formation GéoAI : 12 modules, 24 compétences (depuis le CSV),
 48 séances (Lun/Mer/Ven/Sam). Idempotent."""
 import csv
+import datetime as dt
 import re
 from pathlib import Path
 from django.core.management.base import BaseCommand
@@ -24,13 +25,20 @@ MODULE_TITRES = {
 
 # Thèmes des séances de la semaine 1 (déjà rédigée) ; les autres modules
 # reçoivent des séances vierges (thème à compléter au fil des manuels).
-SEANCES_S1 = {
-    "lundi": "Cadrage GéoAI (carte mentale)",
-    "mercredi": "Installer Earth Engine & Python",
-    "vendredi": "QGIS, Git & structure du projet",
-    "samedi": "Atelier : chaîne Sentinel-2 de bout en bout",
-}
-JOURS = [("lundi", 1.5), ("mercredi", 1.5), ("vendredi", 1.5), ("samedi", 4.0)]
+SEANCES_S1 = [
+    "Cadrage GéoAI (carte mentale)",
+    "Installer Earth Engine & Python",
+    "QGIS, Git & structure du projet",
+    "Atelier : chaîne Sentinel-2 de bout en bout",
+]
+# Créneau initial de chaque séance d'un module : (jour 0=lundi, heure, durée h, mode).
+# Valeurs de départ uniquement : tout se modifie ensuite dans Paramètres > Formations.
+CRENEAUX = [
+    (0, dt.time(21, 30), 1.5, "en_ligne"),
+    (2, dt.time(21, 30), 1.5, "en_ligne"),
+    (4, dt.time(21, 30), 1.5, "en_ligne"),
+    (5, dt.time(8, 0), 4.0, "hybride"),
+]
 
 DATA = Path(__file__).resolve().parents[2] / "data" / "referentiel_competences_geoai.csv"
 
@@ -80,11 +88,13 @@ class Command(BaseCommand):
         # Séances (4 par module)
         nb_seances = 0
         for code, module in modules.items():
-            for ordre, (jour, duree) in enumerate(JOURS, start=1):
-                theme = SEANCES_S1.get(jour, "") if code == "M1" else ""
-                Seance.objects.update_or_create(
-                    module=module, jour=jour,
-                    defaults={"theme": theme, "duree_prevue_h": duree, "ordre": ordre},
+            for ordre, (jour, heure, duree, mode) in enumerate(CRENEAUX, start=1):
+                theme = SEANCES_S1[ordre - 1] if code == "M1" else ""
+                # get_or_create : ne jamais écraser un paramétrage fait depuis l'interface
+                Seance.objects.get_or_create(
+                    module=module, ordre=ordre,
+                    defaults={"theme": theme, "jour": jour, "heure_debut": heure,
+                              "duree_prevue_h": duree, "mode": mode, "semaine": module.ordre},
                 )
                 nb_seances += 1
 

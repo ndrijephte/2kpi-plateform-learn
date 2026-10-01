@@ -1,0 +1,61 @@
+{% load ui %}
+<div class="grid-2">
+  <div>
+    <div class="card">
+      <div class="card-head">
+        <h2 class="section-title">{% icon "clock" size=18 %} Prochaines séances à animer</h2>
+        <a class="link" href="{% url 'agenda:mon_agenda' %}">Agenda {% icon "arrow-right" size=16 %}</a>
+      </div>
+      {% for ev in a_animer %}{% include "agenda/_evenement.html" with ev=ev promo=True %}
+      {% empty %}<div class="empty"><span class="ico-tile">{% icon "calendar" %}</span><strong>Aucune séance à venir</strong>Génère le calendrier d'une promotion pour la planifier.</div>{% endfor %}
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h2 class="section-title">{% icon "users" size=18 %} {% if admin %}Promotions actives{% else %}Mes promotions{% endif %}</h2>
+        <a class="link" href="{% url 'agenda:promotions' %}">{% if admin %}Gérer{% else %}Tout voir{% endif %} {% icon "arrow-right" size=16 %}</a>
+      </div>
+      <ul class="list">
+        {% for p in promotions %}
+        <li><a class="list-item" href="{% url 'agenda:planning' p.id %}">
+          <span class="ico-tile">{% icon "graduation-cap" size=18 %}</span>
+          <span class="grow"><strong>{{ p.nom }}</strong>
+            <small>{{ p.nb_apprenants }} apprenant{{ p.nb_apprenants|pluralize }} · {{ p.nb_evenements }} séances{% if admin %} · {% if p.formateur %}{{ p.formateur.get_full_name|default:p.formateur.username }}{% else %}<span class="result-ko">sans formateur</span>{% endif %}{% endif %}</small></span>
+          <span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
+        {% empty %}
+        <li class="empty"><strong>Aucune promotion active</strong>{% if admin %}<a href="{% url 'agenda:promotions' %}">Créer une promotion</a>{% else %}L'administration t'affectera tes promotions.{% endif %}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="card-head">
+        <h2 class="section-title">{% icon "clipboard-check" size=18 %} À corriger</h2>
+        <a class="link" href="{% url 'evaluation:livrables' %}">Tout voir {% icon "arrow-right" size=16 %}</a>
+      </div>
+      <ul class="list">
+        {% for l in a_corriger %}
+        <li><a class="list-item" href="{% url 'evaluation:livrables' %}">
+          {% avatar l.inscription.apprenant %}
+          <span class="grow"><strong>{{ l.inscription.apprenant.get_full_name|default:l.inscription.apprenant.username }}</strong><small>{{ l.seance.module.code }} · {{ l.seance.get_jour_display }}</small></span>
+          <span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
+        {% empty %}
+        <li class="list-item"><span class="ico-tile done">{% icon "check-check" size=18 %}</span><span class="grow muted">Aucun livrable en attente.</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h2 class="section-title">{% icon "bell" size=18 %} À lire</h2>
+        <a class="link" href="{% url 'agenda:notifications' %}">Tout voir</a>
+      </div>
+      <ul class="list">
+        {% for n in notifications %}
+        <li class="list-item"><span class="ico-tile coral">{% icon "bell" size=18 %}</span><span class="grow"><strong>{{ n.titre }}</strong><small>il y a {{ n.date_creation|timesince }}</small></span></li>
+        {% empty %}
+        <li class="list-item"><span class="ico-tile done">{% icon "check-check" size=18 %}</span><span class="grow muted">Tu es à jour.</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>

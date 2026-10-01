@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Paramètres — Quiz{% endblock %}
+{% block crumbs %}{% include "parametres/_fil.html" %}{% endblock %}
+{% block content %}
+{% include "parametres/_tete.html" with titre_page="Quiz" sous_titre="Tests auto-corrigés rattachés aux modules : questions, réponses et import GIFT." %}
+<div class="grid-2">
+  <div class="table-wrap">
+    <table class="tbl">
+      <thead><tr><th>Quiz</th><th>Module</th><th class="num">Questions</th><th class="num">Tentatives</th><th></th></tr></thead>
+      <tbody>
+      {% for q in quiz_liste %}
+        <tr>
+          <td><a href="{% url 'core:quiz' q.pk %}"><strong>{{ q.titre }}</strong></a><br><small class="muted">Barème /{{ q.bareme }}</small></td>
+          <td><span class="pill">{{ q.module.code }}</span><br><small class="muted">{{ q.module.formation.titre }}</small></td>
+          <td class="num">{{ q.nb_questions }}</td><td class="num">{{ q.nb_tentatives }}</td>
+          <td><div class="actions"><a class="btn btn-sm btn-secondary" href="{% url 'core:quiz' q.pk %}">{% icon "sliders" size=14 %} Paramétrer</a>
+            {% include "partials/supprimer.html" with modele="quiz" pk=q.pk next=request.path quoi=q.titre %}</div></td>
+        </tr>
+      {% empty %}<tr><td colspan="5"><div class="empty"><span class="ico-tile">{% icon "quiz" %}</span><strong>Aucun quiz</strong>Crée le premier avec le formulaire.</div></td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2 class="section-title">{% icon "plus" size=18 %} Nouveau quiz</h2>
+    <form method="post">{% csrf_token %}
+      {% include "partials/form_fields.html" %}
+      <button class="btn" type="submit">{% icon "plus" size=16 %} Créer</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

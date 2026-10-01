@@ -4,11 +4,18 @@ from django.conf.urls.static import static
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 
+admin.site.site_header = "2KPI Learn — Administration"
+admin.site.site_title = "2KPI Learn"
+admin.site.index_title = "Gestion de la plateforme"
+admin.site.site_url = "/"
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("comptes/", include("apps.comptes.urls")),
     path("login/", auth_views.LoginView.as_view(), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("mot-de-passe/changer/", auth_views.PasswordChangeView.as_view(), name="password_change"),
+    path("mot-de-passe/change/", auth_views.PasswordChangeDoneView.as_view(), name="password_change_done"),
     path("mot-de-passe/oublie/", auth_views.PasswordResetView.as_view(), name="password_reset"),
     path("mot-de-passe/envoye/", auth_views.PasswordResetDoneView.as_view(), name="password_reset_done"),
     path("reinitialiser/<uidb64>/<token>/", auth_views.PasswordResetConfirmView.as_view(), name="password_reset_confirm"),
@@ -16,6 +23,7 @@ urlpatterns = [
     path("formation/", include("apps.formation.urls")),
     path("evaluation/", include("apps.evaluation.urls")),
     path("agenda/", include("apps.agenda.urls")),
+    path("parametres/", include("apps.core.urls")),
     path("", include("apps.tableau_bord.urls")),
 ]
 
