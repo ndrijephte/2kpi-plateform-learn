@@ -16,6 +16,14 @@
     });
   }
 
+  /* En local, le bouton « Espace apprenant » mène à l'app lancée sur le poste
+     (python manage.py runserver) plutôt qu'à learn.2kpinnov.org */
+  if (/^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)) {
+    document.querySelectorAll('a[href^="https://learn.2kpinnov.org"]').forEach(function (a) {
+      a.href = a.getAttribute("href").replace("https://learn.2kpinnov.org", "http://127.0.0.1:8000");
+    });
+  }
+
   /* Lien de navigation actif selon la page courante */
   var current = window.location.pathname.split("/").pop() || "index.html";
   document.querySelectorAll(".nav-links a[data-page]").forEach(function (a) {

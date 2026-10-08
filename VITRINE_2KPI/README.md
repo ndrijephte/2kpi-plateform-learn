@@ -13,7 +13,7 @@ visite cette page) contre plus de 150 Mo pour la version précédente.
 ## Structure
 
 ```
-SITE_2KPI_V2/
+VITRINE_2KPI/
 ├── index.html              (accueil)
 ├── pages/
 │   ├── formations.html
@@ -49,7 +49,7 @@ styles et scripts fonctionnent sans serveur (chemins relatifs uniquement).
 
 Trois options gratuites, sans ligne de commande :
 
-1. **Netlify Drop** (https://app.netlify.com/drop) : glisser-déposer le dossier `SITE_2KPI_V2`
+1. **Netlify Drop** (https://app.netlify.com/drop) : glisser-déposer le dossier `VITRINE_2KPI`
    dans la page → un lien public est généré en quelques secondes. Le plus simple pour commencer.
 2. **GitHub Pages** : héberger le dossier dans un dépôt GitHub et activer "Pages" dans les
    paramètres du dépôt (gratuit, adresse en `2kpi.github.io` ou domaine personnalisé).

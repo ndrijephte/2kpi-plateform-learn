@@ -45,16 +45,28 @@ Un seul clone sur le serveur, ex. `/home/c2864961c/apps/2kpi_plateforme` :
 - **Bouton « Espace apprenant »** du menu vitrine → `https://learn.2kpinnov.org/login/`.
 - Côté app, les origines autorisées de la vitrine sont listées dans `.env` › `VITRINE_ORIGINS`.
 
-## Développer en local (app)
+## Développer en local (vitrine + app reliées)
+
+Deux terminaux, depuis la racine `PLATEFORME_2KPI/` :
 
 ```bash
+# 1) L'app sur http://127.0.0.1:8000
 cd 2KPI_LEARN
-python -m venv .venv             # une seule fois
-source .venv/bin/activate        # Windows : .venv\Scripts\activate
+python -m venv .venv && source .venv/bin/activate   # première fois ; ensuite : source .venv/bin/activate
 pip install -r requirements.txt
-python manage.py migrate         # .env local en SQLite (DB_ENGINE vide)
+python manage.py migrate
 python manage.py runserver
+
+# 2) La vitrine sur http://127.0.0.1:5500
+cd VITRINE_2KPI
+python3 -m http.server 5500
 ```
+
+Ouverte en local, la vitrine **bascule seule** vers l'app locale : les inscriptions partent vers
+`http://127.0.0.1:8000/api/candidatures/` et « Espace apprenant » mène à `http://127.0.0.1:8000/login/`.
+En ligne, elle utilise `learn.2kpinnov.org` — rien à modifier avant de déployer.
+Côté app, le `.env` local doit autoriser la vitrine locale :
+`VITRINE_ORIGINS=http://127.0.0.1:5500,http://localhost:5500`.
 
 ## Documentation
 

@@ -49,6 +49,11 @@ Le plus simple : l'**assistant**.
    **À retenir : CHEMIN_APP = `/home/c2864961c/apps/2kpi_plateforme/2KPI_LEARN`**
 5. Clique **Créer**. Le code est cloné.
 
+> **Dépôt privé ?** cPanel doit pouvoir lire GitHub : cPanel → **Accès SSH** → *Gérer les clés SSH*
+> → *Générer une nouvelle clé* (sans phrase de passe) → *Autoriser* → copie la clé **publique**.
+> Sur GitHub : dépôt → *Settings* → *Deploy keys* → *Add deploy key* (lecture seule), colle-la.
+> URL du clone à utiliser alors : `git@github.com:ndrijephte/2kpi-plateform-learn.git`.
+
 > Pas de dépôt GitHub prêt ? Alternative : **Gestionnaire de fichiers** → envoyer un `.zip` du dossier
 > `2KPI_LEARN` dans `/home/c2864961c/apps/2kpi_plateforme/2KPI_LEARN` puis **Extraire**.
 
@@ -60,7 +65,7 @@ Le plus simple : l'**assistant**.
    (parfois « Configurer une application Python »).
 2. Clique **Create Application** / **Créer une application**.
 3. Renseigne :
-   - **Python version** : choisis la plus récente proposée (3.11 ou plus).
+   - **Python version** : choisis la plus récente proposée (**3.10 minimum**, requis par Django 5.2 ; 3.12+ idéal).
    - **Application root** (racine) : `apps/2kpi_plateforme/2KPI_LEARN`  ← le CHEMIN_APP de l'étape 3.
    - **Application URL** : sélectionne `learn.2kpinnov.org`.
    - **Application startup file** : `passenger_wsgi.py`
@@ -159,24 +164,34 @@ régulièrement hors du serveur (Gestionnaire de fichiers › Télécharger).
 
 ---
 
-## Étape 11 — Relier le site vitrine
+## Étape 11 — Mettre en ligne la vitrine et la relier
 
-1. Dans l'application : **Promotions** → pour chaque promotion, saisis le **code session vitrine**
-   (l'`id` de la session dans `SITE_2KPI_V2/js/sessions-data.js`, ex. `teledetection-sig-initiation`).
-2. Le site vitrine envoie les inscriptions à `https://learn.2kpinnov.org/api/candidatures/`
+1. **Sauvegarde d'abord l'ancien site** : Gestionnaire de fichiers → `public_html` → tout
+   sélectionner → **Compresser** (zip) → télécharge le zip. Le déploiement remplace les fichiers de
+   même nom (`index.html`, `pages/`, `css/`, `js/`, `assets/`) ; les autres restent en place.
+2. cPanel → **Contrôle de version Git** → sur le dépôt `apps/2kpi_plateforme` → **Gérer** → onglet
+   *Pull or Deploy* → **Deploy HEAD Commit**. Le fichier `.cpanel.yml` (racine du dépôt) copie
+   `VITRINE_2KPI/` dans `public_html`. Vérifie `https://2kpinnov.org` (vider le cache : Ctrl+F5).
+3. Dans l'application : **Promotions** → pour chaque promotion, saisis le **code session vitrine**
+   (l'`id` de la session dans `VITRINE_2KPI/js/sessions-data.js`, ex. `teledetection-sig-initiation`).
+   Sans ce code, la candidature arrive bien mais n'est rattachée à aucune promotion.
+4. Le site vitrine envoie les inscriptions à `https://learn.2kpinnov.org/api/candidatures/`
    (`js/inscription-config.js` › `LEARN_API_URL`). Elles arrivent dans **Candidatures** (badge dans
    le menu admin). **Accepter** crée le compte, l'inscrit à la promotion et envoie l'e-mail
    d'activation.
-3. Le bouton **Espace apprenant** du menu de la vitrine pointe vers `https://learn.2kpinnov.org/login/`.
-4. Si la vitrine est servie sur un autre domaine que `2kpinnov.org` / `www.2kpinnov.org`, ajoute-le à
+5. Le bouton **Espace apprenant** du menu de la vitrine pointe vers `https://learn.2kpinnov.org/login/`.
+6. Si la vitrine est servie sur un autre domaine que `2kpinnov.org` / `www.2kpinnov.org`, ajoute-le à
    `VITRINE_ORIGINS` dans `.env`.
+7. **Test final** : sur `https://2kpinnov.org/pages/inscription.html`, envoie une inscription test →
+   elle doit apparaître dans `learn.2kpinnov.org` › **Candidatures** (puis supprime-la).
 
 ---
 
 ## Mise à jour (à chaque nouvelle version)
 
 Sur ta machine : `python manage.py test` (tout doit être « OK »), puis `git push`.
-Dans cPanel : Contrôle de version Git → **Update from Remote**, puis Terminal :
+Dans cPanel : Contrôle de version Git → **Update from Remote** puis **Deploy HEAD Commit** (vitrine),
+puis Terminal (app) :
 ```bash
 pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput
 ```

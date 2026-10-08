@@ -1,4 +1,4 @@
-Django>=5.1,<5.2
+Django>=5.2.8,<5.3   # LTS (sécurité jusqu'en avril 2028), compatible Python 3.10 → 3.14
 psycopg[binary]>=3.2.10
 whitenoise>=6.7
 python-decouple>=3.8
