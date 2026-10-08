@@ -395,5 +395,3 @@ input[type=search]{width:100%;padding:9px 12px;border:1px solid var(--border-str
 .cand-session{margin:12px 0 0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .cand-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
 .cand-actions select{min-width:220px}
-.code-vitrine{margin-top:6px}
-.code-vitrine input{width:190px;font-size:.78rem;padding:4px 8px}

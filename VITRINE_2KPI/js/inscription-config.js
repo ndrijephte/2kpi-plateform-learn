@@ -16,13 +16,7 @@
    learn.2kpinnov.org › Candidatures. L'admin l'accepte en un clic : le compte
    apprenant est créé et la personne reçoit un e-mail pour activer son accès.
    Laisser vide pour revenir au Google Sheet / à l'e-mail. */
-var LEARN_API_URL = "https://learn.2kpinnov.org/api/candidatures/";
-
-/* En développement (vitrine ouverte sur localhost / 127.0.0.1), les inscriptions
-   partent vers l'app lancée en local (python manage.py runserver) et non vers la
-   production. Rien à changer avant la mise en ligne. */
-var LEARN_LOCAL = /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
-if (LEARN_LOCAL && LEARN_API_URL) LEARN_API_URL = "http://127.0.0.1:8000/api/candidatures/";
+var LEARN_API_URL = LEARN_URL + "/api/candidatures/";  /* LEARN_URL : js/learn-config.js */
 
 var APPS_SCRIPT_URL = "COLLE_ICI_TON_URL_APPS_SCRIPT";
 

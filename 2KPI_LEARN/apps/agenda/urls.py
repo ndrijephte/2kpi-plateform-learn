@@ -8,6 +8,7 @@ urlpatterns = [
     path("notifications/envoyer/", views.envoyer, name="envoyer"),
     path("promotions/", views.promotions, name="promotions"),
     path("promotions/<int:promo_id>/generer/", views.generer_promo, name="generer_promo"),
+    path("promotions/<int:promo_id>/vitrine/", views.fiche_vitrine, name="fiche_vitrine"),
     path("planning/<int:promo_id>/", views.planning, name="planning"),
     path("planning/<int:promo_id>/synchroniser/", views.synchroniser, name="synchroniser"),
     path("promotions/<int:promo_id>/acces/", views.acces_contenus, name="acces"),

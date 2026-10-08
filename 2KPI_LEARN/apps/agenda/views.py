@@ -12,7 +12,7 @@ from apps.core.permissions import (APPRENANT, FORMATEUR, formateur_requis, est_a
                                    promotions_visibles, role_de)
 from apps.evaluation.models import Presence
 from apps.evaluation.utils import inscription_courante
-from .forms import AnnonceForm
+from .forms import AnnonceForm, FicheVitrineForm
 from .models import AccesModule, Annonce, Promotion, Evenement, Notification
 from .services import apprenants_de, notifier, generer_agenda, synchroniser_agenda
 
@@ -149,16 +149,6 @@ def promotions(request):
     if request.method == "POST":
         if not admin:
             raise PermissionDenied
-        if request.POST.get("action") == "code":
-            promo = get_object_or_404(Promotion, pk=request.POST.get("promotion"))
-            code = slugify(request.POST.get("code_vitrine", ""))[:100]
-            if code and Promotion.objects.filter(code_vitrine=code, active=True).exclude(pk=promo.pk).exists():
-                messages.error(request, f"Le code « {code} » est déjà utilisé par une autre promotion active.")
-            else:
-                promo.code_vitrine = code
-                promo.save(update_fields=["code_vitrine"])
-                messages.success(request, f"Code vitrine de « {promo.nom} » : {code or '(aucun)'}.")
-            return redirect("agenda:promotions")
         if request.POST.get("action") == "affecter":
             promo = get_object_or_404(Promotion, pk=request.POST.get("promotion"))
             promo.formateur = formateurs.filter(pk=request.POST.get("formateur") or None).first()
@@ -185,6 +175,24 @@ def promotions(request):
         "promotions": liste, "formations": Formation.objects.filter(active=True),
         "formateurs": formateurs, "peut_gerer": admin,
     })
+
+
+@formateur_requis
+def fiche_vitrine(request, promo_id):
+    """Admin : ce que le site vitrine affiche de la promotion (API publique /api/sessions/)."""
+    if not est_admin(request.user):
+        raise PermissionDenied
+    promo = get_object_or_404(Promotion.objects.select_related("formation"), pk=promo_id)
+    form = FicheVitrineForm(request.POST or None, instance=promo)
+    if request.method == "POST" and form.is_valid():
+        promo = form.save()
+        if promo.publiee_vitrine:
+            messages.success(request, f"« {promo.nom} » est publiée sur le site vitrine "
+                                      f"({promo.places_restantes} place(s) disponible(s)).")
+        else:
+            messages.success(request, f"Fiche vitrine de « {promo.nom} » enregistrée (non publiée).")
+        return redirect("agenda:promotions")
+    return render(request, "agenda/fiche_vitrine.html", {"promo": promo, "form": form})
 
 
 @formateur_requis

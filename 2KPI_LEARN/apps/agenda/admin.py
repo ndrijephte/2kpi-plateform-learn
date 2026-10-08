@@ -9,8 +9,14 @@ class IndispoInline(admin.TabularInline):
 
 @admin.register(Promotion)
 class PromotionAdmin(admin.ModelAdmin):
-    list_display = ("nom", "formation", "date_debut", "formateur", "active", "ouverture_auto")
-    list_filter = ("active", "formation")
+    list_display = ("nom", "formation", "date_debut", "formateur", "active", "publiee_vitrine")
+    list_filter = ("active", "publiee_vitrine", "formation")
+    fieldsets = [
+        (None, {"fields": ["nom", "formation", "date_debut", "formateur", "active", "ouverture_auto"]}),
+        ("Site vitrine", {"fields": ["publiee_vitrine", "code_vitrine", "domaine", "mode", "date_affichage",
+                                     "horaire", "duree", "lieu", "places_total", "places_hors_plateforme",
+                                     "prix", "description_vitrine"]}),
+    ]
     inlines = [IndispoInline]
     actions = ["action_generer_agenda"]
 

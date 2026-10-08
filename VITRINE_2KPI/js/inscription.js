@@ -29,23 +29,33 @@
     if (wanted && getSessionById(wanted)) select.value = wanted;
   }
 
+  function esc(str) {
+    return String(str == null ? "" : str).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
   function renderSummary() {
     if (sessionHidden) sessionHidden.value = select.value;
     var s = getSessionById(select.value);
     if (!s || !summary) return;
     var full = s.placesRestantes <= 0;
     summary.innerHTML =
-      "<h3>" + s.titre + "</h3>" +
-      '<p style="margin:0 0 4px;"><strong>Mode :</strong> ' + s.mode + " · <strong>Dates :</strong> " + s.dateAffichage + " (" + s.duree + ")</p>" +
-      (s.horaire ? '<p style="margin:0 0 4px;"><strong>Horaire :</strong> ' + s.horaire + "</p>" : "") +
-      '<p style="margin:0 0 4px;"><strong>Lieu :</strong> ' + s.lieu + "</p>" +
+      "<h3>" + esc(s.titre) + "</h3>" +
+      '<p style="margin:0 0 4px;"><strong>Mode :</strong> ' + esc(s.mode) + " · <strong>Dates :</strong> " + esc(s.dateAffichage) + (s.duree ? " (" + esc(s.duree) + ")" : "") + "</p>" +
+      (s.horaire ? '<p style="margin:0 0 4px;"><strong>Horaire :</strong> ' + esc(s.horaire) + "</p>" : "") +
+      (s.lieu ? '<p style="margin:0 0 4px;"><strong>Lieu :</strong> ' + esc(s.lieu) + "</p>" : "") +
       '<p style="margin:0; color:' + (full ? "var(--coral-dark)" : "var(--green-dark)") + '; font-weight:600;">' +
       (full ? "Session complète — votre demande sera placée en liste d'attente." : s.placesRestantes + " place(s) disponible(s) sur " + s.placesTotal) +
       "</p>";
   }
 
-  fillSelect();
-  renderSummary();
+  select.disabled = true;
+  chargerSessions(function () {
+    select.disabled = false;
+    fillSelect();
+    renderSummary();
+  });
   select.addEventListener("change", renderSummary);
 
   form.addEventListener("submit", function (e) {

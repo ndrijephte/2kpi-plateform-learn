@@ -1,7 +1,6 @@
 /* 2KPI — Rendu du catalogue de sessions (pages/sessions.html)
-   Lit le tableau SESSIONS (js/sessions-data.js) et affiche les cartes,
-   avec filtre par domaine. Aucune modification nécessaire ici : pour
-   changer les sessions affichées, éditer js/sessions-data.js. */
+   Charge les sessions publiées dans 2KPI Learn (js/sessions-sync.js, repli
+   sur js/sessions-data.js) et affiche les cartes, avec filtre par domaine. */
 (function () {
   "use strict";
 
@@ -25,7 +24,7 @@
 
   function renderCard(s) {
     var full = s.placesRestantes <= 0;
-    var pct = Math.max(0, Math.min(100, Math.round((s.placesRestantes / s.placesTotal) * 100)));
+    var pct = s.placesTotal ? Math.max(0, Math.min(100, Math.round((s.placesRestantes / s.placesTotal) * 100))) : 0;
     var low = !full && s.placesRestantes <= Math.ceil(s.placesTotal * 0.25);
 
     var card = document.createElement("div");
@@ -45,9 +44,9 @@
       "<h3>" + escapeHtml(s.titre) + "</h3>" +
       "<p>" + escapeHtml(s.description) + "</p>" +
       '<ul class="session-meta">' +
-      "<li>" + ICON_CAL + "<span><strong>" + escapeHtml(s.dateAffichage) + "</strong> · " + escapeHtml(s.duree) + "</span></li>" +
+      "<li>" + ICON_CAL + "<span><strong>" + escapeHtml(s.dateAffichage) + "</strong>" + (s.duree ? " · " + escapeHtml(s.duree) : "") + "</span></li>" +
       (s.horaire ? "<li>" + ICON_CLOCK + "<span>" + escapeHtml(s.horaire) + "</span></li>" : "") +
-      "<li>" + ICON_PIN + "<span>" + escapeHtml(s.lieu) + "</span></li>" +
+      (s.lieu ? "<li>" + ICON_PIN + "<span>" + escapeHtml(s.lieu) + "</span></li>" : "") +
       "</ul>" +
       '<div class="seats-bar"><div class="seats-bar-fill' + (low ? " low" : "") + '" style="width:' + pct + '%;"></div></div>' +
       '<p style="font-size:0.82rem;color:var(--text-soft);margin:8px 0 0;">' + seatsLabel + "</p>" +
@@ -88,5 +87,6 @@
     });
   }
 
-  render();
+  container.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-soft);">Chargement des sessions…</p>';
+  chargerSessions(render);
 })();

@@ -39,6 +39,9 @@ Un seul clone sur le serveur, ex. `/home/c2864961c/apps/2kpi_plateforme` :
 
 ## Comment la vitrine et l'app se parlent
 
+- **Catalogue des sessions** → la vitrine lit `https://learn.2kpinnov.org/api/sessions/` : les
+  promotions publiées dans l'app (**Promotions › Vitrine**), avec places restantes calculées.
+  Repli automatique sur `VITRINE_2KPI/js/sessions-data.js` si l'app ne répond pas.
 - **Inscription depuis la vitrine** → envoyée en POST à `https://learn.2kpinnov.org/api/candidatures/`
   (réglée dans `VITRINE_2KPI/js/inscription-config.js` › `LEARN_API_URL`). Les demandes arrivent
   dans l'app (**Candidatures**) ; l'admin « Accepte » → compte créé + inscription + e-mail.
@@ -62,8 +65,10 @@ cd VITRINE_2KPI
 python3 -m http.server 5500
 ```
 
-Ouverte en local, la vitrine **bascule seule** vers l'app locale : les inscriptions partent vers
-`http://127.0.0.1:8000/api/candidatures/` et « Espace apprenant » mène à `http://127.0.0.1:8000/login/`.
+Ouverte en local, la vitrine **bascule seule** vers l'app locale (`VITRINE_2KPI/js/learn-config.js`) :
+catalogue lu sur `http://127.0.0.1:8000/api/sessions/`, inscriptions envoyées à
+`…/api/candidatures/`, « Espace apprenant » vers `…/login/`.
+Première fois : `python manage.py importer_sessions_vitrine` pour reprendre les sessions du site.
 En ligne, elle utilise `learn.2kpinnov.org` — rien à modifier avant de déployer.
 Côté app, le `.env` local doit autoriser la vitrine locale :
 `VITRINE_ORIGINS=http://127.0.0.1:5500,http://localhost:5500`.

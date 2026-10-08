@@ -64,3 +64,33 @@ class AnnonceForm(forms.ModelForm):
         if not self.liste_destinataires:
             raise forms.ValidationError("Aucun destinataire ne correspond à ce choix.")
         return d
+
+
+class FicheVitrineForm(forms.ModelForm):
+    """Fiche publique d'une promotion sur le site vitrine (catalogue + formulaire d'inscription)."""
+    code_vitrine = forms.CharField(
+        label="Identifiant public", max_length=100, required=False,
+        help_text="Utilisé dans l'adresse d'inscription (…/inscription.html?session=<b>identifiant</b>). "
+                  "Vide = déduit du nom. Évite de le changer une fois la session annoncée.")
+
+    class Meta:
+        from .models import Promotion
+        model = Promotion
+        fields = ["publiee_vitrine", "code_vitrine", "domaine", "mode", "date_affichage", "horaire",
+                  "duree", "lieu", "places_total", "places_hors_plateforme", "prix", "description_vitrine"]
+        widgets = {"description_vitrine": forms.Textarea(attrs={"rows": 3, "maxlength": 400})}
+
+    def clean_code_vitrine(self):
+        from django.utils.text import slugify
+        from .models import Promotion
+        code = slugify(self.cleaned_data.get("code_vitrine") or "")[:100]
+        if code and Promotion.objects.filter(code_vitrine=code, active=True).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Cet identifiant est déjà utilisé par une autre promotion active.")
+        return code
+
+    def clean(self):
+        d = super().clean()
+        total, ailleurs = d.get("places_total"), d.get("places_hors_plateforme")
+        if total is not None and ailleurs is not None and ailleurs > total:
+            self.add_error("places_hors_plateforme", "Ne peut pas dépasser le nombre total de places.")
+        return d

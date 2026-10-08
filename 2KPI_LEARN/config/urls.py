@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.conf import settings
 from django.urls import include, path, re_path
+from apps.agenda.api import sessions as sessions_api
 from apps.comptes.api import candidature as candidature_api
 from apps.core.views import media_publique
 from django.contrib.auth import views as auth_views
@@ -26,6 +27,7 @@ urlpatterns = [
     path("agenda/", include("apps.agenda.urls")),
     path("parametres/", include("apps.core.urls")),
     path("api/candidatures/", candidature_api, name="api_candidatures"),
+    path("api/sessions/", sessions_api, name="api_sessions"),
     path("", include("apps.tableau_bord.urls")),
 ]
 

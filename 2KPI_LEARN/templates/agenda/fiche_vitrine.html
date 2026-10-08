@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Fiche vitrine — {{ promo.nom }} — {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "users" size=16 %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<span>{{ promo.nom }}</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "globe" size=14 %} Site vitrine</span>
+    <h1>{{ promo.nom }}</h1>
+    <p class="muted">Ce que <strong>2kpinnov.org</strong> affiche de cette promotion dans le catalogue des sessions et le formulaire d'inscription. Les candidatures reçues arrivent dans <a href="{% url 'comptes:candidatures' %}">Candidatures</a>, rattachées à cette promotion.</p>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <form method="post" class="stack-sm">{% csrf_token %}
+      {% include "partials/form_fields.html" %}
+      <div class="actions">
+        <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
+        <a class="btn btn-secondary" href="{% url 'agenda:promotions' %}">Annuler</a>
+      </div>
+    </form>
+  </div>
+  <div>
+    <div class="card">
+      <h2 class="section-title">{% icon "info" size=18 %} État actuel</h2>
+      <p>{% if promo.publiee_vitrine %}<span class="pill">{% icon "globe" size=12 %} Publiée</span>{% else %}<span class="pill">Non publiée</span>{% endif %}
+        {% if promo.code_vitrine %}<br><small class="muted">{% icon "link" size=12 %} …/inscription.html?session={{ promo.code_vitrine }}</small>{% endif %}</p>
+      <p><strong>{{ promo.places_restantes }}</strong> place(s) disponible(s) sur {{ promo.places_total }}<br>
+        <small class="muted">= {{ promo.places_total }} − {{ promo.nb_inscrits_actifs }} inscrit(s) sur la plateforme − {{ promo.places_hors_plateforme }} attribuée(s) hors plateforme</small></p>
+      <p class="muted">{% icon "clock" size=14 %} Le site se met à jour tout seul, dès l'enregistrement : rien à redéployer.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

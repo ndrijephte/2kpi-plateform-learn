@@ -1,9 +1,9 @@
-/* 2KPI — Catalogue des sessions de formation
-   ============================================
-   C'est ICI que tu modifies les sessions ouvertes : ajoute, retire ou édite
-   un objet dans le tableau SESSIONS ci-dessous. Aucune autre page n'a besoin
-   d'être touchée : la page catalogue (sessions.html) et la page d'inscription
-   (inscription.html) lisent automatiquement ce fichier.
+/* 2KPI — Catalogue des sessions de formation : LISTE DE SECOURS
+   ===============================================================
+   Les sessions se gèrent désormais dans la plateforme 2KPI Learn
+   (Promotions › bouton « Vitrine ») : le site les lit en direct via
+   js/sessions-sync.js. Ce tableau ne sert que si la plateforme est
+   injoignable ; mets-le à jour de temps en temps pour qu'il reste plausible.
 
    Champs :
    - id            : identifiant unique, sans espace (utilisé dans l'URL ?session=...)
@@ -15,8 +15,7 @@
    - duree         : durée de la session
    - lieu          : lieu (ou "En ligne (visioconférence)")
    - placesTotal   : nombre total de places
-   - placesRestantes : nombre de places encore disponibles (à mettre à jour toi-même
-                        au fur et à mesure des inscriptions reçues dans ton Google Sheet)
+   - placesRestantes : nombre de places encore disponibles
    - prix          : prix affiché (FCFA)
    - description   : court résumé affiché sur la carte
 */

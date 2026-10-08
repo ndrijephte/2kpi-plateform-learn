@@ -40,13 +40,8 @@
   {% for p in promotions %}
     <tr>
       <td><strong>{{ p.nom }}</strong>{% if not p.active %} <span class="pill">Archivée</span>{% endif %}<br><small class="muted">{{ p.formation.titre }}</small>
-        {% if peut_gerer %}
-        <form method="post" class="inline-form code-vitrine">{% csrf_token %}
-          <input type="hidden" name="action" value="code"><input type="hidden" name="promotion" value="{{ p.id }}">
-          <input type="text" name="code_vitrine" value="{{ p.code_vitrine }}" placeholder="code session vitrine" aria-label="Code session vitrine de {{ p.nom }}">
-          <button class="btn btn-sm btn-secondary" type="submit" title="Enregistrer le code">{% icon "check" size=12 %}</button>
-        </form>
-        {% elif p.code_vitrine %}<br><small class="muted">{% icon "link" size=12 %} {{ p.code_vitrine }}</small>{% endif %}</td>
+        {% if p.publiee_vitrine %}<br><small class="muted">{% icon "globe" size=12 %} Sur la vitrine · {{ p.places_restantes }}/{{ p.places_total }} place(s)</small>
+        {% elif p.code_vitrine %}<br><small class="muted">{% icon "link" size=12 %} {{ p.code_vitrine }} · non publiée</small>{% endif %}</td>
       <td>
         {% if peut_gerer %}
         <form method="post" class="inline-form">{% csrf_token %}
@@ -68,6 +63,7 @@
         </form>
         <a class="btn btn-sm btn-navy" href="{% url 'agenda:planning' p.id %}">{% icon "calendar-days" size=14 %} Planning</a>
         <a class="btn btn-sm btn-secondary" href="{% url 'agenda:acces' p.id %}" title="Ouverture des modules aux apprenants">{% icon "lock" size=14 %} Accès</a>
+        {% if peut_gerer %}<a class="btn btn-sm btn-secondary" href="{% url 'agenda:fiche_vitrine' p.id %}" title="Publication sur le site vitrine : dates, lieu, prix, places">{% icon "globe" size=14 %} Vitrine</a>{% endif %}
       </div></td>
     </tr>
   {% empty %}<tr><td colspan="6"><div class="empty"><span class="ico-tile">{% icon "users" %}</span>

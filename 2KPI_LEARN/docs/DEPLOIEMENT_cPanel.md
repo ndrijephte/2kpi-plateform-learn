@@ -109,6 +109,7 @@ En haut de la page de l'app, cPanel affiche une **commande pour entrer dans l'en
    python manage.py collectstatic --noinput
    python manage.py seed_geoai        # première installation uniquement
    python manage.py import_gift       # première installation uniquement
+   python manage.py importer_sessions_vitrine   # première installation : reprend les sessions du site
    python manage.py createsuperuser
    ```
    - `createsuperuser` te demande un identifiant, un e-mail et un mot de passe : ce sera **ton
@@ -172,9 +173,12 @@ régulièrement hors du serveur (Gestionnaire de fichiers › Télécharger).
 2. cPanel → **Contrôle de version Git** → sur le dépôt `apps/2kpi_plateforme` → **Gérer** → onglet
    *Pull or Deploy* → **Deploy HEAD Commit**. Le fichier `.cpanel.yml` (racine du dépôt) copie
    `VITRINE_2KPI/` dans `public_html`. Vérifie `https://2kpinnov.org` (vider le cache : Ctrl+F5).
-3. Dans l'application : **Promotions** → pour chaque promotion, saisis le **code session vitrine**
-   (l'`id` de la session dans `VITRINE_2KPI/js/sessions-data.js`, ex. `teledetection-sig-initiation`).
-   Sans ce code, la candidature arrive bien mais n'est rattachée à aucune promotion.
+3. **Le catalogue des sessions se gère dans l'application** : **Promotions** → bouton **Vitrine** de
+   la promotion → coche *Publiée sur le site vitrine*, renseigne dates, lieu, prix, places →
+   **Enregistrer**. La vitrine lit `https://learn.2kpinnov.org/api/sessions/` : la session apparaît
+   aussitôt, et les **places restantes** baissent seules à chaque candidature acceptée.
+   (`importer_sessions_vitrine`, étape 6, a déjà repris les 6 sessions historiques du site.)
+   Si l'app est injoignable, la vitrine affiche la liste de secours `VITRINE_2KPI/js/sessions-data.js`.
 4. Le site vitrine envoie les inscriptions à `https://learn.2kpinnov.org/api/candidatures/`
    (`js/inscription-config.js` › `LEARN_API_URL`). Elles arrivent dans **Candidatures** (badge dans
    le menu admin). **Accepter** crée le compte, l'inscrit à la promotion et envoie l'e-mail

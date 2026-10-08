@@ -16,6 +16,41 @@ class Promotion(models.Model):
         "Code session (site vitrine)", max_length=100, blank=True,
         help_text="Identifiant de la session sur le site vitrine (ex. teledetection-sig-initiation) : "
                   "les candidatures reçues pour cette session sont rattachées à cette promotion.")
+
+    # --- Fiche publique sur le site vitrine (API /api/sessions/) ---
+    class Domaine(models.TextChoices):
+        SOCLE = "Socle", "Socle"
+        URBANISME = "Urbanisme", "Urbanisme"
+        DEMOGRAPHIE = "Démographie", "Démographie"
+        PAYSAGER = "Paysager", "Paysager"
+        NUMERIQUE = "Numérique", "Numérique"
+
+    class Mode(models.TextChoices):
+        EN_LIGNE = "En ligne", "En ligne"
+        PRESENTIEL = "Présentiel", "Présentiel"
+        HYBRIDE = "Hybride", "Hybride"
+
+    publiee_vitrine = models.BooleanField(
+        "Publiée sur le site vitrine", default=False,
+        help_text="Affichée dans le catalogue des sessions de 2kpinnov.org, ouverte aux inscriptions.")
+    domaine = models.CharField(max_length=20, choices=Domaine.choices, default=Domaine.SOCLE,
+                               help_text="Sert au filtre du catalogue.")
+    mode = models.CharField(max_length=12, choices=Mode.choices, default=Mode.EN_LIGNE)
+    date_affichage = models.CharField(
+        "Date affichée", max_length=60, blank=True,
+        help_text="Ex. « Tous les samedis ». Vide = la date de début (ex. « 14 octobre 2026 »).")
+    horaire = models.CharField(max_length=60, blank=True, help_text="Ex. « 08h – 16h ».")
+    duree = models.CharField("Durée", max_length=60, blank=True, help_text="Ex. « 5 jours », « 4 samedis ».")
+    lieu = models.CharField(max_length=120, blank=True, help_text="Ex. « Abidjan, Cocody » ou « En ligne (visioconférence) ».")
+    places_total = models.PositiveIntegerField("Places au total", default=20)
+    places_hors_plateforme = models.PositiveIntegerField(
+        "Places déjà attribuées hors plateforme", default=0,
+        help_text="Inscrits reçus par e-mail, téléphone… Les inscrits de la plateforme sont comptés automatiquement.")
+    prix = models.CharField(max_length=60, blank=True, help_text="Ex. « 150 000 FCFA ».")
+    description_vitrine = models.TextField(
+        "Résumé (vitrine)", max_length=400, blank=True,
+        help_text="Deux lignes affichées sur la carte. Vide = la description de la formation.")
+
     ouverture_auto = models.BooleanField(
         "Ouverture automatique des modules", default=True,
         help_text="Chaque module s'ouvre le lundi de la semaine de sa première séance. "
@@ -28,6 +63,28 @@ class Promotion(models.Model):
 
     def __str__(self):
         return self.nom
+
+    @property
+    def nb_inscrits_actifs(self):
+        return self.inscriptions.exclude(statut="abandon").count()
+
+    @property
+    def places_restantes(self):
+        """Places libres : total − inscrits de la plateforme (hors abandons) − places attribuées ailleurs."""
+        return max(0, self.places_total - self.nb_inscrits_actifs - self.places_hors_plateforme)
+
+    def save(self, *args, **kwargs):
+        if self.publiee_vitrine and not self.code_vitrine:  # l'identifiant public est indispensable
+            from django.utils.text import slugify
+            base = slugify(self.nom)[:90] or "session"
+            code, i = base, 1
+            while Promotion.objects.filter(code_vitrine=code).exclude(pk=self.pk).exists():
+                i += 1
+                code = f"{base}-{i}"
+            self.code_vitrine = code
+            if kwargs.get("update_fields") is not None:
+                kwargs["update_fields"] = set(kwargs["update_fields"]) | {"code_vitrine"}
+        super().save(*args, **kwargs)
 
 
 class AccesModule(models.Model):
