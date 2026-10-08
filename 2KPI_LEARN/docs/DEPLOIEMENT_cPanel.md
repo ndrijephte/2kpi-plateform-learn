@@ -38,17 +38,19 @@ Le plus simple : l'**assistant**.
 
 ## Étape 3 — Mettre le code sur le serveur (Git)
 
-> Prérequis : avoir poussé le dossier `2KPI_LEARN` sur un dépôt GitHub (voir plus bas « Rappel Git »).
+> Prérequis : avoir poussé le dépôt unique **PLATEFORME_2KPI** (vitrine + app) sur GitHub.
+> Ce même clone sert aussi à déployer la vitrine (`.cpanel.yml` à la racine du dépôt) : ne le crée qu'une fois.
 
 1. Accueil cPanel → rubrique **Fichiers** → clique **Contrôle de version Git** (Git Version Control).
 2. Clique **Créer**.
-3. **URL du clone** : colle l'adresse de ton dépôt GitHub (ex. `https://github.com/TON_COMPTE/2kpi-learn.git`).
-4. **Chemin du dépôt** : `apps/2kpi_learn`  (cPanel le crée dans `/home/c2864961c/apps/2kpi_learn`).
-   **À retenir : CHEMIN_APP = `/home/c2864961c/apps/2kpi_learn`**
+3. **URL du clone** : colle l'adresse de ton dépôt GitHub (ex. `https://github.com/ndrijephte/2kpi-plateforme.git`).
+4. **Chemin du dépôt** : `apps/2kpi_plateforme`  (cPanel le crée dans `/home/c2864961c/apps/2kpi_plateforme`).
+   L'app est dans son sous-dossier `2KPI_LEARN`.
+   **À retenir : CHEMIN_APP = `/home/c2864961c/apps/2kpi_plateforme/2KPI_LEARN`**
 5. Clique **Créer**. Le code est cloné.
 
 > Pas de dépôt GitHub prêt ? Alternative : **Gestionnaire de fichiers** → envoyer un `.zip` du dossier
-> `2KPI_LEARN` dans `/home/c2864961c/apps/2kpi_learn` puis **Extraire**.
+> `2KPI_LEARN` dans `/home/c2864961c/apps/2kpi_plateforme/2KPI_LEARN` puis **Extraire**.
 
 ---
 
@@ -59,14 +61,14 @@ Le plus simple : l'**assistant**.
 2. Clique **Create Application** / **Créer une application**.
 3. Renseigne :
    - **Python version** : choisis la plus récente proposée (3.11 ou plus).
-   - **Application root** (racine) : `apps/2kpi_learn`  ← le CHEMIN_APP de l'étape 3.
+   - **Application root** (racine) : `apps/2kpi_plateforme/2KPI_LEARN`  ← le CHEMIN_APP de l'étape 3.
    - **Application URL** : sélectionne `learn.2kpinnov.org`.
    - **Application startup file** : `passenger_wsgi.py`
    - **Application Entry point** : `application`
 4. Clique **Create**.
 
 En haut de la page de l'app, cPanel affiche une **commande pour entrer dans l'environnement virtuel**
-(du type `source /home/c2864961c/virtualenv/apps/2kpi_learn/3.11/bin/activate && cd /home/c2864961c/apps/2kpi_learn`).
+(du type `source /home/c2864961c/virtualenv/apps/2kpi_plateforme/2KPI_LEARN/3.11/bin/activate && cd /home/c2864961c/apps/2kpi_plateforme/2KPI_LEARN`).
 **Copie cette commande.** ← on l'utilise à l'étape 6.
 
 ---
@@ -78,7 +80,7 @@ En haut de la page de l'app, cPanel affiche une **commande pour entrer dans l'en
    python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
    ```
    Copie la longue chaîne obtenue.
-2. Dans cPanel → **Gestionnaire de fichiers** → va dans `/home/c2864961c/apps/2kpi_learn`.
+2. Dans cPanel → **Gestionnaire de fichiers** → va dans `/home/c2864961c/apps/2kpi_plateforme/2KPI_LEARN`.
 3. Bouton **+ Fichier** → nomme-le `.env` → **Créer**.
 4. Sélectionne `.env` → **Modifier** → colle le contenu de `.env.example` (fourni dans le dépôt)
    et remplace les valeurs par les tiennes : `SECRET_KEY`, mot de passe de la base, et la boîte
@@ -107,7 +109,7 @@ En haut de la page de l'app, cPanel affiche une **commande pour entrer dans l'en
    - `createsuperuser` te demande un identifiant, un e-mail et un mot de passe : ce sera **ton
      compte administrateur** de la plateforme.
    - Les dossiers `media/` (logo, photos — publics) et `prive/` (ressources, livrables — **jamais
-     servis directement**) sont créés dans `/home/c2864961c/apps/2kpi_learn`, donc **hors** du
+     servis directement**) sont créés dans `/home/c2864961c/apps/2kpi_plateforme/2KPI_LEARN`, donc **hors** du
      dossier public du sous-domaine : ne les déplace pas dans `public_html`.
 
 ---

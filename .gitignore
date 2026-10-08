@@ -1,0 +1,30 @@
+# === Dépôt unique PLATEFORME_2KPI (vitrine + app) ===
+# Complète les .gitignore propres à 2KPI_LEARN/ et VITRINE_2KPI/.
+
+# Python / Django (2KPI_LEARN)
+__pycache__/
+*.py[co]
+.venv*/
+venv/
+*.sqlite3
+/2KPI_LEARN/staticfiles/
+/2KPI_LEARN/media/
+/2KPI_LEARN/prive/
+/2KPI_LEARN/sauvegardes/
+/2KPI_LEARN/logs/
+
+# Secrets — jamais versionnés (.env.example, lui, l'est)
+.env
+.env.*
+!.env.example
+
+# Système / éditeurs
+.DS_Store
+Thumbs.db
+*~
+.vscode/
+.idea/
+*.log
+
+# Vitrine : images héritées inutilisées de l'ancienne démo WebSIG
+# (règles détaillées dans VITRINE_2KPI/.gitignore)
