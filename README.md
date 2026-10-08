@@ -1,6 +1,7 @@
 # PLATEFORME_2KPI
 
-Dépôt Git **unique** regroupant les deux projets de la plateforme 2KPI.
+Dépôt Git **unique** regroupant les deux projets de la plateforme 2KPI —
+GitHub : <https://github.com/ndrijephte/2kpi-plateform-learn>
 
 ```
 PLATEFORME_2KPI/

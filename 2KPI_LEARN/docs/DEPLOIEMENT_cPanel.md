@@ -43,7 +43,7 @@ Le plus simple : l'**assistant**.
 
 1. Accueil cPanel → rubrique **Fichiers** → clique **Contrôle de version Git** (Git Version Control).
 2. Clique **Créer**.
-3. **URL du clone** : colle l'adresse de ton dépôt GitHub (ex. `https://github.com/ndrijephte/2kpi-plateforme.git`).
+3. **URL du clone** : colle l'adresse du dépôt GitHub `https://github.com/ndrijephte/2kpi-plateform-learn.git`.
 4. **Chemin du dépôt** : `apps/2kpi_plateforme`  (cPanel le crée dans `/home/c2864961c/apps/2kpi_plateforme`).
    L'app est dans son sous-dossier `2KPI_LEARN`.
    **À retenir : CHEMIN_APP = `/home/c2864961c/apps/2kpi_plateforme/2KPI_LEARN`**
