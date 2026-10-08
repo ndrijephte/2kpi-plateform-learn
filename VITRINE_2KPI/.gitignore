@@ -1,0 +1,23 @@
+# --- Système / éditeurs ---
+.DS_Store
+Thumbs.db
+*~
+.vscode/
+.idea/
+*.log
+
+# --- Images héritées NON utilisées de l'ancienne démo WebSIG (~50 Mo) ---
+# On ne versionne que le logo et les 6 vignettes de fonds de carte réellement
+# référencés par la démo (voir assets/websig-demo/index.html, index.js, style.css).
+assets/websig-demo/assets/img/*
+!assets/websig-demo/assets/img/logo2kpi.png
+!assets/websig-demo/assets/img/osm.png
+!assets/websig-demo/assets/img/open_topo.png
+!assets/websig-demo/assets/img/stadia_dark.png
+!assets/websig-demo/assets/img/stadia_satellite.png
+!assets/websig-demo/assets/img/stadia_smooth.png
+!assets/websig-demo/assets/img/stament_toner.png
+
+# --- GeoJSON source volumineux (les versions .js embarquées suffisent au site) ---
+# Décommente si tu veux aussi exclure les sources .geojson du dépôt :
+# assets/websig-demo/assets/data/*.geojson

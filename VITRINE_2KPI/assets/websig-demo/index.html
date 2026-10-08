@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      2KPI - la révolution en matière de formation en géomatique, urbanisme
+      numérique et solutions territoriales innovantes.
+    </title>
+    <meta
+      name="description"
+      content="2KPI est une structure spécialisée dans la formation en géomatique, urbanisme numérique et solutions territoriales innovantes."
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
+    />
+
+    <link rel="shortcut icon" href="./assets/img/logo2kpi.png" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+
+  <body>
+    <!-- Affichage de la carte interactive -->
+    <div id="map"></div>
+
+    <!-- Cadre-titre de la carte -->
+    <div id="map-title" class="map-title">
+      <img src="./assets/img/logo2kpi.png" alt="2KPI" class="map-title-logo" />
+      <div>
+        <h1>Départements de Côte d'Ivoire</h1>
+        <p>Population &amp; superficie — démo WebSIG 2KPI</p>
+      </div>
+    </div>
+
+    <!-- Création de panneau personnalisé pour controler les couches -->
+    <div id="layer-manager" class="layer-manager">
+      <div class="manager-header">
+        <span>Gestionnaire</span>
+      </div>
+
+      <ul class="manager-tabs">
+        <li class="tab active" data-tab="overlays">Couches</li>
+        <li class="tab" data-tab="basemaps">Fonds</li>
+      </ul>
+
+      <div id="manager-content" class="manager-content"></div>
+    </div>
+
+    <!-- BOUTON TOGGLE FLOTTANT -->
+    <button id="manager-toggle" class="manager-toggle">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <!-- Résumé des informations -->
+    <div id="info-panel" class="info-panel">
+      <h2>Informations</h2>
+      <p>Survolez un département</p>
+    </div>
+
+    <!-- Lien js -->
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <script src="https://unpkg.com/leaflet-providers@latest/leaflet-providers.js"></script>
+
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <!-- Données géographiques embarquées (fonctionnent en local, sans serveur GeoServer) -->
+    <script src="./assets/data/limite_ci.js"></script>
+    <script src="./assets/data/departement_ci.js"></script>
+
+    <!--Connexion javascript-->
+    <script src="index.js"></script>
+  </body>
+</html>
