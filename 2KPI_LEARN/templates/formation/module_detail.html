@@ -66,7 +66,7 @@
     <div class="card">
       <div class="card-head">
         <h2 class="section-title">{% icon "download" size=18 %} Ressources du module</h2>
-        {% if peut_gerer %}<a class="btn btn-sm" href="{% url 'formation:ressource_ajouter' %}?module={{ module.pk }}&next={{ request.path|urlencode }}">{% icon "upload" size=14 %} Ajouter</a>{% endif %}
+        {% if peut_gerer %}<a class="btn btn-sm" href="{% url 'formation:ressource_ajouter' %}?module={{ module.pk }}&next={{ request.path|urlencode }}">{% icon "upload" size=14 %} Ajouter des documents</a>{% endif %}
       </div>
       {% include "formation/_ressources.html" %}
       {% if not ressources %}<p class="muted">Aucune ressource commune au module.</p>{% endif %}

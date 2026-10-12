@@ -1,5 +1,6 @@
 """Contrôle des fichiers déposés (ressources formateur, livrables apprenant)."""
 from pathlib import Path
+from urllib.parse import urlsplit
 from django.core.exceptions import ValidationError
 from .models import Parametres
 
@@ -22,12 +23,30 @@ TYPES = {  # extension -> type de ressource
 }
 
 
+# hôte du lien -> type de ressource (classe virtuelle, notebook en ligne, vidéo)
+HOTES = {
+    "meet.google.com": "visio", "zoom.us": "visio", "teams.microsoft.com": "visio", "teams.live.com": "visio",
+    "meet.jit.si": "visio", "whereby.com": "visio", "webex.com": "visio",
+    "colab.research.google.com": "notebook",
+    "youtube.com": "video", "youtu.be": "video", "vimeo.com": "video",
+}
+
+
 def extension(nom):
     return Path(nom or "").suffix.lower().lstrip(".")
 
 
 def type_depuis_nom(nom):
     return TYPES.get(extension(nom), "autre")
+
+
+def type_depuis_lien(url):
+    """Type déduit de l'hôte (sous-domaines compris : us02web.zoom.us → visio) ; « lien » à défaut."""
+    hote = (urlsplit(url or "").hostname or "").removeprefix("www.")
+    for domaine, type_ in HOTES.items():
+        if hote == domaine or hote.endswith("." + domaine):
+            return type_
+    return "lien"
 
 
 def valider_fichier(fichier):

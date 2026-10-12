@@ -1,0 +1,19 @@
+{% load ui %}{# Une ligne du formulaire d'ajout groupé. Paramètres : f (DocumentForm), num (libellé) #}
+<fieldset class="doc-ligne" data-doc>
+  <div class="doc-tete">
+    <legend class="doc-num">{% icon "file" size=16 %} Document <span data-num>{{ num }}</span></legend>
+    <button type="button" class="btn btn-sm btn-ghost-danger" data-retirer>{% icon "trash" size=14 %} Retirer</button>
+  </div>
+  {% if f.non_field_errors %}<ul class="errorlist nonfield">{% for e in f.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+  {% for h in f.hidden_fields %}{{ h }}{% endfor %}
+  <div class="form-grid doc-grid">
+    {% for field in f.visible_fields %}
+    <div class="field{% if field.name == 'instructions' %} doc-large{% endif %}">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+      {{ field.errors }}
+    </div>
+    {% endfor %}
+  </div>
+</fieldset>

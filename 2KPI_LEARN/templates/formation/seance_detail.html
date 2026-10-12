@@ -16,7 +16,7 @@
     <div class="card">
       <div class="card-head">
         <h2 class="section-title">{% icon "download" size=18 %} Ressources</h2>
-        {% if peut_gerer %}<a class="btn btn-sm" href="{% url 'formation:ressource_ajouter' %}?seance={{ seance.pk }}&next={{ request.path|urlencode }}">{% icon "upload" size=14 %} Ajouter</a>{% endif %}
+        {% if peut_gerer %}<a class="btn btn-sm" href="{% url 'formation:ressource_ajouter' %}?seance={{ seance.pk }}&next={{ request.path|urlencode }}">{% icon "upload" size=14 %} Ajouter des documents</a>{% endif %}
       </div>
       {% if ressources %}
         {% include "formation/_ressources.html" %}
@@ -51,6 +51,14 @@
   </div>
 
   <div>
+    {% for v in visios %}
+    <div class="card visio-card">
+      <h2 class="section-title">{% icon "video" size=18 %} {{ v.titre }}</h2>
+      {% if v.instructions %}<p class="muted">{{ v.instructions|linebreaksbr }}</p>{% endif %}
+      {% if evenement %}<p class="muted"><small>{% icon "calendar-days" size=13 %} {{ evenement.date_debut|date:"l d F, H:i" }}</small></p>{% endif %}
+      <a class="btn btn-block" href="{{ v.url }}" target="_blank" rel="noopener">{% icon "video" size=16 %} Rejoindre le cours</a>
+    </div>
+    {% endfor %}
     {% if seance.objectifs %}
     <div class="card highlight">
       <h2 class="section-title">{% icon "target" size=18 %} Objectifs &amp; déroulé</h2>

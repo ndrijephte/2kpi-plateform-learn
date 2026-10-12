@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q
+from django.db import transaction
+from django.db.models import Count, Max, Q
 from django.http import FileResponse, Http404
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
@@ -9,7 +10,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from apps.core.fichiers import valider_fichier
 from apps.core.permissions import APPRENANT, formateur_requis, formations_gerables, role_de
 from .acces import acces_module, etats_modules
-from .forms import RessourceForm
+from .forms import CibleForm, DocumentsFormSet, RessourceForm
 from .models import Formation, Module, Ressource, Seance
 from apps.agenda.models import Evenement
 from apps.evaluation.models import Livrable
@@ -130,9 +131,10 @@ def detail_seance(request, pk):
     precedente = toutes[i - 1] if i > 0 else None
     suivante = toutes[i + 1] if i + 1 < len(toutes) else None
 
+    ressources = list(seance.ressources.select_related("ajoute_par"))
     return render(request, "formation/seance_detail.html", {
         "seance": seance, "livrable": livrable, "inscription": insc,
-        "ressources": seance.ressources.all(),
+        "ressources": ressources, "visios": [r for r in ressources if r.est_visio],
         "evenement": _dates_promo(insc).get(seance.id),
         "precedente": precedente, "suivante": suivante,
         "peut_gerer": formations_gerables(request.user).filter(pk=seance.module.formation_id).exists(),
@@ -175,34 +177,52 @@ def ressources(request):
 
 
 @formateur_requis
-def ressource_editer(request, pk=None):
+def ressource_editer(request, pk):
     formations = formations_gerables(request.user)
-    r = None
-    if pk:
-        r = get_object_or_404(Ressource.objects.select_related("seance__module", "module"), pk=pk)
-        if not formations.filter(pk=_formation_de_ressource(r)).exists():
-            raise Http404
-    initial = {}
-    if not r:
-        if request.GET.get("seance", "").isdigit():
-            initial["seance"] = request.GET["seance"]
-        if request.GET.get("module", "").isdigit():
-            initial["module"] = request.GET["module"]
-    ancien = r.fichier.name if r and r.fichier else None
-    form = RessourceForm(request.POST or None, request.FILES or None, instance=r,
-                         formations=formations, initial=initial)
+    r = get_object_or_404(Ressource.objects.select_related("seance__module", "module"), pk=pk)
+    if not formations.filter(pk=_formation_de_ressource(r)).exists():
+        raise Http404
+    ancien = r.fichier.name if r.fichier else None
+    form = RessourceForm(request.POST or None, request.FILES or None, instance=r, formations=formations)
     retour = _retour_sur(request, reverse("formation:ressources"))
     if request.method == "POST" and form.is_valid():
-        obj = form.save(commit=False)
-        if not obj.pk:
-            obj.ajoute_par = request.user
-        obj.save()
+        obj = form.save()
         if ancien and ancien != (obj.fichier.name if obj.fichier else None):
             obj.fichier.storage.delete(ancien)  # fichier remplacé ou retiré
-        messages.success(request, f"Ressource « {obj.titre} » {'mise à jour' if pk else 'ajoutée'}.")
+        messages.success(request, f"Ressource « {obj.titre} » mise à jour.")
         return redirect(retour)
     return render(request, "formation/ressource_form.html", {
         "form": form, "ressource": r, "retour": retour})
+
+
+@formateur_requis
+def documents_ajouter(request):
+    """Ajout groupé : plusieurs documents (fichiers, notebooks, lien de classe virtuelle…) décrits un à un."""
+    formations = formations_gerables(request.user)
+    initial = {k: request.GET[k] for k in ("seance", "module") if request.GET.get(k, "").isdigit()}
+    cible = CibleForm(request.POST or None, formations=formations, initial=initial)
+    docs = DocumentsFormSet(request.POST or None, request.FILES or None,
+                            queryset=Ressource.objects.none(), prefix="docs")
+    retour = _retour_sur(request, reverse("formation:ressources"))
+    if request.method == "POST":
+        cible_ok, docs_ok = cible.is_valid(), docs.is_valid()  # valider les deux pour afficher toutes les erreurs
+        remplis = [f for f in docs.forms if f.has_changed()] if docs_ok else []
+        if docs_ok and not remplis:
+            messages.error(request, "Ajoute au moins un document (fichier ou lien).")
+        elif cible_ok and docs_ok:
+            seance, module = cible.cleaned_data["seance"], cible.cleaned_data["module"]
+            voisines = Ressource.objects.filter(seance=seance) if seance else Ressource.objects.filter(module=module)
+            ordre = (voisines.aggregate(m=Max("ordre"))["m"] or 0) + 1 if voisines.exists() else 0
+            with transaction.atomic():
+                for i, f in enumerate(remplis):
+                    r = f.save(commit=False)
+                    r.seance, r.module, r.ordre, r.ajoute_par = seance, module, ordre + i, request.user
+                    r.save()
+            n = len(remplis)
+            messages.success(request, f"{n} document{'s' if n > 1 else ''} ajouté{'s' if n > 1 else ''} "
+                                      f"à {seance.theme or seance if seance else module}.")
+            return redirect(retour)
+    return render(request, "formation/documents_form.html", {"cible": cible, "docs": docs, "retour": retour})
 
 
 @formateur_requis

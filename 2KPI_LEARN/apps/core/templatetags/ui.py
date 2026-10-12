@@ -97,7 +97,7 @@ def icon(nom, size=20, stroke=1.75, **attrs):
 
 ICONE_RESSOURCE = {"pdf": "file-text", "notebook": "code", "code": "code", "archive": "archive",
                    "document": "file-text", "presentation": "presentation", "donnees": "database",
-                   "image": "image", "video": "video", "lien": "link", "autre": "file"}
+                   "image": "image", "video": "video", "visio": "video", "lien": "link", "autre": "file"}
 
 
 @register.simple_tag

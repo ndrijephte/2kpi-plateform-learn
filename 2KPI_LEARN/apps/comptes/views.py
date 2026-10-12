@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -9,7 +11,8 @@ from apps.agenda.models import Promotion
 from apps.core.permissions import ADMIN, admin_requis, appliquer_role, role_de
 from apps.evaluation.models import Inscription
 from apps.evaluation.utils import inscription_courante
-from .forms import CompteAdminForm, CompteForm, NouvelUtilisateurForm, PrerequisForm, ProfilForm
+from .forms import (CompteAdminForm, CompteForm, MotDePasseOublieForm, NouvelUtilisateurForm, PrerequisForm,
+                    ProfilForm)
 from .models import Profil, Prerequis
 
 User = get_user_model()
@@ -218,3 +221,18 @@ def candidatures(request):
     return render(request, "comptes/candidatures.html", {
         "candidatures": qs[:200], "filtre": filtre, "compte": compte, "statuts": Candidature.Statut.choices,
         "promotions": Promotion.objects.filter(active=True).select_related("formation").order_by("-date_debut")})
+
+
+class MotDePasseOublieView(auth_views.PasswordResetView):
+    """Limite les demandes (5 par heure et par adresse IP) contre l'envoi massif d'e-mails ;
+    la page de confirmation reste identique pour ne pas révéler quels comptes existent."""
+    form_class = MotDePasseOublieForm
+    LIMITE_PAR_HEURE = 5
+
+    def form_valid(self, form):
+        cle = f"mdp-oublie-ip-{self.request.META.get('REMOTE_ADDR')}"
+        n = cache.get(cle, 0)
+        cache.set(cle, n + 1, 3600)
+        if n >= self.LIMITE_PAR_HEURE:
+            return redirect(self.get_success_url())
+        return super().form_valid(form)

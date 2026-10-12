@@ -110,6 +110,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_REDIRECT_URL = "tableau_bord:accueil"
 LOGOUT_REDIRECT_URL = "login"
 LOGIN_URL = "login"
+AUTHENTICATION_BACKENDS = ["apps.comptes.backends.IdentifiantOuEmailBackend"]
+PASSWORD_RESET_TIMEOUT = 3 * 86400  # validité des liens « mot de passe oublié » et d'invitation
 
 # Sécurité (activée hors DEBUG)
 CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default="", cast=Csv())

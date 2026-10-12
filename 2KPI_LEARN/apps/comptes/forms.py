@@ -1,4 +1,6 @@
 from django import forms
+from django.conf import settings
+from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from apps.agenda.models import Promotion
@@ -114,3 +116,30 @@ class PrerequisForm(forms.ModelForm):
             if not d.get(nom):
                 d[nom] = getattr(self.instance, nom)
         return d
+
+
+class ConnexionForm(AuthenticationForm):
+    error_messages = {**AuthenticationForm.error_messages,
+                      "invalid_login": "Identifiant (ou e-mail) ou mot de passe incorrect. "
+                                       "Attention aux majuscules du mot de passe."}
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.fields["username"].label = "Identifiant ou e-mail"
+
+
+class MotDePasseOublieForm(PasswordResetForm):
+    """Réinitialisation : inclut les comptes invités qui n'ont pas encore choisi de mot de passe
+    (sinon un apprenant dont l'invitation a expiré ne recevrait jamais rien) et force les liens https
+    en production, même derrière un proxy qui masque le protocole."""
+
+    def get_users(self, email):
+        return (u for u in User._default_manager.filter(email__iexact=email, is_active=True)
+                if u.email.casefold() == email.casefold())
+
+    def save(self, *a, use_https=False, extra_email_context=None, **kw):
+        from apps.core.models import Parametres
+        p = Parametres.charger()
+        contexte = {"site_nom": f"{p.nom_plateforme} {p.suffixe}".strip(),
+                    "jours": settings.PASSWORD_RESET_TIMEOUT // 86400, **(extra_email_context or {})}
+        return super().save(*a, use_https=use_https or not settings.DEBUG, extra_email_context=contexte, **kw)

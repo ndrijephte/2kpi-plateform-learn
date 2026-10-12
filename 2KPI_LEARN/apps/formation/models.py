@@ -111,6 +111,7 @@ class Ressource(models.Model):
         DONNEES = "donnees", "Données (CSV, SIG, raster…)"
         IMAGE = "image", "Image"
         VIDEO = "video", "Vidéo"
+        VISIO = "visio", "Classe virtuelle (Meet, Zoom, Teams…)"
         LIEN = "lien", "Lien"
         AUTRE = "autre", "Autre fichier"
 
@@ -120,8 +121,8 @@ class Ressource(models.Model):
                                null=True, blank=True)
     titre = models.CharField(max_length=250)
     type = models.CharField(max_length=12, choices=Type.choices, default=Type.LIEN)
-    instructions = models.TextField("Consignes d'utilisation", blank=True,
-                                    help_text="Ex. : « Décompresser puis ouvrir le projet QGIS ».")
+    instructions = models.TextField("Description / consignes", blank=True,
+                                    help_text="Ce que contient le document et comment l'utiliser.")
     fichier = models.FileField(upload_to="ressources/%Y/%m/", storage=stockage_prive, max_length=255,
                                blank=True, null=True)
     url = models.URLField("Lien", blank=True)
@@ -130,6 +131,10 @@ class Ressource(models.Model):
     ajoute_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                    related_name="ressources_deposees")
     date_ajout = models.DateTimeField(default=timezone.now)
+
+    @property
+    def est_visio(self):
+        return self.type == self.Type.VISIO and bool(self.url)
 
     class Meta:
         verbose_name = "Ressource"

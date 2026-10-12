@@ -9,7 +9,7 @@
     <h1>Ressources pédagogiques</h1>
     <p class="muted">Supports, notebooks, archives, données et liens mis à disposition des apprenants, avec leurs consignes.</p>
   </div>
-  <a class="btn" href="{% url 'formation:ressource_ajouter' %}">{% icon "upload" size=16 %} Ajouter une ressource</a>
+  <a class="btn" href="{% url 'formation:ressource_ajouter' %}">{% icon "upload" size=16 %} Ajouter des documents</a>
 </div>
 <div class="toolbar">
   <span class="muted">{{ total }} ressource{{ total|pluralize }}</span>
@@ -34,6 +34,6 @@
   </div>
 {% empty %}
   <div class="card empty"><span class="ico-tile">{% icon "folder" %}</span><strong>Aucune ressource</strong>
-    {% if formations %}Dépose le premier support avec le bouton « Ajouter une ressource ».{% else %}Aucune formation ne t'est encore rattachée (via une promotion).{% endif %}</div>
+    {% if formations %}Dépose les premiers supports avec le bouton « Ajouter des documents ».{% else %}Aucune formation ne t'est encore rattachée (via une promotion).{% endif %}</div>
 {% endfor %}
 {% endblock %}

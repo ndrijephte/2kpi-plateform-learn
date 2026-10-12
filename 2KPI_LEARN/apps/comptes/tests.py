@@ -4,7 +4,7 @@ from django.test import override_settings
 from django.urls import reverse
 from apps.comptes.models import Candidature
 from apps.comptes.services import decouper_nom
-from apps.core.test_utils import BaseTest
+from apps.core.test_utils import MDP, BaseTest
 from apps.evaluation.models import Inscription
 
 API = "/api/candidatures/"
@@ -95,3 +95,44 @@ class ProfilsTests(BaseTest):
             "c-username": "admin_t", "c-first_name": "A", "c-last_name": "B", "c-email": "admin_t@exemple.org",
             "c-is_active": "on", "c-role": "apprenant"})
         self.assertContains(r, "ne peux ni retirer")
+
+
+@override_settings(DEBUG=False)
+class MotDePasseOublieTests(BaseTest):
+    def demander(self, email):
+        return self.client.post(reverse("password_reset"), {"email": email})
+
+    def lien(self):
+        return next(l for l in mail.outbox[-1].body.split() if "/reinitialiser/" in l)
+
+    def test_email_complet_et_https(self):
+        self.assertRedirects(self.demander("APP_A@exemple.org"), reverse("password_reset_done"))
+        m = mail.outbox[-1]
+        self.assertEqual(m.to, ["app_a@exemple.org"])
+        self.assertTrue(m.subject.startswith("Réinitialisation de votre mot de passe 2KPI"), m.subject)
+        self.assertIn("identifiant de connexion : app_a", m.body)
+        self.assertTrue(self.lien().startswith("https://"))
+
+    def test_compte_invite_sans_mot_de_passe(self):
+        """Invitation expirée : l'apprenant doit pouvoir passer par « mot de passe oublié »."""
+        self.app_b.set_unusable_password()
+        self.app_b.save()
+        self.demander("app_b@exemple.org")
+        r = self.client.get(self.lien(), follow=True)
+        r = self.client.post(r.redirect_chain[-1][0], {"new_password1": "Un-Nouveau-Mdp-2026", "new_password2":
+                                                       "Un-Nouveau-Mdp-2026"}, follow=True)
+        self.assertContains(r, "Accéder à mon espace")  # connecté directement après la définition
+        self.app_b.refresh_from_db()
+        self.assertTrue(self.app_b.check_password("Un-Nouveau-Mdp-2026"))
+
+    def test_adresse_inconnue_et_limite(self):
+        self.assertRedirects(self.demander("personne@exemple.org"), reverse("password_reset_done"))
+        self.assertEqual(len(mail.outbox), 0)
+        for _ in range(4):  # 5 demandes par heure et par IP, adresse inconnue comprise
+            self.demander("app_a@exemple.org")
+        self.assertRedirects(self.demander("app_a@exemple.org"), reverse("password_reset_done"))
+        self.assertEqual(len(mail.outbox), 4)  # la 6e demande de l'heure n'envoie rien
+
+    def test_connexion_par_email(self):
+        r = self.client.post(reverse("login"), {"username": "App_A@Exemple.org", "password": MDP})
+        self.assertRedirects(r, reverse("tableau_bord:accueil"), fetch_redirect_response=False)

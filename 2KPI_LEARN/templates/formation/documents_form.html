@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Ajouter des documents — {{ site_nom }}{% endblock %}
+{% block crumbs %}<a href="{% url 'formation:ressources' %}">Ressources</a>{% icon "chevron-right" size=14 %}<span>Ajouter des documents</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "upload" size=14 %} Ressources pédagogiques</span>
+    <h1>Ajouter des documents</h1>
+    <p class="muted">Dépose en une fois tout ce qu'il faut pour la séance : support PDF, notebook, données, lien de la classe virtuelle… et décris chaque document.</p>
+  </div>
+</div>
+<form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+  <input type="hidden" name="next" value="{{ retour }}">
+  <div class="grid-2">
+    <div>
+      <div class="card">
+        <h2 class="section-title">{% icon "layers" size=18 %} Où publier ces documents ?</h2>
+        {% include "partials/form_fields.html" with form=cible %}
+      </div>
+      <div class="card">
+        <h2 class="section-title">{% icon "folder" size=18 %} Documents</h2>
+        {{ docs.management_form }}
+        {% if docs.non_form_errors %}<ul class="errorlist nonfield">{% for e in docs.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        <div data-docs>
+          {% for f in docs.forms %}{% include "formation/_document_ligne.html" with num=forloop.counter %}{% endfor %}
+        </div>
+        <template data-modele>{% include "formation/_document_ligne.html" with f=docs.empty_form num="" %}</template>
+        <button type="button" class="btn btn-secondary btn-block" data-ajouter>{% icon "plus" size=16 %} Ajouter un autre document</button>
+        <div class="btn-row">
+          <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer les documents</button>
+          <a class="btn btn-secondary" href="{{ retour }}">Annuler</a>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2 class="section-title">{% icon "info" size=18 %} Exemple pour une séance</h2>
+        <ul class="list">
+          <li class="list-item"><span class="ico-tile">{% icon "file-text" size=18 %}</span><span class="grow"><strong>Support PDF</strong><small>Fichier .pdf — « Support de cours, à lire avant la séance ».</small></span></li>
+          <li class="list-item"><span class="ico-tile">{% icon "code" size=18 %}</span><span class="grow"><strong>Notebook</strong><small>Fichier .ipynb + lien Colab dans « Lien » : l'apprenant télécharge ou ouvre dans Colab en un clic.</small></span></li>
+          <li class="list-item"><span class="ico-tile">{% icon "video" size=18 %}</span><span class="grow"><strong>Classe virtuelle</strong><small>Lien Meet, Zoom ou Teams seul : il s'affiche en tête de la séance avec un bouton « Rejoindre le cours ».</small></span></li>
+        </ul>
+        <p class="muted"><small>Le type et le titre sont déduits automatiquement du fichier ou du lien ; tu peux les préciser.</small></p>
+      </div>
+      <div class="card">
+        <h2 class="section-title">{% icon "shield" size=18 %} Formats acceptés</h2>
+        <p class="muted"><small>{{ parametres.extensions|join:", " }} — {{ parametres.taille_max_mo }} Mo maximum par fichier.</small></p>
+      </div>
+    </div>
+  </div>
+</form>
+<script>
+(function () {
+  var liste = document.querySelector("[data-docs]"), modele = document.querySelector("[data-modele]"),
+      total = document.getElementById("id_docs-TOTAL_FORMS"), max = +document.getElementById("id_docs-MAX_NUM_FORMS").value,
+      ajouter = document.querySelector("[data-ajouter]");
+  function renumeroter() {
+    var visibles = liste.querySelectorAll("[data-doc]:not([hidden])");
+    visibles.forEach(function (el, i) { el.querySelector("[data-num]").textContent = i + 1; });
+    liste.querySelectorAll("[data-retirer]").forEach(function (b) { b.hidden = visibles.length < 2; });
+    ajouter.disabled = +total.value >= max;
+  }
+  ajouter.addEventListener("click", function () {
+    var i = +total.value;
+    liste.insertAdjacentHTML("beforeend", modele.innerHTML.replace(/__prefix__/g, i));
+    total.value = i + 1;
+    renumeroter();
+    liste.lastElementChild.querySelector("input,select,textarea").focus();
+  });
+  liste.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-retirer]");
+    if (!b) return;
+    // Une ligne vide est ignorée à l'enregistrement : on la vide et on la masque (pas de renumérotation des champs).
+    var ligne = b.closest("[data-doc]");
+    ligne.querySelectorAll("input:not([type=hidden]),textarea").forEach(function (c) { c.value = ""; });
+    ligne.querySelectorAll("select").forEach(function (c) { c.selectedIndex = 0; });
+    ligne.hidden = true;
+    renumeroter();
+  });
+  renumeroter();
+})();
+</script>
+{% endblock %}
