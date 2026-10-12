@@ -232,8 +232,11 @@ python manage.py collectstatic --noinput
 | `relation "…" does not exist` (au `seed`) | `seed` lancé avant `migrate` | Lance **`migrate` d'abord**, puis `seed_geoai` |
 | `connection refused … port 5432` | Mauvais hôte | `DB_HOST=localhost` |
 | Boucle de redirection (301) | SSL pas encore actif + `SECURE_SSL_REDIRECT=True` | Mets `SECURE_SSL_REDIRECT=False` jusqu'à l'AutoSSL (A8) |
-| CSS/JS absents | `collectstatic` non lancé | `python manage.py collectstatic --noinput` + Restart |
-| Erreur 500 / page blanche | `.env` incomplet ou erreur appli | Setup Python App → onglet **Log** ; vérifie `.env` |
+| CSS/JS absents, ou 500 « something went wrong » | `collectstatic` non lancé (manifeste statique absent) | `python manage.py collectstatic --noinput` + Restart |
+| `Passengerfile.json … Permission denied (errno=13)` | App sous `~/repositories/` non traversable par le serveur web | `chmod 755` sur `repositories`, le dépôt et `2KPI_LEARN` (le fichier `Passengerfile.json` est optionnel) |
+| « Web application could not be started » + `RecursionError: maximum recursion depth` | cPanel a écrasé `passenger_wsgi.py` par un chargeur qui s'importe lui-même | `git checkout -- passenger_wsgi.py` (restaure la version simple qui expose `application`) + Restart |
+| E-mail : `535 Incorrect authentication data` | Identifiants SMTP faux | `EMAIL_HOST_USER` = **adresse complète** (`no-reply@2kpinnov.org`) ; mot de passe de boîte **alphanumérique** (pas de `#`/espace), recopié à l'identique |
+| Erreur 500 / page blanche | `.env` incomplet ou erreur appli | Setup Python App → onglet **Log** ; ou `python passenger_wsgi.py` pour voir la traceback |
 
 ---
 
