@@ -45,6 +45,19 @@ Pages : `/` (tableau de bord) · `/formation/modules/` · `/agenda/` · `/agenda
 | Modifier son profil | ✔ | ✔ | ✔ (+ tout compte via Utilisateurs) |
 
 Le super-utilisateur est toujours administrateur. Un accès interdit renvoie une page 403.
+Le rôle **Formateur** correspond aux enseignants.
+
+### Création des comptes
+
+- **Super-admin** : `python manage.py createsuperuser` — renseigner l'**e-mail** (indispensable au
+  « mot de passe oublié »).
+- **Apprenants, formateurs, admins** : **Utilisateurs → Nouveau compte** (rôle, promotion, mot de
+  passe provisoire).
+- **Libre-service** : `/creer-mon-compte/` (bouton « Créer mon compte » de la vitrine) — apprenant ou
+  étudiant ; contenus accessibles seulement après rattachement à une promotion (candidature acceptée).
+- **Candidatures** de la vitrine : *Accepter* crée le compte, l'inscrit et envoie le lien d'activation.
+
+Pas à pas : `../docs/GUIDE_ADMINISTRATEUR.md`.
 
 ### Accès des apprenants aux contenus (autorisation)
 
@@ -72,11 +85,9 @@ web) et téléchargés uniquement via l'application après contrôle des droits.
 
 ## Déploiement (cPanel Setup Python App)
 
-1. Créer l'« application Python » (3.11) sur `learn.2kpinnov.org`, startup file `passenger_wsgi.py`.
-2. Créer une base **PostgreSQL** (cPanel) et renseigner `.env` (DB_ENGINE=postgresql, identifiants).
-3. Dans le terminal de l'app : `pip install -r requirements.txt`, `python manage.py migrate`,
-   `python manage.py collectstatic --noinput`, `seed_geoai`, `import_gift`, `createsuperuser`.
-4. **Restart** de l'application.
+Installation initiale : `../docs/GUIDE_DEPLOIEMENT_2KPI.md` (Python 3.13, PostgreSQL, `.env`, puis
+`migrate`, `seed_geoai`, `import_gift`, `createsuperuser`, `collectstatic`).
+Mises à jour : **automatiques à chaque `git push` sur main** (`../docs/DEPLOIEMENT_AUTOMATIQUE.md`).
 
 > Sécurité : tu crées la base, saisis les secrets (`.env`) et les comptes réels.
 > L'app ne stocke jamais de mot de passe en clair (hachage Django).
@@ -95,15 +106,19 @@ web) et téléchargés uniquement via l'application après contrôle des droits.
 ## Tests
 
 ```bash
-python manage.py test        # 32 tests : rôles, paramètres, accès aux contenus, fichiers, quiz, candidatures
+python manage.py test        # 50 tests : rôles, accès aux contenus, fichiers, quiz, candidatures,
+                             # création de compte, mot de passe oublié, envoi d'e-mails
 ```
 
 ## Exploitation
 
-- `python manage.py tester_email adresse@exemple.org` — vérifie la configuration SMTP
+- `python manage.py tester_email adresse@exemple.org [--reinitialisation]` — diagnostic e-mail pas à pas
+  (SMTP, sendmail du serveur) et, avec `--reinitialisation`, rejoue « mot de passe oublié » pour l'adresse
+- E-mails : SMTP du `.env` avec **repli automatique sur sendmail** (cPanel) ; `EMAIL_ENVOI=sendmail` pour l'imposer
 - `python manage.py envoyer_rappels` — rappels J-1 (cron quotidien)
 - `python manage.py sauvegarder [--garder 14]` — base + `media/` + `prive/` dans `sauvegardes/` (cron nocturne)
-- Journaux : `logs/2kpi_learn.log` ; erreurs 500 envoyées par e-mail aux `ADMINS`
+- Journaux : `logs/2kpi_learn.log` (dont chaque demande « mot de passe oublié » : envoyée, en échec,
+  aucun compte, limite atteinte) ; `logs/deploiement.log` ; erreurs 500 envoyées par e-mail aux `ADMINS`
 
 ## Site vitrine
 

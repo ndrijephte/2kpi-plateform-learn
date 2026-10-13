@@ -80,6 +80,11 @@ Côté app, le `.env` local doit autoriser la vitrine locale :
 
 ## Documentation
 
+- **Administration (comptes super-admin, apprenants, enseignants, candidatures)** :
+  `docs/GUIDE_ADMINISTRATEUR.md`
+- Déploiement automatique (push → production) : `docs/DEPLOIEMENT_AUTOMATIQUE.md`
+- Installation cPanel complète et dépannage : `docs/GUIDE_DEPLOIEMENT_2KPI.md`
+
 - Vitrine : `VITRINE_2KPI/DEPLOIEMENT.md`
 - Application : `2KPI_LEARN/README.md`, `2KPI_LEARN/docs/ARCHITECTURE.md`,
   `2KPI_LEARN/docs/DEPLOIEMENT_cPanel.md`

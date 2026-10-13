@@ -142,12 +142,14 @@ pip install -r requirements.txt
 python manage.py migrate            # 1) crée les tables  ← AVANT le seed !
 python manage.py seed_geoai         # 2) 12 modules, 24 compétences, 48 séances
 python manage.py import_gift        # 3) 22 questions du Test S1
-python manage.py createsuperuser    # 4) ton compte admin
+python manage.py createsuperuser    # 4) ton compte admin — renseigne bien l'E-MAIL (mot de passe oublié)
 python manage.py collectstatic --noinput
 ```
 
 > 📌 **Toujours `migrate` AVANT `seed_geoai`** — sinon :
 > `relation "formation_formation" does not exist`.
+
+> 👤 Création des comptes apprenants / enseignants ensuite : [`GUIDE_ADMINISTRATEUR.md`](GUIDE_ADMINISTRATEUR.md).
 
 ## A7. Redémarrer et vérifier
 
@@ -172,7 +174,8 @@ Une fois le cadenas actif : **retire** `SECURE_SSL_REDIRECT=False` du `.env` →
    EMAIL_USE_SSL=True
    DEFAULT_FROM_EMAIL=2KPI Learn <no-reply@2kpinnov.org>
    ```
-4. **Restart**, puis teste : `python manage.py tester_email ton.adresse@exemple.org`.
+4. **Restart**, puis teste : `python manage.py tester_email ton.adresse@exemple.org --reinitialisation`
+   (diagnostic pas à pas ; si le SMTP est bloqué, l'app bascule seule sur le `sendmail` du serveur).
 
 ## A10. Tâches planifiées (cron)
 
@@ -232,7 +235,9 @@ redémarrage). Mise en place unique et dépannage : [`DEPLOIEMENT_AUTOMATIQUE.md
 | `Passengerfile.json … Permission denied (errno=13)` | App sous `~/repositories/` non traversable par le serveur web | `chmod 755` sur `repositories`, le dépôt et `2KPI_LEARN` (le fichier `Passengerfile.json` est optionnel) |
 | « Web application could not be started » + `RecursionError: maximum recursion depth` | cPanel a écrasé `passenger_wsgi.py` par un chargeur qui s'importe lui-même | `git checkout -- passenger_wsgi.py` (restaure la version simple qui expose `application`) + Restart |
 | E-mail : `535 Incorrect authentication data` | Identifiants SMTP faux | `EMAIL_HOST_USER` = **adresse complète** (`no-reply@2kpinnov.org`) ; mot de passe de boîte **alphanumérique** (pas de `#`/espace), recopié à l'identique |
+| « Mot de passe oublié » : rien n'arrive, diagnostic `✘ Aucun compte n'a cette adresse` | Le compte **de production** n'a pas cet e-mail (base locale ≠ base en ligne ; `createsuperuser` sans e-mail) | Renseigne l'e-mail du compte (Mon profil ou Utilisateurs) — voir `GUIDE_ADMINISTRATEUR.md` §4 |
 | « Mot de passe oublié » : rien n'arrive en ligne (OK en local) | App non redémarrée après le `.env`, variable `EMAIL_*` de *Setup Python App* qui écrase le `.env`, ou SMTP sortant bloqué par l'hébergeur | `python manage.py tester_email ton@adresse --reinitialisation` (indique la cause) ; repli sendmail automatique, ou `EMAIL_ENVOI=sendmail` ; Restart |
+| Déploiement auto : `deployer.sh: … /dev/fd/63: No such file or directory` | L'environnement de déploiement cPanel n'a pas `/dev/fd` (pas de `exec > >(tee …)`) | Corrigé dans `deploy/deployer.sh` (journal via un tube) |
 | Erreur 500 / page blanche | `.env` incomplet ou erreur appli | Setup Python App → onglet **Log** ; ou `python passenger_wsgi.py` pour voir la traceback |
 
 ---

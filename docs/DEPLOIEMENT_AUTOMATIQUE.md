@@ -36,11 +36,12 @@ Fichiers concernés : `.github/workflows/deploiement.yml`, `.cpanel.yml`, `deplo
 ### 2. Déclarer les secrets dans GitHub
 
 Dépôt `ndrijephte/2kpi-plateform-learn` → **Settings** → **Secrets and variables** → **Actions**
-→ **New repository secret**, trois fois :
+→ **New repository secret**, trois fois. Chaque secret a deux champs : **Name** (le nom ci-dessous,
+en majuscules) et **Secret** (la valeur seule, sans `:` ni guillemets) :
 
 | Nom | Valeur |
 |---|---|
-| `CPANEL_HOST` | le nom du serveur cPanel, tel qu'il apparaît dans l'adresse de connexion à cPanel, **sans** `https://` ni `:2083` (ex. `2kpinnov.org` ou `serveurXX.hebergeur.com`) |
+| `CPANEL_HOST` | `2kpinnov.org` (vérifié : cPanel répond sur le port 2083 avec un certificat valide) — de façon générale, le nom du serveur cPanel, tel qu'il apparaît dans l'adresse de connexion à cPanel, **sans** `https://` ni `:2083` (ex. `2kpinnov.org` ou `serveurXX.hebergeur.com`) |
 | `CPANEL_USER` | `c2864961c` |
 | `CPANEL_TOKEN` | le jeton copié à l'étape 1 |
 
@@ -85,11 +86,11 @@ git add -A && git commit -m "learn: …" && git push
 
 | Étape rouge | Cause probable | Solution |
 |---|---|---|
-| *Vérifier la configuration* | Secret absent | Étape 2 |
+| *Vérifier la configuration* | Secret absent ou mal saisi : le message nomme le secret fautif et sa longueur (jamais sa valeur) | Étape 2. Ex. vécu : `CPANEL_USER invalide (32 caractères)` = le jeton collé dans `CPANEL_USER` (secrets inversés) |
 | *Récupérer le commit* — `401` / `Access denied` | Jeton faux/expiré, ou `CPANEL_USER` faux | Recrée le jeton (étape 1) |
 | *Récupérer le commit* — connexion impossible | `CPANEL_HOST` faux, ou port 2083 filtré | Mets le nom exact du serveur cPanel ; sinon alternative SSH |
 | *Récupérer le commit* — refus de mise à jour | Fichier modifié sur le serveur | Étape 3 (`git checkout -- .`) |
-| *Déployer* | Erreur dans pip / migrate / collectstatic | Lis `2KPI_LEARN/logs/deploiement.log` (dernières lignes) |
+| *Déployer* | Erreur dans pip / migrate / collectstatic | Les **journaux du serveur s'affichent dans GitHub** (annotations de l'étape) ; sinon `2KPI_LEARN/logs/deploiement.log` |
 | *Contrôler les sites* — 500 | L'app ne démarre pas | `logs/2kpi_learn.log` ; Setup Python App › onglet Log |
 
 Relancer à la main sur le serveur (même effet que le déploiement automatique) :
