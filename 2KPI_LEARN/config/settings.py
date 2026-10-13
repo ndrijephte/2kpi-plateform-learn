@@ -140,6 +140,8 @@ if EMAIL_HOST:
     EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
     EMAIL_USE_SSL = config("EMAIL_USE_SSL", default=EMAIL_PORT == 465, cast=bool)
     EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=not EMAIL_USE_SSL, cast=bool)
+    if EMAIL_USE_SSL and EMAIL_USE_TLS:  # exclusifs pour Django : le port tranche (465 = SSL, sinon STARTTLS)
+        EMAIL_USE_SSL, EMAIL_USE_TLS = EMAIL_PORT == 465, EMAIL_PORT != 465
     EMAIL_TIMEOUT = 15
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
