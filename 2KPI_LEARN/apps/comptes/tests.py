@@ -1,4 +1,5 @@
 import json
+from django.contrib.auth import get_user_model
 from django.core import mail
 from django.test import override_settings
 from django.urls import reverse
@@ -7,6 +8,7 @@ from apps.comptes.services import decouper_nom
 from apps.core.test_utils import MDP, BaseTest
 from apps.evaluation.models import Inscription
 
+User = get_user_model()
 API = "/api/candidatures/"
 VITRINE = "https://www.2kpinnov.org"
 
@@ -128,11 +130,86 @@ class MotDePasseOublieTests(BaseTest):
     def test_adresse_inconnue_et_limite(self):
         self.assertRedirects(self.demander("personne@exemple.org"), reverse("password_reset_done"))
         self.assertEqual(len(mail.outbox), 0)
-        for _ in range(4):  # 5 demandes par heure et par IP, adresse inconnue comprise
-            self.demander("app_a@exemple.org")
-        self.assertRedirects(self.demander("app_a@exemple.org"), reverse("password_reset_done"))
-        self.assertEqual(len(mail.outbox), 4)  # la 6e demande de l'heure n'envoie rien
+        for _ in range(4):  # 3 demandes par heure et par adresse e-mail
+            self.assertRedirects(self.demander("app_a@exemple.org"), reverse("password_reset_done"))
+        self.assertEqual(len(mail.outbox), 3)
+        self.demander("app_b@exemple.org")  # une autre adresse n'est pas bloquée
+        self.assertEqual(len(mail.outbox), 4)
+
+    def test_echec_smtp_journalise(self):
+        with self.settings(EMAIL_BACKEND="apps.comptes.tests.BackendEnPanne"), \
+                self.assertLogs("apps.comptes.forms", "ERROR") as journal:
+            self.assertRedirects(self.demander("app_a@exemple.org"), reverse("password_reset_done"))
+        self.assertIn("ÉCHEC d'envoi à app_a@exemple.org", journal.output[0])
 
     def test_connexion_par_email(self):
         r = self.client.post(reverse("login"), {"username": "App_A@Exemple.org", "password": MDP})
         self.assertRedirects(r, reverse("tableau_bord:accueil"), fetch_redirect_response=False)
+
+
+class BackendEnPanne:
+    def __init__(self, *a, **kw):
+        pass
+
+    def send_messages(self, messages):
+        raise ConnectionRefusedError("SMTP injoignable")
+
+
+class CreationCompteTests(BaseTest):
+    URL = "/creer-mon-compte/"
+
+    def donnees(self, **kw):
+        return {"categorie": "etudiant", "first_name": "Awa", "last_name": "KONÉ", "email": "Awa.Kone@Exemple.org",
+                "telephone": "+225 07 00 00 00", "structure": "Université FHB", "password1": "Geomatique-2026!",
+                "password2": "Geomatique-2026!", **kw}
+
+    def test_lien_depuis_la_connexion(self):
+        self.assertContains(self.client.get(reverse("login")), 'href="/creer-mon-compte/"')
+
+    def test_creation_connexion_et_notification(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            r = self.client.post(self.URL, self.donnees(), follow=True)
+        self.assertContains(r, "Votre compte est créé")
+        u = User.objects.get(email="awa.kone@exemple.org")
+        self.assertEqual((u.username, u.profil.role, u.profil.categorie, u.profil.structure),
+                         ("awakone", "apprenant", "etudiant", "Université FHB"))
+        self.assertTrue(u.check_password("Geomatique-2026!"))
+        self.assertEqual(int(self.client.session["_auth_user_id"]), u.pk)
+        self.assertContains(r, "Aucune inscription active")  # aucun contenu sans promotion validée
+        self.assertEqual(mail.outbox[-1].to, ["awa.kone@exemple.org"])
+        self.assertTrue(self.admin.notifications.filter(titre__contains="Awa").exists())
+
+    def test_session_choisie_devient_candidature(self):
+        self.promo_a.publiee_vitrine, self.promo_a.code_vitrine = True, "geoai-a"
+        self.promo_a.save()
+        r = self.client.get(self.URL + "?session=geoai-a")
+        self.assertEqual(r.context["form"]["promotion"].value(), self.promo_a.pk)
+        r = self.client.post(self.URL, self.donnees(categorie="professionnel", promotion=self.promo_a.pk), follow=True)
+        self.assertContains(r, "Inscription en cours de validation")
+        c = Candidature.objects.get(email="awa.kone@exemple.org")
+        self.assertEqual((c.promotion, c.utilisateur.email, c.statut), (self.promo_a, c.email, "nouvelle"))
+        # L'admin accepte : le compte existant est rattaché, sans nouvelle invitation à définir un mot de passe
+        self.client.force_login(self.admin)
+        self.client.post(reverse("comptes:candidatures"), {"candidature": c.pk, "action": "accepter",
+                                                           "promotion": self.promo_a.pk})
+        self.assertTrue(Inscription.objects.filter(apprenant=c.utilisateur, promotion=self.promo_a).exists())
+        self.assertIn("nouvelle session", mail.outbox[-1].subject)
+
+    def test_erreurs(self):
+        r = self.client.post(self.URL, self.donnees(email="APP_A@exemple.org", password2="autre"))
+        self.assertContains(r, "Un compte existe déjà avec cet e-mail")
+        self.assertContains(r, "ne correspondent pas")
+        r = self.client.post(self.URL, self.donnees(password1="12345678", password2="12345678"))
+        self.assertFalse(User.objects.filter(email="awa.kone@exemple.org").exists())
+
+    def test_robot_et_limite(self):
+        self.client.post(self.URL, self.donnees(site_web="http://spam"))
+        self.assertFalse(User.objects.filter(email="awa.kone@exemple.org").exists())
+        for i in range(6):
+            self.client.post(self.URL, self.donnees(email=f"robot{i}@exemple.org"))
+            self.client.logout()
+        self.assertEqual(User.objects.filter(email__startswith="robot").count(), 5)
+
+    def test_deja_connecte(self):
+        self.client.force_login(self.app_a)
+        self.assertRedirects(self.client.get(self.URL), reverse("tableau_bord:accueil"), fetch_redirect_response=False)

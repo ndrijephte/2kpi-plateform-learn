@@ -1,3 +1,4 @@
+import logging
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth import views as auth_views
@@ -11,11 +12,12 @@ from apps.agenda.models import Promotion
 from apps.core.permissions import ADMIN, admin_requis, appliquer_role, role_de
 from apps.evaluation.models import Inscription
 from apps.evaluation.utils import inscription_courante
-from .forms import (CompteAdminForm, CompteForm, MotDePasseOublieForm, NouvelUtilisateurForm, PrerequisForm,
-                    ProfilForm)
+from .forms import (CompteAdminForm, CompteForm, CreationCompteForm, MotDePasseOublieForm, NouvelUtilisateurForm,
+                    PrerequisForm, ProfilForm)
 from .models import Profil, Prerequis
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -223,16 +225,51 @@ def candidatures(request):
         "promotions": Promotion.objects.filter(active=True).select_related("formation").order_by("-date_debut")})
 
 
+def creer_compte(request):
+    """Création de compte apprenant / étudiant en libre-service (lien « Créer mon compte » de la vitrine).
+    ?session=<code vitrine> présélectionne la session demandée."""
+    from django.contrib.auth import login
+    from . import services
+    if request.user.is_authenticated:
+        return redirect("tableau_bord:accueil")
+    code = request.GET.get("session", "")
+    form = CreationCompteForm(request.POST or None, initial={
+        "promotion": Promotion.objects.filter(code_vitrine=code, active=True, publiee_vitrine=True).first()
+        if code else None})
+    if request.method == "POST" and form.is_valid():
+        if form.cleaned_data["site_web"]:  # robot : on ne crée rien
+            return redirect("login")
+        cle = f"creation-compte-ip-{request.META.get('REMOTE_ADDR')}"
+        if cache.get(cle, 0) >= CREATIONS_PAR_HEURE:
+            messages.error(request, "Trop de comptes créés depuis cette connexion. Réessayez dans une heure.")
+        else:
+            cache.set(cle, cache.get(cle, 0) + 1, 3600)
+            user = services.creer_compte_apprenant(request, form.cleaned_data)
+            login(request, user, backend="apps.comptes.backends.IdentifiantOuEmailBackend")
+            messages.success(request, f"Bienvenue {user.first_name} ! Votre compte est créé "
+                                      f"(identifiant : {user.username}, ou votre e-mail).")
+            return redirect("tableau_bord:accueil")
+    return render(request, "registration/creer_compte.html", {"form": form})
+
+
+CREATIONS_PAR_HEURE = 5
+
+
 class MotDePasseOublieView(auth_views.PasswordResetView):
-    """Limite les demandes (5 par heure et par adresse IP) contre l'envoi massif d'e-mails ;
-    la page de confirmation reste identique pour ne pas révéler quels comptes existent."""
+    """Limite les demandes (3 par heure et par adresse e-mail, 10 par adresse IP) contre l'envoi massif
+    d'e-mails ; la page de confirmation reste identique pour ne pas révéler quels comptes existent."""
     form_class = MotDePasseOublieForm
-    LIMITE_PAR_HEURE = 5
+    LIMITE_PAR_EMAIL, LIMITE_PAR_IP = 3, 10
 
     def form_valid(self, form):
-        cle = f"mdp-oublie-ip-{self.request.META.get('REMOTE_ADDR')}"
-        n = cache.get(cle, 0)
-        cache.set(cle, n + 1, 3600)
-        if n >= self.LIMITE_PAR_HEURE:
+        email = form.cleaned_data["email"].strip().lower()
+        cles = {f"mdp-oublie-ip-{self.request.META.get('REMOTE_ADDR')}": self.LIMITE_PAR_IP,
+                f"mdp-oublie-email-{email}": self.LIMITE_PAR_EMAIL}
+        compteurs = {cle: cache.get(cle, 0) for cle in cles}
+        for cle in cles:
+            cache.set(cle, compteurs[cle] + 1, 3600)
+        if any(compteurs[cle] >= limite for cle, limite in cles.items()):
+            logger.warning("Mot de passe oublié : limite horaire atteinte (%s, IP %s) — rien n'est envoyé",
+                           email, self.request.META.get("REMOTE_ADDR"))
             return redirect(self.get_success_url())
         return super().form_valid(form)

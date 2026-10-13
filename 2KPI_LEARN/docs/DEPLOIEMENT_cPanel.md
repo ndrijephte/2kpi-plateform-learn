@@ -147,7 +147,21 @@ Ouvre **https://learn.2kpinnov.org** :
    `mail.2kpinnov.org`) et le **port SSL** (465).
 3. Renseigne dans `.env` : `EMAIL_HOST`, `EMAIL_PORT=465`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`,
    `DEFAULT_FROM_EMAIL`, `ADMINS` → **Restart**.
-4. Teste dans le terminal : `python manage.py tester_email ton.adresse@exemple.org`
+4. Teste dans le terminal : `python manage.py tester_email ton.adresse@exemple.org --reinitialisation`
+   — diagnostic étape par étape (DNS, connexion, TLS, authentification, envoi), test du sendmail du
+   serveur, puis envoi d'un vrai lien « mot de passe oublié » si un compte a cette adresse.
+
+> **« Mot de passe oublié » OK en local mais rien n'arrive en ligne ?** Causes classiques sur cPanel :
+> - l'app n'a pas été **redémarrée** après la modification du `.env` (le terminal lit le nouveau
+>   `.env`, l'app en ligne garde l'ancien) → *Restart* ;
+> - une variable `EMAIL_*` saisie dans *Setup Python App › Environment variables* **écrase** le `.env`
+>   (le diagnostic le signale) → supprime-la ;
+> - **SMTP Restrictions** de l'hébergeur : les applications ne peuvent pas ouvrir de connexion SMTP.
+>   L'app bascule alors seule sur le `sendmail` du serveur ; pour l'imposer : `EMAIL_ENVOI=sendmail` ;
+> - aucun compte **actif** n'a exactement cette adresse (la page affiche quand même « e-mail envoyé ») ;
+> - l'e-mail est arrivé dans les **spams** : cPanel › *Email Deliverability* → réparer SPF et DKIM.
+> Chaque demande est tracée dans `logs/2kpi_learn.log` (« lien envoyé à… », « ÉCHEC d'envoi… »,
+> « aucun compte actif… »).
 
 ---
 
@@ -193,13 +207,12 @@ régulièrement hors du serveur (Gestionnaire de fichiers › Télécharger).
 
 ## Mise à jour (à chaque nouvelle version)
 
-Sur ta machine : `python manage.py test` (tout doit être « OK »), puis `git push`.
-Dans cPanel : Contrôle de version Git → **Update from Remote** puis **Deploy HEAD Commit** (vitrine),
-puis Terminal (app) :
-```bash
-pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput
-```
-puis **Restart**.
+**Automatique** : un `git push` sur main lance les tests puis met en ligne vitrine + app
+(voir `docs/DEPLOIEMENT_AUTOMATIQUE.md` à la racine du dépôt pour la mise en place, une seule fois).
+
+À la main si besoin (même effet) : Contrôle de version Git → **Update from Remote** puis
+**Deploy HEAD Commit** — `.cpanel.yml` lance `deploy/deployer.sh` (vitrine, pip, sauvegarde + migrate,
+collectstatic, redémarrage). Journal : `logs/deploiement.log`.
 
 ---
 
@@ -207,7 +220,8 @@ puis **Restart**.
 
 - **Erreur 500 / page blanche** : consulte `logs/2kpi_learn.log` (et l'e-mail envoyé aux `ADMINS`) ;
   vérifie le `.env` (identifiants de base, SECRET_KEY présents).
-- **Les e-mails ne partent pas** : `python manage.py tester_email …` affiche l'erreur SMTP exacte.
+- **Les e-mails ne partent pas** : `python manage.py tester_email … --reinitialisation` affiche l'étape
+  qui échoue et la correction (voir l'encadré de l'étape 9).
 - **Le formulaire de la vitrine bascule sur l'e-mail** : l'API n'est pas joignable ou le domaine de la
   vitrine manque dans `VITRINE_ORIGINS`.
 - **Boucle de redirection** : SSL pas encore actif → mets `SECURE_SSL_REDIRECT=False` le temps de

@@ -107,3 +107,42 @@ def refuser(request, candidature, motif=""):
     candidature.save()
     return _envoyer("Votre demande d'inscription", "emails/candidature_refusee.txt", candidature.email,
                     {"c": candidature})
+
+
+def notifier_admins(titre, message):
+    from apps.agenda.models import Notification
+    from apps.agenda.services import notifier
+    from apps.core.permissions import ADMIN
+    admins = [p.utilisateur for p in Profil.objects.filter(role=ADMIN, utilisateur__is_active=True)
+              .select_related("utilisateur")]
+    notifier(admins, titre=titre, message=message, type=Notification.Type.INFO)
+
+
+@transaction.atomic
+def creer_compte_apprenant(request, d):
+    """Compte créé en libre-service depuis le site vitrine (CreationCompteForm.cleaned_data).
+    Une session choisie devient une candidature, à accepter par l'admin comme celles de la vitrine."""
+    user = User.objects.create_user(identifiant_libre(d["email"]), d["email"], d["password1"],
+                                    first_name=d["first_name"].strip()[:150], last_name=d["last_name"].strip()[:150])
+    appliquer_role(user, APPRENANT)
+    profil = user.profil
+    profil.categorie = d["categorie"]
+    profil.telephone = d["telephone"].strip()[:40]
+    profil.structure = d.get("structure", "").strip()[:200]
+    profil.save(update_fields=["categorie", "telephone", "structure"])
+    promo = d.get("promotion")
+    if promo:
+        Candidature.objects.create(
+            nom_complet=user.get_full_name(), email=user.email, telephone=profil.telephone,
+            message=f"Compte créé en ligne ({profil.get_categorie_display()}"
+                    f"{', ' + profil.structure if profil.structure else ''}).",
+            session_code=promo.code_vitrine, session_libelle=promo.nom, promotion=promo, utilisateur=user,
+            ip=request.META.get("REMOTE_ADDR") or None)
+    notifier_admins(f"Nouveau compte apprenant : {user.get_full_name()}",
+                    f"{profil.get_categorie_display()} · {user.email} · {profil.telephone}"
+                    + (f" · demande la session « {promo.nom} »" if promo else ""))
+    transaction.on_commit(lambda: _envoyer(
+        "Bienvenue sur 2KPI Learn — votre compte est créé", "emails/compte_cree.txt", user.email,
+        {"user": user, "promotion": promo, "connexion": request.build_absolute_uri(reverse("login"))}))
+    logger.info("Compte apprenant créé en libre-service : %s (%s)", user.username, user.email)
+    return user

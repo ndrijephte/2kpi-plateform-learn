@@ -8,10 +8,16 @@ class Profil(models.Model):
         FORMATEUR = "formateur", "Formateur"
         ADMIN = "admin", "Administrateur"
 
+    class Categorie(models.TextChoices):
+        ETUDIANT = "etudiant", "Étudiant(e)"
+        PROFESSIONNEL = "professionnel", "Professionnel(le)"
+
     utilisateur = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profil"
     )
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.APPRENANT)
+    categorie = models.CharField("Profil", max_length=20, choices=Categorie.choices, blank=True,
+                                 help_text="Renseigné par l'apprenant à la création de son compte.")
     structure = models.CharField("Structure / Université", max_length=200, blank=True)
     specialite = models.CharField("Spécialité", max_length=200, blank=True,
                                   default="Géomatique / Bases de données spatiales")

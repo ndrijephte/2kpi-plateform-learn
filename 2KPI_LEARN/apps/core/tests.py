@@ -1,5 +1,6 @@
 from django.contrib.auth.models import Group
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import SimpleTestCase
 from django.urls import reverse
 from apps.core.models import Parametres
 from apps.core.permissions import GROUPE_ADMIN, appliquer_role
@@ -72,3 +73,31 @@ class ParametresTests(BaseTest):
         gift = SimpleUploadedFile("q.gift", "::Q:: La Terre est ronde {T}\n".encode(), "text/plain")
         c.post(reverse("core:quiz", args=[quiz.pk]), {"quoi": "gift", "fichier": gift})
         self.assertEqual(quiz.questions.count(), 2)
+
+
+class EnvoiEmailTests(SimpleTestCase):
+    """Backend de production : SMTP puis repli sur le sendmail de l'hébergeur."""
+
+    def message(self):
+        from django.core.mail import EmailMessage
+        return EmailMessage("Sujet", "Corps", "2KPI <no-reply@2kpinnov.org>", ["a@exemple.org"])
+
+    def test_repli_sendmail_si_smtp_en_panne(self):
+        from unittest import mock
+        from apps.core import mail as m
+        with mock.patch.object(m.SmtpBackend, "send_messages", side_effect=ConnectionRefusedError("bloqué")), \
+                mock.patch.object(m, "sendmail_disponible", return_value=True), \
+                mock.patch.object(m.subprocess, "run") as run, self.assertLogs("apps.mail", "ERROR"):
+            self.assertEqual(m.SmtpAvecRepliBackend().send_messages([self.message()]), 1)
+        cmd = run.call_args.args[0]
+        self.assertEqual(cmd[1:], ["-i", "-f", "no-reply@2kpinnov.org", "--", "a@exemple.org"])
+        self.assertIn(b"Subject: Sujet", run.call_args.kwargs["input"])
+
+    def test_sans_sendmail_l_erreur_remonte(self):
+        from unittest import mock
+        from apps.core import mail as m
+        with mock.patch.object(m.SmtpBackend, "send_messages", side_effect=ConnectionRefusedError("bloqué")), \
+                mock.patch.object(m, "sendmail_disponible", return_value=False), self.assertLogs("apps.mail"):
+            with self.assertRaises(ConnectionRefusedError):
+                m.SmtpAvecRepliBackend().send_messages([self.message()])
+            self.assertEqual(m.SmtpAvecRepliBackend(fail_silently=True).send_messages([self.message()]), 0)

@@ -208,16 +208,12 @@ Le dépôt étant **unique**, un `.cpanel.yml` à la **racine** copie `VITRINE_2
 
 # 🔁 Mettre à jour (à chaque nouvelle version)
 
-Sur ta machine : `git add -A && git commit -m "…" && git push`. Puis sur le serveur :
+Sur ta machine : `git add -A && git commit -m "…" && git push` — **c'est tout** : GitHub Actions
+lance les tests puis met en ligne la vitrine et l'app (pip, sauvegarde + migrate, collectstatic,
+redémarrage). Mise en place unique et dépannage : [`DEPLOIEMENT_AUTOMATIQUE.md`](DEPLOIEMENT_AUTOMATIQUE.md).
 
-```bash
-# cPanel → Git Version Control → Update from Remote (+ Deploy pour la vitrine)
-# Terminal (app) :
-pip install -r requirements.txt     # si requirements a changé
-python manage.py migrate            # si nouvelles migrations
-python manage.py collectstatic --noinput
-# Setup Python App → Restart
-```
+À la main si besoin : cPanel → Git Version Control → **Update from Remote** puis **Deploy HEAD Commit**
+(exécute `deploy/deployer.sh`), ou Terminal : `bash ~/repositories/2kpi-plateform-learn/deploy/deployer.sh`.
 
 ---
 
@@ -236,6 +232,7 @@ python manage.py collectstatic --noinput
 | `Passengerfile.json … Permission denied (errno=13)` | App sous `~/repositories/` non traversable par le serveur web | `chmod 755` sur `repositories`, le dépôt et `2KPI_LEARN` (le fichier `Passengerfile.json` est optionnel) |
 | « Web application could not be started » + `RecursionError: maximum recursion depth` | cPanel a écrasé `passenger_wsgi.py` par un chargeur qui s'importe lui-même | `git checkout -- passenger_wsgi.py` (restaure la version simple qui expose `application`) + Restart |
 | E-mail : `535 Incorrect authentication data` | Identifiants SMTP faux | `EMAIL_HOST_USER` = **adresse complète** (`no-reply@2kpinnov.org`) ; mot de passe de boîte **alphanumérique** (pas de `#`/espace), recopié à l'identique |
+| « Mot de passe oublié » : rien n'arrive en ligne (OK en local) | App non redémarrée après le `.env`, variable `EMAIL_*` de *Setup Python App* qui écrase le `.env`, ou SMTP sortant bloqué par l'hébergeur | `python manage.py tester_email ton@adresse --reinitialisation` (indique la cause) ; repli sendmail automatique, ou `EMAIL_ENVOI=sendmail` ; Restart |
 | Erreur 500 / page blanche | `.env` incomplet ou erreur appli | Setup Python App → onglet **Log** ; ou `python passenger_wsgi.py` pour voir la traceback |
 
 ---

@@ -53,8 +53,14 @@
     {% else %}
     <div class="card empty">
       <span class="ico-tile coral">{% icon "graduation-cap" %}</span>
+      {% if demande %}
+      <strong>Inscription en cours de validation</strong>
+      Ta demande pour « {{ demande.session_libelle }} » a bien été reçue : tes cours s'ouvriront ici dès sa validation par l'équipe 2KPI.
+      {% else %}
       <strong>Aucune inscription active</strong>
-      Contacte l'administration pour être rattaché à une promotion.
+      Inscris-toi à une session sur <a href="https://2kpinnov.org/pages/sessions.html" target="_blank" rel="noopener">2kpinnov.org</a> :
+      tes cours s'ouvriront ici dès que l'équipe 2KPI aura validé ton inscription.
+      {% endif %}
     </div>
     {% endif %}
   </div>

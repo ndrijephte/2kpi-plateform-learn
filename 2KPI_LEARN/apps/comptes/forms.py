@@ -1,3 +1,4 @@
+import logging
 from django import forms
 from django.conf import settings
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
@@ -8,6 +9,7 @@ from apps.evaluation.models import Inscription
 from .models import Prerequis, Profil
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class NouvelUtilisateurForm(forms.Form):
@@ -90,7 +92,7 @@ class CompteAdminForm(CompteForm):
 class ProfilForm(forms.ModelForm):
     class Meta:
         model = Profil
-        fields = ["photo", "telephone", "structure", "specialite", "bio"]
+        fields = ["photo", "categorie", "telephone", "structure", "specialite", "bio"]
         widgets = {"bio": forms.Textarea(attrs={"rows": 3})}
 
     def clean_photo(self):
@@ -118,6 +120,57 @@ class PrerequisForm(forms.ModelForm):
         return d
 
 
+class CreationCompteForm(forms.Form):
+    """Création de compte en libre-service (bouton « Créer mon compte » du site vitrine).
+    Le compte est un compte apprenant : il ne donne accès aux contenus qu'une fois rattaché
+    à une promotion par l'administration (candidature acceptée)."""
+    categorie = forms.ChoiceField(label="Je suis", choices=Profil.Categorie.choices, widget=forms.RadioSelect,
+                                  initial=Profil.Categorie.ETUDIANT)
+    first_name = forms.CharField(label="Prénom", max_length=150)
+    last_name = forms.CharField(label="Nom", max_length=150)
+    email = forms.EmailField(label="E-mail", help_text="Sert aussi d'identifiant de connexion.")
+    telephone = forms.CharField(label="Téléphone (WhatsApp de préférence)", max_length=40)
+    structure = forms.CharField(label="Université / école ou structure", max_length=200, required=False)
+    promotion = forms.ModelChoiceField(
+        label="Session souhaitée", required=False, empty_label="— Je choisirai plus tard —",
+        queryset=Promotion.objects.none(),
+        help_text="Facultatif : votre demande d'inscription sera transmise à l'équipe 2KPI.")
+    password1 = forms.CharField(label="Mot de passe", strip=False, widget=forms.PasswordInput(
+        attrs={"autocomplete": "new-password"}), help_text="8 caractères minimum, pas uniquement des chiffres.")
+    password2 = forms.CharField(label="Confirmer le mot de passe", strip=False,
+                                widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}))
+    site_web = forms.CharField(required=False, label="Site web", widget=forms.TextInput(
+        attrs={"tabindex": "-1", "autocomplete": "off"}))  # piège anti-robots, masqué en CSS
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.fields["promotion"].queryset = (
+            Promotion.objects.filter(active=True, publiee_vitrine=True).select_related("formation")
+            .order_by("date_debut"))
+        self.fields["email"].widget.attrs["autocomplete"] = "email"
+        self.fields["telephone"].widget.attrs.update({"autocomplete": "tel", "type": "tel"})
+
+    def clean_email(self):
+        e = self.cleaned_data["email"].strip().lower()
+        if User.objects.filter(email__iexact=e).exists():
+            raise forms.ValidationError("Un compte existe déjà avec cet e-mail : connectez-vous, ou utilisez "
+                                        "« Mot de passe oublié » si vous ne vous en souvenez plus.")
+        return e
+
+    def clean(self):
+        d = super().clean()
+        p1, p2 = d.get("password1"), d.get("password2")
+        if p1 and p2 and p1 != p2:
+            self.add_error("password2", "Les deux mots de passe ne correspondent pas.")
+        elif p1:
+            try:
+                validate_password(p1, User(email=d.get("email", ""), first_name=d.get("first_name", ""),
+                                           last_name=d.get("last_name", "")))
+            except forms.ValidationError as e:
+                self.add_error("password1", e)
+        return d
+
+
 class ConnexionForm(AuthenticationForm):
     error_messages = {**AuthenticationForm.error_messages,
                       "invalid_login": "Identifiant (ou e-mail) ou mot de passe incorrect. "
@@ -134,8 +187,28 @@ class MotDePasseOublieForm(PasswordResetForm):
     en production, même derrière un proxy qui masque le protocole."""
 
     def get_users(self, email):
-        return (u for u in User._default_manager.filter(email__iexact=email, is_active=True)
-                if u.email.casefold() == email.casefold())
+        comptes = [u for u in User._default_manager.filter(email__iexact=email, is_active=True)
+                   if u.email.casefold() == email.casefold()]
+        if not comptes:
+            logger.info("Mot de passe oublié : aucun compte actif pour %s", email)
+        self.nb_comptes = len(comptes)
+        return comptes
+
+    def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email,
+                  html_email_template_name=None):
+        """Comme Django, sans avaler l'échec en silence : il est journalisé et compté (self.echecs)."""
+        from django.core.mail import EmailMultiAlternatives
+        from django.template import loader
+        sujet = "".join(loader.render_to_string(subject_template_name, context).splitlines())
+        message = EmailMultiAlternatives(sujet, loader.render_to_string(email_template_name, context),
+                                         from_email, [to_email])
+        try:
+            message.send()
+            logger.info("Mot de passe oublié : lien envoyé à %s (%s)", to_email, context["user"].username)
+        except Exception:
+            self.echecs = getattr(self, "echecs", 0) + 1
+            logger.exception("Mot de passe oublié : ÉCHEC d'envoi à %s — vérifier la configuration e-mail "
+                             "(python manage.py tester_email %s)", to_email, to_email)
 
     def save(self, *a, use_https=False, extra_email_context=None, **kw):
         from apps.core.models import Parametres

@@ -11,4 +11,5 @@
   <button class="btn btn-block" type="submit">{% icon "log-in" size=18 %} Se connecter</button>
 </form>
 <p class="stack center"><a href="{% url 'password_reset' %}">Mot de passe oublié ?</a></p>
+<p class="auth-alt">Pas encore de compte ? <a href="{% url 'creer_compte' %}"><strong>Créer mon compte</strong></a></p>
 {% endblock %}

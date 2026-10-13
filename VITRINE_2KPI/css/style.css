@@ -512,6 +512,14 @@ strong { color: var(--navy); }
   padding: 22px 24px; margin-bottom: 28px;
 }
 .session-summary h3 { margin-bottom: 10px; }
+.compte-cta {
+  margin-top: 28px; padding: 22px 24px; border-radius: var(--radius);
+  border: 1px dashed var(--navy); background: #fff;
+}
+.compte-cta h3 { margin-bottom: 8px; font-size: 1.05rem; }
+.compte-cta p { font-size: 0.9rem; color: var(--text-soft); margin: 0 0 14px; }
+.compte-cta .btn { display: inline-flex; align-items: center; gap: 8px; }
+.compte-cta .btn svg { width: 16px; height: 16px; }
 
 .form-status {
   border-radius: var(--radius); padding: 20px 22px; margin-bottom: 22px;
@@ -640,7 +648,19 @@ strong { color: var(--navy); }
 }
 
 /* Accès à la plateforme d'apprentissage (learn.2kpinnov.org) */
-.nav-espace { margin-left: 8px; display: inline-flex; align-items: center; gap: 6px; }
-.nav-espace svg { width: 16px; height: 16px; }
-@media (max-width: 720px) { .nav-espace { margin: 6px 0 0; justify-content: center; } }
+/* Bouton « Espace apprenant » : menu Se connecter / Créer mon compte, à l'allure d'un bouton contour */
+.nav-espace-item { margin-left: 8px; }
+.nav-parent.nav-espace { border: 2px solid var(--navy); color: var(--navy); padding: 8px 14px; gap: 6px; }
+.nav-parent.nav-espace svg { width: 16px; height: 16px; }
+.nav-parent.nav-espace .caret { width: 13px; height: 13px; }
+.nav-espace-item:hover .nav-espace,
+.nav-espace-item.open .nav-espace { background: var(--navy); color: #fff; }
+.nav-espace-item .nav-dropdown { left: auto; right: 0; min-width: 200px; }
+.nav-dropdown a.nav-creer { color: var(--coral-dark); }
+@media (max-width: 720px) {
+  .nav-espace-item { margin: 6px 0 0; }
+  .nav-parent.nav-espace { justify-content: center; }
+  .nav-espace-item .nav-dropdown { padding: 6px 0 0; }
+  .nav-espace-item .nav-dropdown a { text-align: center; }
+}
 .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }

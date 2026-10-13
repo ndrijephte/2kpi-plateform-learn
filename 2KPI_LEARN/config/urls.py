@@ -4,7 +4,7 @@ from django.urls import include, path, re_path
 from apps.agenda.api import sessions as sessions_api
 from apps.comptes.api import candidature as candidature_api
 from apps.comptes.forms import ConnexionForm
-from apps.comptes.views import MotDePasseOublieView
+from apps.comptes.views import MotDePasseOublieView, creer_compte
 from apps.core.views import media_publique
 from django.contrib.auth import views as auth_views
 
@@ -18,6 +18,7 @@ urlpatterns = [
     path("comptes/", include("apps.comptes.urls")),
     path("login/", auth_views.LoginView.as_view(authentication_form=ConnexionForm, redirect_authenticated_user=True), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("creer-mon-compte/", creer_compte, name="creer_compte"),
     path("mot-de-passe/changer/", auth_views.PasswordChangeView.as_view(), name="password_change"),
     path("mot-de-passe/change/", auth_views.PasswordChangeDoneView.as_view(), name="password_change_done"),
     path("mot-de-passe/oublie/", MotDePasseOublieView.as_view(), name="password_reset"),

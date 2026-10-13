@@ -1,14 +1,11 @@
-# Déploiement automatique via cPanel « Git Version Control » (dépôt unique PLATEFORME_2KPI).
-# cPanel ne lit ce fichier qu'à la RACINE du dépôt.
+# Déploiement cPanel « Git Version Control » (dépôt unique PLATEFORME_2KPI).
+# cPanel ne lit ce fichier qu'à la RACINE du dépôt. Exécuté par « Deploy HEAD Commit » —
+# déclenché automatiquement par GitHub Actions à chaque push sur main
+# (.github/workflows/deploiement.yml), ou à la main depuis cPanel.
 #
-# - Vitrine (VITRINE_2KPI/) : copiée dans public_html → 2kpinnov.org
-# - App Django (2KPI_LEARN/) : rien à copier, « Setup Python App » pointe directement sur
-#   <clone>/2KPI_LEARN (voir 2KPI_LEARN/docs/DEPLOIEMENT_cPanel.md).
+# deploy/deployer.sh : vitrine → public_html, puis app Django (pip, sauvegarde + migrate,
+# collectstatic, redémarrage). Journal : 2KPI_LEARN/logs/deploiement.log
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/c2864961c/public_html
-    - /bin/cp -R VITRINE_2KPI/index.html $DEPLOYPATH/
-    - /bin/cp -R VITRINE_2KPI/pages $DEPLOYPATH/
-    - /bin/cp -R VITRINE_2KPI/css $DEPLOYPATH/
-    - /bin/cp -R VITRINE_2KPI/js $DEPLOYPATH/
-    - /bin/cp -R VITRINE_2KPI/assets $DEPLOYPATH/
+    - export PUBLIC_HTML=/home/c2864961c/public_html
+    - /bin/bash deploy/deployer.sh

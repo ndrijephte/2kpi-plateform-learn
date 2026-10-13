@@ -12,6 +12,8 @@ venv/
 /2KPI_LEARN/prive/
 /2KPI_LEARN/sauvegardes/
 /2KPI_LEARN/logs/
+# tmp/restart.txt : redémarrage Passenger (sinon cPanel refuse le prochain « Update from Remote »)
+/2KPI_LEARN/tmp/
 
 # Secrets — jamais versionnés (.env.example, lui, l'est)
 .env

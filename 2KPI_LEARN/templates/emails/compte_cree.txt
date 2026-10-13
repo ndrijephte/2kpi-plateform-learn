@@ -1,0 +1,18 @@
+{% autoescape off %}Bonjour {{ user.first_name|default:user.username }},
+
+Votre compte 2KPI Learn est créé. Bienvenue !
+
+Votre identifiant de connexion : {{ user.username }}
+(vous pouvez aussi vous connecter avec votre adresse e-mail : {{ user.email }})
+Connexion : {{ connexion }}
+{% if promotion %}
+Votre demande d'inscription à « {{ promotion.nom }} » a bien été transmise.
+L'équipe 2KPI vous recontacte pour finaliser l'inscription ; les contenus de la formation
+s'ouvriront dans votre espace dès sa validation.
+{% else %}
+Pour accéder aux contenus d'une formation, inscrivez-vous à une session sur https://2kpinnov.org
+(rubrique « Sessions ») : votre espace s'ouvrira dès la validation de votre inscription.
+{% endif %}
+À très bientôt,
+L'équipe 2KPI
+{% endautoescape %}

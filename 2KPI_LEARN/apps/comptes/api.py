@@ -10,11 +10,9 @@ from django.conf import settings
 from django.core.cache import cache
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from apps.agenda.models import Notification, Promotion
-from apps.agenda.services import notifier
-from apps.core.permissions import ADMIN
-from .models import Candidature, Profil
-from .services import accuse_reception
+from apps.agenda.models import Promotion
+from .models import Candidature
+from .services import accuse_reception, notifier_admins
 
 logger = logging.getLogger(__name__)
 LIMITE_PAR_HEURE = 5
@@ -76,11 +74,8 @@ def candidature(request):
         nom_complet=d["nom"].strip(), email=d["email"].strip().lower(), telephone=d["telephone"].strip(),
         participants=d["participants"] or 1, message=d["message"], session_code=d["session"],
         session_libelle=d["session_libelle"] or d["session"], promotion=promo, ip=_ip(request))
-    admins = [p.utilisateur for p in Profil.objects.filter(role=ADMIN, utilisateur__is_active=True)
-              .select_related("utilisateur")]
-    notifier(admins, titre=f"Nouvelle candidature : {c.nom_complet}",
-             message=f"{c.session_libelle or 'Session non précisée'} · {c.email} · {c.telephone}",
-             type=Notification.Type.INFO)
+    notifier_admins(f"Nouvelle candidature : {c.nom_complet}",
+                    f"{c.session_libelle or 'Session non précisée'} · {c.email} · {c.telephone}")
     accuse_reception(c)
     logger.info("Candidature reçue #%s (%s)", c.pk, c.session_code)
     return _cors(request, JsonResponse({"ok": True}, status=201))

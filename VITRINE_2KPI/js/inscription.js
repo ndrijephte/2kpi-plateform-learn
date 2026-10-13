@@ -35,8 +35,13 @@
     });
   }
 
+  var lienCompte = document.getElementById("lien-creer-compte");
   function renderSummary() {
     if (sessionHidden) sessionHidden.value = select.value;
+    /* « Créer mon compte » transmet la session choisie : elle est présélectionnée côté plateforme */
+    if (lienCompte && typeof LEARN_URL !== "undefined") {
+      lienCompte.href = LEARN_URL + "/creer-mon-compte/" + (select.value ? "?session=" + encodeURIComponent(select.value) : "");
+    }
     var s = getSessionById(select.value);
     if (!s || !summary) return;
     var full = s.placesRestantes <= 0;

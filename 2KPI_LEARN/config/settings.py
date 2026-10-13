@@ -128,23 +128,32 @@ if not DEBUG:
 # Site vitrine autorisé à appeler l'API publique (candidatures)
 VITRINE_ORIGINS = config("VITRINE_ORIGINS", default="https://2kpinnov.org,https://www.2kpinnov.org", cast=Csv())
 
-# E-mail : SMTP de l'hébergeur (465 = SSL, 587 = STARTTLS). Vide = e-mails affichés dans la console.
-EMAIL_HOST = config("EMAIL_HOST", default="")
+# E-mail. EMAIL_ENVOI = auto (défaut) | smtp | sendmail | console
+# - auto : SMTP si EMAIL_HOST est renseigné (465 = SSL, 587 = STARTTLS), avec repli automatique sur
+#   le sendmail de l'hébergeur si le SMTP échoue ; sinon e-mails affichés dans la console (local).
+# - sendmail : uniquement l'agent local du serveur (cPanel/Exim) — sans mot de passe ni TLS.
+EMAIL_ENVOI = config("EMAIL_ENVOI", default="auto").strip().lower()
+EMAIL_SENDMAIL = config("EMAIL_SENDMAIL", default="/usr/sbin/sendmail")
+EMAIL_HOST = config("EMAIL_HOST", default="").strip()
 if "@" in EMAIL_HOST:  # erreur fréquente : sinon les e-mails échouent sans aucun message visible
     from django.core.exceptions import ImproperlyConfigured
     raise ImproperlyConfigured(f"EMAIL_HOST doit être un serveur (ex. mail.2kpinnov.org), pas une adresse : {EMAIL_HOST}")
-if EMAIL_HOST:
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_PORT = config("EMAIL_PORT", default=465, cast=int)
-    EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
-    EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
-    EMAIL_USE_SSL = config("EMAIL_USE_SSL", default=EMAIL_PORT == 465, cast=bool)
-    EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=not EMAIL_USE_SSL, cast=bool)
-    if EMAIL_USE_SSL and EMAIL_USE_TLS:  # exclusifs pour Django : le port tranche (465 = SSL, sinon STARTTLS)
-        EMAIL_USE_SSL, EMAIL_USE_TLS = EMAIL_PORT == 465, EMAIL_PORT != 465
-    EMAIL_TIMEOUT = 15
-else:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_PORT = config("EMAIL_PORT", default=465, cast=int)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="").strip()
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_SSL = config("EMAIL_USE_SSL", default=EMAIL_PORT == 465, cast=bool)
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=not EMAIL_USE_SSL, cast=bool)
+if EMAIL_USE_SSL and EMAIL_USE_TLS:  # exclusifs pour Django : le port tranche (465 = SSL, sinon STARTTLS)
+    EMAIL_USE_SSL, EMAIL_USE_TLS = EMAIL_PORT == 465, EMAIL_PORT != 465
+if EMAIL_PORT == 25 and not config("EMAIL_USE_TLS", default="", cast=str):
+    EMAIL_USE_TLS = False  # port 25 local (EMAIL_HOST=localhost) : en clair par défaut
+EMAIL_TIMEOUT = 15
+EMAIL_BACKEND = {
+    "smtp": "django.core.mail.backends.smtp.EmailBackend",
+    "sendmail": "apps.core.mail.SendmailBackend",
+    "console": "django.core.mail.backends.console.EmailBackend",
+}.get(EMAIL_ENVOI, "apps.core.mail.SmtpAvecRepliBackend" if EMAIL_HOST
+      else "django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="2KPI Learn <no-reply@2kpinnov.org>")
 SERVER_EMAIL = config("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 # ADMINS=Nom <adresse>,Autre <adresse> : reçoivent le détail des erreurs 500 en production

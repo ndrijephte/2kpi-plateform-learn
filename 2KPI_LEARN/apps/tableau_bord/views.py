@@ -28,6 +28,8 @@ def _apprenant(request):
     inscription = inscription_courante(user)
     ctx = {"inscription": inscription, "synthese": None, "a_venir": [], "reprendre": None,
            "notifications": user.notifications.filter(lu=False)[:3]}
+    if not inscription:  # compte créé en ligne : demande d'inscription en attente de validation ?
+        ctx["demande"] = user.candidatures.filter(statut="nouvelle").order_by("-date_reception").first()
     if inscription:
         ctx["synthese"] = services.synthese(inscription)
         if inscription.promotion_id:

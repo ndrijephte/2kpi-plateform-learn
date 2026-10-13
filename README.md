@@ -29,13 +29,16 @@ l'API de candidatures) peut désormais tenir dans **un seul commit**.
 
 ## Déploiement (cPanel)
 
-Un seul clone sur le serveur, ex. `/home/c2864961c/apps/2kpi_plateforme` :
+**Automatique à chaque `git push` sur main** (tests puis mise en ligne vitrine + app) :
+voir [`docs/DEPLOIEMENT_AUTOMATIQUE.md`](docs/DEPLOIEMENT_AUTOMATIQUE.md) — mise en place unique.
 
-- **Vitrine** : *Git Version Control* → *Update from Remote* → *Deploy HEAD Commit*.
-  `.cpanel.yml` copie `VITRINE_2KPI/` dans `public_html`.
-- **App** : *Setup Python App* → **Application root** = `apps/2kpi_plateforme/2KPI_LEARN`.
-  Après un *Update from Remote* : migrations / collectstatic puis *Restart*
-  (voir `2KPI_LEARN/docs/DEPLOIEMENT_cPanel.md`).
+Un seul clone sur le serveur : `/home/c2864961c/repositories/2kpi-plateform-learn`.
+
+- *Git Version Control* → *Update from Remote* → *Deploy HEAD Commit* : `.cpanel.yml` lance
+  `deploy/deployer.sh` → vitrine copiée dans `public_html`, puis app (pip, sauvegarde + migrate,
+  collectstatic, redémarrage). C'est exactement ce que fait GitHub Actions à chaque push.
+- **App** : *Setup Python App* → **Application root** = `repositories/2kpi-plateform-learn/2KPI_LEARN`
+  (installation initiale : `docs/GUIDE_DEPLOIEMENT_2KPI.md`).
 
 ## Comment la vitrine et l'app se parlent
 
@@ -45,7 +48,9 @@ Un seul clone sur le serveur, ex. `/home/c2864961c/apps/2kpi_plateforme` :
 - **Inscription depuis la vitrine** → envoyée en POST à `https://learn.2kpinnov.org/api/candidatures/`
   (réglée dans `VITRINE_2KPI/js/inscription-config.js` › `LEARN_API_URL`). Les demandes arrivent
   dans l'app (**Candidatures**) ; l'admin « Accepte » → compte créé + inscription + e-mail.
-- **Bouton « Espace apprenant »** du menu vitrine → `https://learn.2kpinnov.org/login/`.
+- **Menu « Espace apprenant »** de la vitrine → *Se connecter* (`/login/`) ou *Créer mon compte*
+  (`/creer-mon-compte/`) : les apprenants et étudiants créent eux-mêmes leur compte ; la session
+  choisie devient une candidature à accepter dans **Candidatures** (accès aux cours après validation).
 - Côté app, les origines autorisées de la vitrine sont listées dans `.env` › `VITRINE_ORIGINS`.
 
 ## Développer en local (vitrine + app reliées)

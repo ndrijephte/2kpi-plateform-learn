@@ -1,0 +1,36 @@
+{% extends "base_auth.html" %}
+{% load ui %}
+{% block title %}Créer mon compte — {{ site_nom }}{% endblock %}
+{% block auth_card_classe %} auth-card-large{% endblock %}
+{% block content %}
+<span class="eyebrow">{% icon "graduation-cap" size=14 %} Apprenants &amp; étudiants</span>
+<h1>Créer mon compte</h1>
+<p class="muted">Ton espace pour suivre tes cours, ton agenda et ta progression. Les contenus d'une formation s'ouvrent dès que ton inscription à une session est validée par l'équipe 2KPI.</p>
+<form method="post" class="stack" novalidate>{% csrf_token %}
+  {% if form.non_field_errors %}<ul class="errorlist nonfield">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+  <fieldset class="field choix-profil">
+    <legend class="field-label">{{ form.categorie.label }}</legend>
+    <div class="segments">{% for radio in form.categorie %}
+      <label class="segment">{{ radio.tag }}<span>{% if radio.data.value == "etudiant" %}{% icon "graduation-cap" size=18 %}{% else %}{% icon "briefcase" size=18 %}{% endif %}{{ radio.choice_label }}</span></label>
+    {% endfor %}</div>
+    {{ form.categorie.errors }}
+  </fieldset>
+  <div class="form-duo">
+    {% include "partials/champ.html" with field=form.first_name %}
+    {% include "partials/champ.html" with field=form.last_name %}
+  </div>
+  <div class="form-duo">
+    {% include "partials/champ.html" with field=form.email %}
+    {% include "partials/champ.html" with field=form.telephone %}
+  </div>
+  {% include "partials/champ.html" with field=form.structure %}
+  {% if form.promotion.field.queryset %}{% include "partials/champ.html" with field=form.promotion %}{% endif %}
+  <div class="form-duo">
+    {% include "partials/champ.html" with field=form.password1 %}
+    {% include "partials/champ.html" with field=form.password2 %}
+  </div>
+  <div class="hp" aria-hidden="true">{{ form.site_web }}</div>
+  <button class="btn btn-block" type="submit">{% icon "user-check" size=18 %} Créer mon compte</button>
+</form>
+<p class="stack center">Déjà un compte ? <a href="{% url 'login' %}">Se connecter</a></p>
+{% endblock %}

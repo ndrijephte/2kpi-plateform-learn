@@ -404,3 +404,19 @@ input[type=search]{width:100%;padding:9px 12px;border:1px solid var(--border-str
 .visio-card{border-color:#f6c9bf;background:var(--coral-50)}
 .visio-card .btn{margin-top:4px}
 .res-visio .ico-tile{background:#fff}
+
+/* ---------- Création de compte (libre-service) ---------- */
+.auth-card-large{max-width:580px}
+.form-duo{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.choix-profil{border:0;padding:0;min-width:0}
+.segments{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.segment{position:relative;display:block;cursor:pointer;margin:0}
+.segment input{position:absolute;opacity:0;pointer-events:none}
+.segment span{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1.5px solid var(--border-strong);
+  border-radius:var(--radius-sm);font-weight:500;font-size:.9rem;transition:border-color .15s,background .15s,color .15s}
+.segment:hover span{border-color:var(--coral)}
+.segment input:checked+span{border-color:var(--coral);background:rgba(239,106,82,.08);color:var(--navy)}
+.segment input:focus-visible+span{box-shadow:0 0 0 3px rgba(239,106,82,.25)}
+.hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+.auth-alt{margin:18px 0 0;padding:12px 14px;border-radius:12px;background:var(--bg);font-size:.88rem;text-align:center}
+@media (max-width:520px){.form-duo{grid-template-columns:1fr}.auth-card{padding:26px 20px}}

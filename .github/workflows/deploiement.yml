@@ -1,0 +1,109 @@
+# Push sur main → tests → mise en production cPanel (vitrine + app), automatiquement.
+#
+# Le serveur est piloté par l'API de cPanel (UAPI, jeton d'API) — aucun accès SSH requis :
+#   1. VersionControl/update            : le clone du serveur récupère le commit poussé ;
+#   2. VersionControlDeployment/create  : cPanel exécute .cpanel.yml → deploy/deployer.sh ;
+#   3. suivi du déploiement, puis contrôle que les deux sites répondent.
+#
+# Secrets à créer (GitHub › Settings › Secrets and variables › Actions) — voir
+# docs/DEPLOIEMENT_AUTOMATIQUE.md : CPANEL_HOST, CPANEL_USER, CPANEL_TOKEN.
+name: Tests et mise en production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 2KPI_LEARN
+    env:
+      DEBUG: "False"
+      SECRET_KEY: ci-uniquement-pas-un-secret
+      DB_ENGINE: ""
+      EMAIL_HOST: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: 2KPI_LEARN/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Migrations à jour avec les modèles
+        run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py collectstatic --noinput -v0
+      - run: python manage.py test
+
+  production:
+    needs: tests
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://learn.2kpinnov.org
+    env:
+      CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
+      CPANEL_USER: ${{ secrets.CPANEL_USER }}
+      CPANEL_TOKEN: ${{ secrets.CPANEL_TOKEN }}
+      DEPOT: ${{ vars.CPANEL_REPO || '/home/c2864961c/repositories/2kpi-plateform-learn' }}
+    steps:
+      - name: Vérifier la configuration
+        run: |
+          for v in CPANEL_HOST CPANEL_USER CPANEL_TOKEN; do
+            [ -n "${!v}" ] || { echo "::error::Secret $v manquant (voir docs/DEPLOIEMENT_AUTOMATIQUE.md)"; exit 1; }
+          done
+
+      - name: Récupérer le commit sur le serveur (Update from Remote)
+        run: |
+          uapi() {
+            curl -sS --fail-with-body --max-time 120 -H "Authorization: cpanel $CPANEL_USER:$CPANEL_TOKEN" \
+              "https://$CPANEL_HOST:2083/execute/$1" "${@:2}"
+          }
+          rep=$(uapi VersionControl/update --get --data-urlencode "repository_root=$DEPOT" --data-urlencode "branch=main")
+          echo "$rep" | jq '{status, errors, commit: .data.last_update.identifier}'
+          [ "$(echo "$rep" | jq -r .status)" = "1" ] || {
+            echo "::error::Mise à jour du clone refusée : $(echo "$rep" | jq -c .errors)"
+            echo "::error::Cause habituelle : fichier modifié sur le serveur → Terminal cPanel : cd $DEPOT && git status && git checkout -- ."
+            exit 1; }
+          serveur=$(echo "$rep" | jq -r '.data.last_update.identifier // empty')
+          [ -z "$serveur" ] || [ "$serveur" = "$GITHUB_SHA" ] || {
+            echo "::error::Le serveur est sur $serveur, attendu $GITHUB_SHA"; exit 1; }
+
+      - name: Déployer (.cpanel.yml → deploy/deployer.sh)
+        run: |
+          uapi() {
+            curl -sS --fail-with-body --max-time 120 -H "Authorization: cpanel $CPANEL_USER:$CPANEL_TOKEN" \
+              "https://$CPANEL_HOST:2083/execute/$1" "${@:2}"
+          }
+          rep=$(uapi VersionControlDeployment/create --get --data-urlencode "repository_root=$DEPOT")
+          id=$(echo "$rep" | jq -r '.data.deploy_id // empty')
+          [ -n "$id" ] || { echo "::error::Déploiement non lancé : $(echo "$rep" | jq -c .errors)"; exit 1; }
+          echo "Déploiement n°$id lancé"
+          for i in $(seq 1 60); do
+            sleep 10
+            etat=$(uapi VersionControlDeployment/retrieve | jq -c --arg id "$id" \
+              '.data[] | select((.deploy_id|tostring) == $id) | {t: .timestamps, log: .log_path}')
+            if echo "$etat" | jq -e '.t.succeeded' >/dev/null; then echo "Déploiement réussi"; exit 0; fi
+            if echo "$etat" | jq -e '.t.failed or .t.canceled' >/dev/null; then
+              echo "::error::Déploiement en échec — journal serveur : $(echo "$etat" | jq -r .log) et 2KPI_LEARN/logs/deploiement.log"
+              exit 1
+            fi
+          done
+          echo "::error::Déploiement toujours en cours après 10 minutes"; exit 1
+
+      - name: Contrôler les sites en ligne
+        run: |
+          sleep 5
+          for url in https://learn.2kpinnov.org/login/ https://learn.2kpinnov.org/creer-mon-compte/ \
+                     https://learn.2kpinnov.org/api/sessions/ https://2kpinnov.org/; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 5 --max-time 30 "$url")
+            echo "$code $url"
+            [ "$code" = "200" ] || { echo "::error::$url répond $code"; exit 1; }
+          done
