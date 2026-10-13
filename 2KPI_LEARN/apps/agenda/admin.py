@@ -1,11 +1,20 @@
 from django.contrib import admin
 from django.contrib import messages
-from .models import AccesModule, Annonce, Promotion, Indisponibilite, Evenement, Notification
+from .models import AccesModule, Affectation, Annonce, Promotion, Indisponibilite, Evenement, Notification
 from .services import generer_agenda
 
 class IndispoInline(admin.TabularInline):
     model = Indisponibilite
     extra = 0
+
+
+class AffectationInline(admin.TabularInline):
+    """Formateurs autorisés par l'administration à intervenir dans la promotion (modules cochés)."""
+    model = Affectation
+    fk_name = "promotion"
+    extra = 0
+    fields = ["formateur", "tous_les_modules", "modules"]
+    filter_horizontal = ["modules"]
 
 @admin.register(Promotion)
 class PromotionAdmin(admin.ModelAdmin):
@@ -17,7 +26,7 @@ class PromotionAdmin(admin.ModelAdmin):
                                      "horaire", "duree", "lieu", "places_total", "places_hors_plateforme",
                                      "prix", "description_vitrine"]}),
     ]
-    inlines = [IndispoInline]
+    inlines = [AffectationInline, IndispoInline]
     actions = ["action_generer_agenda"]
 
     @admin.action(description="Générer l'agenda (12 semaines) à partir de la date de début")

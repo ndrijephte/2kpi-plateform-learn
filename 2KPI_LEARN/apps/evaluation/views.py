@@ -8,7 +8,8 @@ from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from apps.agenda.models import Notification
 from apps.agenda.services import notifier
-from apps.core.permissions import ADMIN, APPRENANT, formateur_requis, promotions_visibles, role_de, role_requis
+from apps.core.permissions import (ADMIN, APPRENANT, formateur_requis, interventions, promotions_visibles,
+                                   q_interventions, role_de, role_requis)
 from .models import Inscription, Livrable, Quiz, TentativeQuiz
 from apps.formation.acces import acces_module
 from .grading import corriger
@@ -63,9 +64,13 @@ def quiz(request, quiz_id):
 def quiz_resultats(request, quiz_id):
     """Résultats d'un quiz pour les apprenants des promotions pilotées."""
     quiz = get_object_or_404(Quiz.objects.select_related("module__formation"), pk=quiz_id)
+    if not acces_module(request.user, quiz.module).ouvert:  # module non attribué au formateur
+        raise PermissionDenied
+    perimetre = interventions(request.user)  # promotions où ce module est attribué au formateur
+    promos = (promotions_visibles(request.user) if perimetre is None else
+              [pid for pid, modules in perimetre.items() if modules is None or quiz.module_id in modules])
     inscriptions = (Inscription.objects
-                    .filter(promotion__in=promotions_visibles(request.user),
-                            formation_id=quiz.module.formation_id)
+                    .filter(promotion__in=promos, formation_id=quiz.module.formation_id)
                     .select_related("apprenant", "promotion")
                     .annotate(meilleur=Max("tentatives__score", filter=Q(tentatives__quiz=quiz)),
                               nb=Count("tentatives", filter=Q(tentatives__quiz=quiz)),
@@ -82,7 +87,7 @@ def quiz_resultats(request, quiz_id):
 def livrables(request):
     """Livrables rendus des promotions pilotées : à corriger / corrigés."""
     promos = promotions_visibles(request.user)
-    qs = (Livrable.objects.filter(rendu=True, inscription__promotion__in=promos)
+    qs = (Livrable.objects.filter(q_interventions(request.user, promotion="inscription__promotion"), rendu=True)
           .select_related("inscription__apprenant", "inscription__promotion", "seance__module")
           .order_by("seance__module__ordre", "seance__ordre", "inscription__apprenant__last_name"))
     if request.method == "POST":
@@ -123,11 +128,12 @@ def livrables(request):
 
 @login_required
 def livrable_fichier(request, pk):
-    """Fichier d'un livrable : son auteur, le formateur de sa promotion ou un admin."""
+    """Fichier d'un livrable : son auteur, un formateur autorisé sur ce module dans sa promotion, ou un admin."""
     l = get_object_or_404(Livrable.objects.select_related("inscription"), pk=pk)
     autorise = (l.inscription.apprenant_id == request.user.pk
                 or role_de(request.user) == ADMIN
-                or promotions_visibles(request.user).filter(pk=l.inscription.promotion_id).exists())
+                or Livrable.objects.filter(q_interventions(request.user, promotion="inscription__promotion"),
+                                           pk=l.pk).exists())
     if not autorise:
         raise PermissionDenied
     if not l.fichier:

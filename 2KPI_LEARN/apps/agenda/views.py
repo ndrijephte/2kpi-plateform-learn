@@ -8,12 +8,12 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.text import slugify
-from apps.core.permissions import (APPRENANT, FORMATEUR, formateur_requis, est_admin,
-                                   promotions_visibles, role_de)
+from apps.core.permissions import (APPRENANT, FORMATEUR, admin_requis, formateur_requis, est_admin,
+                                   pilote_promotion, promotions_visibles, q_interventions, role_de)
 from apps.evaluation.models import Presence
 from apps.evaluation.utils import inscription_courante
 from .forms import AnnonceForm, FicheVitrineForm
-from .models import AccesModule, Annonce, Promotion, Evenement, Notification
+from .models import AccesModule, Affectation, Annonce, Promotion, Evenement, Notification
 from .services import apprenants_de, notifier, generer_agenda, synchroniser_agenda
 
 
@@ -35,8 +35,7 @@ def mon_agenda(request):
         qs = promo.evenements.all() if promo else Evenement.objects.none()
     else:
         promo = None
-        qs = Evenement.objects.filter(promotion__in=promotions_visibles(request.user),
-                                      promotion__active=True)
+        qs = Evenement.objects.filter(q_interventions(request.user), promotion__active=True)
     evenements = list(qs.select_related("seance", "seance__module", "promotion")
                       .order_by("date_debut"))
     maintenant = timezone.now()
@@ -81,17 +80,18 @@ def envoyer(request):
 @formateur_requis
 def planning(request, promo_id):
     promo = get_object_or_404(promotions_visibles(request.user), pk=promo_id)
-    evenements = (promo.evenements.select_related("seance", "seance__module")
+    evenements = (promo.evenements.filter(q_interventions(request.user))  # séances de SES modules
+                  .select_related("seance", "seance__module")
                   .annotate(nb_presences=Count("presences")).order_by("date_debut"))
     return render(request, "agenda/planning.html",
-                  {"promotion": promo, "evenements": evenements,
+                  {"promotion": promo, "evenements": evenements, "pilote": pilote_promotion(request.user, promo),
                    "nb_apprenants": promo.inscriptions.count(),
                    "statuts": Evenement.Statut.choices})
 
 
 @formateur_requis
 def evenement_action(request, ev_id):
-    ev = get_object_or_404(Evenement, pk=ev_id, promotion__in=promotions_visibles(request.user))
+    ev = get_object_or_404(Evenement.objects.filter(q_interventions(request.user)), pk=ev_id)
     if request.method != "POST":
         return redirect("agenda:planning", promo_id=ev.promotion_id)
     action = request.POST.get("action")
@@ -118,8 +118,9 @@ def evenement_action(request, ev_id):
             ev.statut = Evenement.Statut.REPORTE
             ev.note = request.POST.get("motif", "")
             ev.save()
-            if request.POST.get("decaler_suite"):
-                suivants = ev.promotion.evenements.filter(date_debut__gt=ancienne).exclude(pk=ev.pk)
+            if request.POST.get("decaler_suite"):  # uniquement les séances que l'utilisateur anime
+                suivants = (ev.promotion.evenements.filter(q_interventions(request.user), date_debut__gt=ancienne)
+                            .exclude(pk=ev.pk))
                 for s in suivants:
                     s.date_debut = s.date_debut + delta
                     s.save()
@@ -167,10 +168,13 @@ def promotions(request):
         else:
             messages.error(request, "Renseigne le nom, la formation et la date de début.")
         return redirect("agenda:promotions")
-    liste = (promotions_visibles(request.user).select_related("formation", "formateur")
-             .annotate(nb_evenements=Count("evenements", distinct=True),
-                       nb_apprenants=Count("inscriptions", distinct=True))
-             .order_by("-date_debut"))
+    liste = list(promotions_visibles(request.user).select_related("formation", "formateur")
+                 .prefetch_related("affectations__formateur")
+                 .annotate(nb_evenements=Count("evenements", distinct=True),
+                           nb_apprenants=Count("inscriptions", distinct=True))
+                 .order_by("-date_debut"))
+    for p in liste:
+        p.pilote = pilote_promotion(request.user, p)
     return render(request, "agenda/promotions.html", {
         "promotions": liste, "formations": Formation.objects.filter(active=True),
         "formateurs": formateurs, "peut_gerer": admin,
@@ -198,6 +202,8 @@ def fiche_vitrine(request, promo_id):
 @formateur_requis
 def generer_promo(request, promo_id):
     promo = get_object_or_404(promotions_visibles(request.user), pk=promo_id)
+    if not pilote_promotion(request.user, promo):  # calendrier : admin ou formateur référent
+        raise PermissionDenied
     if request.method == "POST":
         n = generer_agenda(promo)
         if n:
@@ -210,8 +216,8 @@ def generer_promo(request, promo_id):
 @formateur_requis
 def presences(request, ev_id):
     """Feuille de présence d'une séance datée : un statut par apprenant de la promotion."""
-    ev = get_object_or_404(Evenement.objects.select_related("promotion", "seance", "seance__module"),
-                           pk=ev_id, promotion__in=promotions_visibles(request.user))
+    ev = get_object_or_404(Evenement.objects.filter(q_interventions(request.user))
+                           .select_related("promotion", "seance", "seance__module"), pk=ev_id)
     inscriptions = ev.promotion.inscriptions.select_related("apprenant").order_by(
         "apprenant__last_name", "apprenant__first_name", "apprenant__username")
     existantes = {p.inscription_id: p for p in ev.presences.all()}
@@ -242,19 +248,72 @@ def presences(request, ev_id):
 @formateur_requis
 def synchroniser(request, promo_id):
     promo = get_object_or_404(promotions_visibles(request.user), pk=promo_id)
+    if not pilote_promotion(request.user, promo):
+        raise PermissionDenied
     if request.method == "POST":
         recales, crees = synchroniser_agenda(promo)
         messages.success(request, f"Paramétrage appliqué : {recales} séance(s) recalée(s), {crees} ajoutée(s).")
     return redirect("agenda:planning", promo_id=promo.pk)
 
 
+@admin_requis
+def affectations(request, promo_id):
+    """L'admin autorise des formateurs à intervenir dans la promotion, module par module."""
+    promo = get_object_or_404(Promotion.objects.select_related("formation", "formateur"), pk=promo_id)
+    modules = list(promo.formation.modules.order_by("ordre"))
+    formateurs = (get_user_model().objects.filter(profil__role=FORMATEUR, is_active=True)
+                  .order_by("first_name", "last_name", "username"))
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "retirer":
+            a = get_object_or_404(promo.affectations, pk=request.POST.get("affectation"))
+            a.delete()
+            messages.success(request, f"{a.formateur.get_full_name() or a.formateur} n'intervient plus dans « {promo.nom} ».")
+        else:
+            formateur = formateurs.filter(pk=request.POST.get("formateur") or None).first()
+            tous = bool(request.POST.get("tous_les_modules"))
+            choisis = [m for m in modules if str(m.pk) in request.POST.getlist("modules")]
+            if not formateur:
+                messages.error(request, "Choisis un formateur.")
+            elif not tous and not choisis:
+                messages.error(request, "Coche au moins un module, ou « Tous les modules ».")
+            else:
+                a, cree = Affectation.objects.get_or_create(promotion=promo, formateur=formateur)
+                a.tous_les_modules, a.accordee_par = tous, request.user
+                a.save()
+                a.modules.set([] if tous else choisis)
+                portee = "tous les modules" if tous else ", ".join(m.code for m in choisis)
+                if cree:
+                    notifier([formateur], titre=f"Nouvelle intervention : {promo.nom}",
+                             message=f"L'administration t'a affecté à « {promo.nom} » ({portee}).",
+                             type=Notification.Type.INFO, expediteur=request.user)
+                messages.success(request, f"{formateur.get_full_name() or formateur} : {portee}.")
+        return redirect("agenda:affectations", promo_id=promo.pk)
+    liste = list(promo.affectations.select_related("formateur").prefetch_related("modules")
+                 .order_by("formateur__first_name", "formateur__username"))
+    for a in liste:
+        a.ids = {m.pk for m in a.modules.all()}
+    return render(request, "agenda/affectations.html", {
+        "promotion": promo, "modules": modules, "affectations": liste,
+        "disponibles": formateurs.exclude(pk__in=[a.formateur_id for a in liste])
+                                 .exclude(pk=promo.formateur_id or 0)})
+
+
 @formateur_requis
 def acces_contenus(request, promo_id):
-    """Ouverture des modules d'une promotion : automatique (calendrier), ouvert ou fermé."""
+    """Ouverture des modules d'une promotion aux apprenants : automatique (calendrier), ouvert ou fermé.
+    Décision réservée à l'administration ; le formateur consulte l'état des modules qu'il enseigne."""
     from apps.formation.acces import etats_promotion
     promo = get_object_or_404(promotions_visibles(request.user).select_related("formation"), pk=promo_id)
     modules = list(promo.formation.modules.order_by("ordre"))
+    admin = est_admin(request.user)
+    if not admin:
+        from apps.core.permissions import modules_gerables
+        autorises = set(modules_gerables(request.user).values_list("pk", flat=True))
+        modules = [m for m in modules if m.id in autorises]
     if request.method == "POST":
+        if not admin:
+            raise PermissionDenied
         if request.POST.get("action") == "mode":
             promo.ouverture_auto = bool(request.POST.get("ouverture_auto"))
             promo.save(update_fields=["ouverture_auto"])
@@ -280,5 +339,5 @@ def acces_contenus(request, promo_id):
     lignes = [{"module": m, "acces": etats[m.id], "decision": decisions.get(m.id, AccesModule.Etat.AUTO)}
               for m in modules]
     return render(request, "agenda/acces.html", {
-        "promotion": promo, "lignes": lignes, "etats_choix": AccesModule.Etat.choices,
+        "promotion": promo, "lignes": lignes, "etats_choix": AccesModule.Etat.choices, "peut_decider": admin,
         "nb_ouverts": sum(1 for l in lignes if l["acces"].ouvert)})

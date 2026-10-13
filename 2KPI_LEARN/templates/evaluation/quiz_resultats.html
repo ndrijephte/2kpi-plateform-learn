@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load ui %}
 {% block title %}Résultats — {{ quiz.titre }}{% endblock %}
-{% block crumbs %}<a href="{% url 'formation:modules' %}">Contenu des cours</a>{% icon "chevron-right" size=14 %}<a href="{% url 'formation:module_detail' quiz.module.code %}">{{ quiz.module.code }}</a>{% icon "chevron-right" size=14 %}<span>Résultats du quiz</span>{% endblock %}
+{% block crumbs %}<a href="{% url 'formation:modules' %}">Contenu des cours</a>{% icon "chevron-right" size=14 %}<a href="{% url 'formation:module_detail' quiz.module.code %}?formation={{ quiz.module.formation_id }}">{{ quiz.module.code }}</a>{% icon "chevron-right" size=14 %}<span>Résultats du quiz</span>{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
@@ -30,5 +30,5 @@
   </tbody>
 </table>
 </div>
-<div class="btn-row"><a class="btn btn-secondary" href="{% url 'formation:module_detail' quiz.module.code %}">{% icon "arrow-left" size=16 %} Retour au module</a></div>
+<div class="btn-row"><a class="btn btn-secondary" href="{% url 'formation:module_detail' quiz.module.code %}?formation={{ quiz.module.formation_id }}">{% icon "arrow-left" size=16 %} Retour au module</a></div>
 {% endblock %}

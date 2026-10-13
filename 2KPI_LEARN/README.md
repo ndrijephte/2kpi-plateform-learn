@@ -35,12 +35,15 @@ Pages : `/` (tableau de bord) · `/formation/modules/` · `/agenda/` · `/agenda
 | Tableau de bord | sa progression | ses promotions, séances, livrables à corriger | indicateurs plateforme + points d'attention |
 | Cours / quiz | suivre, déposer | consultation, quiz en aperçu | consultation |
 | Agenda | sa promotion | ses séances | toutes les séances |
-| Planning, présences, correction | — | **ses** promotions | toutes |
+| Planning, présences, correction | — | **ses** promotions, **ses** modules (attribués par l'admin) | toutes |
 | Utilisateurs, rôles, rattachement | — | — | `/comptes/utilisateurs/` |
-| Créer une promotion, affecter le formateur | — | — | `/agenda/promotions/` |
+| Créer une promotion, choisir le référent | — | — | `/agenda/promotions/` |
+| Autoriser des formateurs, module par module | — | — | Promotions › **Formateurs** |
+| Ouvrir les modules aux apprenants | — | consultation | Promotions › **Accès** |
+| Générer / recaler le calendrier | — | référent uniquement | toutes |
 | Admin Django | — | — | ✔ (accès synchronisé avec le rôle) |
 
-| Ressources pédagogiques (fichiers + consignes) | consultation | dépôt sur **ses** formations | toutes |
+| Ressources pédagogiques (fichiers + consignes) | consultation | dépôt sur **ses** modules | toutes |
 | Paramètres (identité, logo, page de connexion, formations/séances, jours non travaillés, fichiers) | — | — | `/parametres/` |
 | Modifier son profil | ✔ | ✔ | ✔ (+ tout compte via Utilisateurs) |
 
@@ -59,12 +62,18 @@ Le rôle **Formateur** correspond aux enseignants.
 
 Pas à pas : `../docs/GUIDE_ADMINISTRATEUR.md`.
 
-### Accès des apprenants aux contenus (autorisation)
+### Accès aux contenus : toujours sur autorisation de l'admin
 
-Un apprenant n'ouvre un module (séances, ressources, quiz, dépôt de livrable) que si :
-1. son **inscription** à la formation est « En cours » et rattachée à une promotion (réglable par l'admin) ;
-2. le module est **ouvert** pour sa promotion — Promotions › *Accès* : « Ouvert », « Fermé » ou
-   « Auto » (ouverture le lundi de la semaine de la 1re séance, si l'ouverture automatique est active).
+Un **apprenant** n'ouvre un module (séances, ressources, quiz, dépôt de livrable) que si :
+1. son **inscription** à la formation est « En cours » et rattachée à une promotion (validée par l'admin) ;
+2. le module est **ouvert** pour sa promotion — Promotions › *Accès* (admin) : « Ouvert », « Fermé » ou
+   « Auto » (ouverture le lundi de la semaine de la 1re séance, si l'admin a activé l'ouverture automatique).
+
+Un **formateur** n'accède à une promotion, à sa formation et à ses modules que s'il en est le
+**référent** (tous les modules) ou s'il y est **affecté** par l'admin (modèle `Affectation` : modules
+cochés, ou tous). Sans affectation, il ne voit aucune formation. Tout est centralisé dans
+`apps/core/permissions.py` (`interventions`, `q_interventions`, `modules_gerables`) et
+`apps/formation/acces.py`.
 
 Les fichiers des ressources et des livrables sont stockés dans `prive/` (jamais servis par le serveur
 web) et téléchargés uniquement via l'application après contrôle des droits.
@@ -106,8 +115,8 @@ Mises à jour : **automatiques à chaque `git push` sur main** (`../docs/DEPLOIE
 ## Tests
 
 ```bash
-python manage.py test        # 50 tests : rôles, accès aux contenus, fichiers, quiz, candidatures,
-                             # création de compte, mot de passe oublié, envoi d'e-mails
+python manage.py test        # 55 tests : rôles, autorisations (apprenants, formateurs par module),
+                             # fichiers, quiz, candidatures, création de compte, mot de passe oublié, e-mails
 ```
 
 ## Exploitation

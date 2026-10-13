@@ -9,6 +9,15 @@
     <h1>{{ formation.titre|default:"Formation" }}</h1>
     {% if formation.description %}<p class="muted">{{ formation.description }}</p>{% endif %}
   </div>
+  {% if formations %}
+  <form method="get" class="form-inline" aria-label="Changer de formation">
+    <div class="field"><label for="f-formation">Formation</label>
+      <select id="f-formation" name="formation" onchange="this.form.submit()">
+        {% for f in formations %}<option value="{{ f.pk }}" {% if f.pk == formation.pk %}selected{% endif %}>{{ f.titre }}</option>{% endfor %}
+      </select></div>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit">Afficher</button></noscript>
+  </form>
+  {% endif %}
 </div>
 
 {% if modules %}
@@ -21,7 +30,7 @@
     <p class="muted"><small>{% icon "info" size=12 %} {{ item.acces.motif }}</small></p>
   </div>
   {% else %}
-  <a class="module-card" href="{% url 'formation:module_detail' m.code %}">
+  <a class="module-card" href="{% url 'formation:module_detail' m.code %}?formation={{ m.formation_id }}">
     <div class="card-head" style="margin:0">
       <span class="code">{{ m.code }}</span>
       {% if item.pct == 100 %}<span class="pill pill-ok">{% icon "check" size=12 stroke=2.5 %} Terminé</span>
@@ -44,6 +53,10 @@
   {% endwith %}{% endfor %}
 </div>
 {% else %}
+{% if not formation %}
+<div class="card empty"><span class="ico-tile">{% icon "lock" %}</span><strong>Aucune formation accessible</strong>{% if est_apprenant %}Tes cours apparaîtront ici dès que l'administration aura validé ton inscription à une promotion.{% else %}L'administration ne t'a encore affecté à aucune promotion.{% endif %}</div>
+{% else %}
 <div class="card empty"><span class="ico-tile">{% icon "book-open" %}</span><strong>Contenu à venir</strong>Les modules seront publiés prochainement.</div>
+{% endif %}
 {% endif %}
 {% endblock %}

@@ -11,9 +11,9 @@
   </div>
   <div class="actions">
   <a class="btn btn-navy" href="{% url 'agenda:acces' promotion.pk %}">{% icon "lock" size=16 %} Accès aux contenus</a>
-  <form method="post" action="{% url 'agenda:synchroniser' promotion.pk %}" onsubmit="return confirm('Recaler les séances encore « planifiées » sur le paramétrage actuel des séances ?')">{% csrf_token %}
+  {% if pilote %}<form method="post" action="{% url 'agenda:synchroniser' promotion.pk %}" onsubmit="return confirm('Recaler les séances encore « planifiées » sur le paramétrage actuel des séances ?')">{% csrf_token %}
     <button class="btn btn-secondary" type="submit" title="Applique les créneaux définis dans Paramètres > Formations">{% icon "rotate-ccw" size=16 %} Appliquer le paramétrage</button>
-  </form>
+  </form>{% endif %}
   </div>
 </div>
 <div class="table-wrap">

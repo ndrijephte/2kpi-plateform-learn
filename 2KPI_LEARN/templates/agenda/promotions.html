@@ -7,7 +7,7 @@
   <div>
     <span class="eyebrow">{% if peut_gerer %}{% icon "shield" size=14 %} Administration{% else %}{% icon "briefcase" size=14 %} Espace formateur{% endif %}</span>
     <h1>{% if peut_gerer %}Promotions{% else %}Mes promotions{% endif %}</h1>
-    <p class="muted">{% if peut_gerer %}Crée les promotions, affecte un formateur, puis génère leur calendrier.{% else %}Les promotions qui te sont confiées : planning, présences et calendrier.{% endif %}</p>
+    <p class="muted">{% if peut_gerer %}Crée les promotions, choisis le formateur référent, autorise les autres formateurs module par module, puis génère le calendrier.{% else %}Les promotions où l'administration t'a autorisé à intervenir : planning, présences et livrables de tes modules.{% endif %}</p>
   </div>
 </div>
 
@@ -20,7 +20,7 @@
       <select id="p-formation" name="formation" required>
         {% for f in formations %}<option value="{{ f.id }}">{{ f.titre }}</option>{% empty %}<option value="">Aucune formation</option>{% endfor %}
       </select></div>
-    <div class="field"><label for="p-ens">Formateur</label>
+    <div class="field"><label for="p-ens">Formateur référent</label>
       <select id="p-ens" name="formateur">
         <option value="">— à affecter —</option>
         {% for e in formateurs %}<option value="{{ e.id }}">{{ e.get_full_name|default:e.username }}</option>{% endfor %}
@@ -35,7 +35,7 @@
 
 <div class="table-wrap">
 <table class="tbl">
-  <thead><tr><th>Promotion</th><th>Formateur</th><th>Début</th><th class="num">Apprenants</th><th class="num">Séances</th><th>Actions</th></tr></thead>
+  <thead><tr><th>Promotion</th><th>Formateurs</th><th>Début</th><th class="num">Apprenants</th><th class="num">Séances</th><th>Actions</th></tr></thead>
   <tbody>
   {% for p in promotions %}
     <tr>
@@ -46,29 +46,31 @@
         {% if peut_gerer %}
         <form method="post" class="inline-form">{% csrf_token %}
           <input type="hidden" name="action" value="affecter"><input type="hidden" name="promotion" value="{{ p.id }}">
-          <select name="formateur" aria-label="Formateur de {{ p.nom }}" onchange="this.form.submit()">
+          <select name="formateur" aria-label="Formateur référent de {{ p.nom }}" title="Formateur référent (tous les modules)" onchange="this.form.submit()">
             <option value="">— à affecter —</option>
             {% for e in formateurs %}<option value="{{ e.id }}" {% if p.formateur_id == e.id %}selected{% endif %}>{{ e.get_full_name|default:e.username }}</option>{% endfor %}
           </select>
           <noscript><button class="btn btn-sm btn-secondary">OK</button></noscript>
         </form>
-        {% else %}{{ p.formateur.get_full_name|default:p.formateur.username }}{% endif %}
+        {% else %}{% if p.formateur %}{{ p.formateur.get_full_name|default:p.formateur.username }} <small class="muted">(référent)</small>{% endif %}{% endif %}
+        {% with autres=p.affectations.all %}{% if autres %}<small class="muted fmt-liste">+ {% for a in autres %}{{ a.formateur.get_full_name|default:a.formateur.username }}{% if not forloop.last %}, {% endif %}{% endfor %}</small>{% endif %}{% endwith %}
       </td>
       <td>{{ p.date_debut|date:"d M Y" }}</td>
       <td class="num">{{ p.nb_apprenants }}</td>
       <td class="num">{{ p.nb_evenements }}</td>
       <td><div class="actions">
-        <form method="post" action="{% url 'agenda:generer_promo' p.id %}" class="inline">{% csrf_token %}
+        {% if p.pilote %}<form method="post" action="{% url 'agenda:generer_promo' p.id %}" class="inline">{% csrf_token %}
           <button class="btn btn-sm btn-secondary" type="submit" title="Ajoute les séances manquantes">{% icon "calendar-plus" size=14 %} Calendrier</button>
-        </form>
+        </form>{% endif %}
         <a class="btn btn-sm btn-navy" href="{% url 'agenda:planning' p.id %}">{% icon "calendar-days" size=14 %} Planning</a>
         <a class="btn btn-sm btn-secondary" href="{% url 'agenda:acces' p.id %}" title="Ouverture des modules aux apprenants">{% icon "lock" size=14 %} Accès</a>
+        {% if peut_gerer %}<a class="btn btn-sm btn-secondary" href="{% url 'agenda:affectations' p.id %}" title="Autoriser des formateurs, module par module">{% icon "user-check" size=14 %} Formateurs</a>{% endif %}
         {% if peut_gerer %}<a class="btn btn-sm btn-secondary" href="{% url 'agenda:fiche_vitrine' p.id %}" title="Publication sur le site vitrine : dates, lieu, prix, places">{% icon "globe" size=14 %} Vitrine</a>{% endif %}
       </div></td>
     </tr>
   {% empty %}<tr><td colspan="6"><div class="empty"><span class="ico-tile">{% icon "users" %}</span>
     {% if peut_gerer %}<strong>Aucune promotion pour l'instant</strong>Crée la première avec le formulaire ci-dessus.
-    {% else %}<strong>Aucune promotion ne t'est encore confiée</strong>L'administration t'affectera tes promotions.{% endif %}</div></td></tr>{% endfor %}
+    {% else %}<strong>Aucune promotion ne t'est encore confiée</strong>L'administration doit t'autoriser à intervenir dans une promotion.{% endif %}</div></td></tr>{% endfor %}
   </tbody>
 </table>
 </div>

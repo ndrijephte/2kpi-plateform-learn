@@ -7,12 +7,12 @@
   <div>
     <span class="eyebrow">{% icon "lock" size=14 %} Autorisations · {{ nb_ouverts }}/{{ lignes|length }} modules ouverts</span>
     <h1>Accès aux contenus — {{ promotion.nom }}</h1>
-    <p class="muted">Un apprenant n'accède aux séances, ressources et quiz d'un module que lorsqu'il est ouvert pour sa promotion.</p>
+    <p class="muted">Un apprenant n'accède aux séances, ressources et quiz d'un module que lorsqu'il est ouvert pour sa promotion.{% if not peut_decider %} L'ouverture est décidée par l'administration ; tu vois ici l'état de tes modules.{% endif %}</p>
   </div>
   <a class="btn btn-secondary" href="{% url 'agenda:planning' promotion.pk %}">{% icon "calendar-days" size=16 %} Planning</a>
 </div>
 
-<form method="post" class="card mode-auto">{% csrf_token %}
+{% if peut_decider %}<form method="post" class="card mode-auto">{% csrf_token %}
   <input type="hidden" name="action" value="mode">
   <label class="opt" style="margin:0;border:0;padding:0">
     <input type="checkbox" name="ouverture_auto" {% if promotion.ouverture_auto %}checked{% endif %} onchange="this.form.submit()">
@@ -20,11 +20,11 @@
       <small class="muted">Chaque module s'ouvre le lundi de la semaine de sa première séance. Une décision « Ouvert » ou « Fermé » prime toujours.</small></span>
   </label>
   <noscript><button class="btn btn-sm btn-secondary">Appliquer</button></noscript>
-</form>
+</form>{% else %}<p class="card muted">{% icon "info" size=14 %} Ouverture automatique selon le calendrier : <strong>{{ promotion.ouverture_auto|yesno:"activée,désactivée" }}</strong> (réglée par l'administration).</p>{% endif %}
 
 <div class="table-wrap">
 <table class="tbl">
-  <thead><tr><th>Module</th><th>Accès apprenants</th><th>Décision</th></tr></thead>
+  <thead><tr><th>Module</th><th>Accès apprenants</th>{% if peut_decider %}<th>Décision</th>{% endif %}</tr></thead>
   <tbody>
   {% for l in lignes %}{% with m=l.module a=l.acces %}
     <tr>
@@ -32,7 +32,7 @@
       <td>{% if a.ouvert %}<span class="pill pill-ok">{% icon "lock-open" size=12 %} Ouvert</span>
           {% else %}<span class="pill pill-ko">{% icon "lock" size=12 %} Fermé</span>{% endif %}
           {% if l.decision == "auto" %}<br><small class="muted">{% if a.date %}{% if a.ouvert %}Ouvert depuis le {{ a.date|date:"d/m/Y" }}{% else %}Ouverture prévue le {{ a.date|date:"d/m/Y" }}{% endif %}{% elif promotion.ouverture_auto %}Aucune séance datée : génère le calendrier{% else %}Ouverture manuelle requise{% endif %}</small>{% endif %}</td>
-      <td>
+      {% if peut_decider %}<td>
         <form method="post" class="inline-form">{% csrf_token %}
           <input type="hidden" name="module" value="{{ m.pk }}">
           <div class="seg" role="radiogroup" aria-label="Accès au module {{ m.code }}">
@@ -44,7 +44,7 @@
           {% if not a.ouvert %}<label class="muted prevenir"><input type="checkbox" name="prevenir" checked> prévenir à l'ouverture</label>{% endif %}
           <noscript><button class="btn btn-sm btn-secondary">OK</button></noscript>
         </form>
-      </td>
+      </td>{% endif %}
     </tr>
   {% endwith %}{% endfor %}
   </tbody>

@@ -420,3 +420,10 @@ input[type=search]{width:100%;padding:9px 12px;border:1px solid var(--border-str
 .hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
 .auth-alt{margin:18px 0 0;padding:12px 14px;border-radius:12px;background:var(--bg);font-size:.88rem;text-align:center}
 @media (max-width:520px){.form-duo{grid-template-columns:1fr}.auth-card{padding:26px 20px}}
+
+/* ---------- Affectations des formateurs ---------- */
+.grille-modules{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0 10px;margin-bottom:6px}
+.grille-modules .opt{margin:4px 0}
+.grille-modules.desactivee{opacity:.45}
+.affectation .card-head{flex-wrap:wrap;gap:6px}
+.fmt-liste{display:block;margin-top:4px}

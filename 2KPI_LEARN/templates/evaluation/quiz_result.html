@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load ui %}
 {% block title %}Résultat — {{ quiz.titre }}{% endblock %}
-{% block crumbs %}<a href="{% url 'formation:modules' %}">Mon cours</a>{% icon "chevron-right" size=14 %}<a href="{% url 'formation:module_detail' quiz.module.code %}">{{ quiz.module.code }}</a>{% icon "chevron-right" size=14 %}<span>Résultat</span>{% endblock %}
+{% block crumbs %}<a href="{% url 'formation:modules' %}">Mon cours</a>{% icon "chevron-right" size=14 %}<a href="{% url 'formation:module_detail' quiz.module.code %}?formation={{ quiz.module.formation_id }}">{{ quiz.module.code }}</a>{% icon "chevron-right" size=14 %}<span>Résultat</span>{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
@@ -27,6 +27,6 @@
 </div>
 <div class="btn-row">
   <a class="btn" href="{% url 'evaluation:quiz' quiz.id %}">{% icon "rotate-ccw" size=16 %} Refaire le test</a>
-  <a class="btn btn-secondary" href="{% url 'formation:module_detail' quiz.module.code %}">{% icon "arrow-left" size=16 %} Retour au module</a>
+  <a class="btn btn-secondary" href="{% url 'formation:module_detail' quiz.module.code %}?formation={{ quiz.module.formation_id }}">{% icon "arrow-left" size=16 %} Retour au module</a>
 </div>
 {% endblock %}

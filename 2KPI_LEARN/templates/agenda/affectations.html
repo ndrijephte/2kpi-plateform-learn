@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Formateurs — {{ promotion.nom }}{% endblock %}
+{% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<span>{{ promotion.nom }}</span>{% icon "chevron-right" size=14 %}<span>Formateurs</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "shield" size=14 %} Autorisations · {{ promotion.formation.titre }}</span>
+    <h1>Formateurs — {{ promotion.nom }}</h1>
+    <p class="muted">Un formateur ne voit une promotion, sa formation et ses modules que si tu l'y autorises ici. Il anime alors les séances, présences et livrables <strong>des modules cochés</strong> et peut y déposer des ressources.</p>
+  </div>
+  <a class="btn btn-secondary" href="{% url 'agenda:promotions' %}">{% icon "arrow-left" size=16 %} Promotions</a>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="section-title">{% icon "user-check" size=18 %} Formateur référent</h2></div>
+  {% if promotion.formateur %}
+  <p><strong>{{ promotion.formateur.get_full_name|default:promotion.formateur.username }}</strong> — <span class="pill pill-ok">tous les modules</span></p>
+  <p class="muted"><small>Le référent pilote la promotion (calendrier compris). Il se change dans la liste des <a href="{% url 'agenda:promotions' %}">Promotions</a>.</small></p>
+  {% else %}
+  <p class="muted">Aucun référent. Choisis-le dans la liste des <a href="{% url 'agenda:promotions' %}">Promotions</a>.</p>
+  {% endif %}
+</div>
+
+{% for a in affectations %}
+<form method="post" class="card affectation">{% csrf_token %}
+  <input type="hidden" name="formateur" value="{{ a.formateur_id }}">
+  <div class="card-head">
+    <h2 class="section-title">{% icon "briefcase" size=18 %} {{ a.formateur.get_full_name|default:a.formateur.username }}</h2>
+    <small class="muted">accordé{% if a.accordee_par %} par {{ a.accordee_par.get_full_name|default:a.accordee_par.username }}{% endif %} · {{ a.modifiee_le|date:"d/m/Y" }}</small>
+  </div>
+  <label class="opt"><input type="checkbox" name="tous_les_modules" {% if a.tous_les_modules %}checked{% endif %} data-tous>
+    <span><strong>Tous les modules</strong> <small class="muted">(y compris ceux ajoutés plus tard)</small></span></label>
+  <div class="grille-modules" data-modules>
+    {% for m in modules %}<label class="opt"><input type="checkbox" name="modules" value="{{ m.pk }}" {% if a.tous_les_modules or m.pk in a.ids %}checked{% endif %}>
+      <span><span class="pill">{{ m.code }}</span> {{ m.titre }}</span></label>{% endfor %}
+  </div>
+  <div class="btn-row">
+    <button class="btn" type="submit" name="action" value="enregistrer">{% icon "check" size=16 %} Enregistrer</button>
+    <button class="btn btn-secondary" type="submit" name="action" value="retirer" formnovalidate
+            onclick="return confirm('Retirer ce formateur de la promotion ? Il n\'y aura plus accès.')">{% icon "ban" size=16 %} Retirer l'accès</button>
+    <input type="hidden" name="affectation" value="{{ a.pk }}">
+  </div>
+</form>
+{% endfor %}
+
+<form method="post" class="card affectation">{% csrf_token %}
+  <input type="hidden" name="action" value="enregistrer">
+  <div class="card-head"><h2 class="section-title">{% icon "plus" size=18 %} Autoriser un formateur</h2></div>
+  {% if disponibles %}
+  <div class="field"><label for="a-formateur">Formateur</label>
+    <select id="a-formateur" name="formateur" required>
+      <option value="">— choisir —</option>
+      {% for f in disponibles %}<option value="{{ f.pk }}">{{ f.get_full_name|default:f.username }}</option>{% endfor %}
+    </select></div>
+  <label class="opt"><input type="checkbox" name="tous_les_modules" data-tous><span><strong>Tous les modules</strong></span></label>
+  <div class="grille-modules" data-modules>
+    {% for m in modules %}<label class="opt"><input type="checkbox" name="modules" value="{{ m.pk }}"><span><span class="pill">{{ m.code }}</span> {{ m.titre }}</span></label>{% endfor %}
+  </div>
+  <div class="btn-row"><button class="btn" type="submit">{% icon "user-check" size=16 %} Autoriser</button></div>
+  {% else %}
+  <p class="muted">Tous les formateurs actifs sont déjà affectés à cette promotion. Crée un compte formateur dans <a href="{% url 'comptes:utilisateurs' %}?nouveau=1">Utilisateurs</a>.</p>
+  {% endif %}
+</form>
+
+<script>
+/* « Tous les modules » coché : la sélection module par module est inutile */
+document.querySelectorAll("form.affectation").forEach(function (f) {
+  var tous = f.querySelector("[data-tous]"), grille = f.querySelector("[data-modules]");
+  if (!tous || !grille) return;
+  function maj() { grille.classList.toggle("desactivee", tous.checked);
+    grille.querySelectorAll("input").forEach(function (i) { i.disabled = tous.checked; }); }
+  tous.addEventListener("change", maj); maj();
+});
+</script>
+{% endblock %}

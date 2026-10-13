@@ -27,7 +27,7 @@
   <h2 class="section-title">{% icon "alert" size=18 %} Points d'attention</h2>
   <ul class="list">
     {% for p in sans_formateur %}
-    <li><a class="list-item" href="{% url 'agenda:promotions' %}"><span class="ico-tile coral">{% icon "briefcase" size=18 %}</span>
+    <li><a class="list-item" href="{% url 'agenda:affectations' p.pk %}"><span class="ico-tile coral">{% icon "briefcase" size=18 %}</span>
       <span class="grow"><strong>{{ p.nom }}</strong><small>Aucun formateur affecté</small></span><span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
     {% endfor %}
     {% if candidatures_nouvelles %}

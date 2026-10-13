@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load ui %}
 {% block title %}{{ seance.theme|default:"Séance" }} — {{ site_nom }}{% endblock %}
-{% block crumbs %}<a href="{% url 'formation:modules' %}">{% if est_apprenant %}Mon cours{% else %}Contenu des cours{% endif %}</a>{% icon "chevron-right" size=14 %}<a href="{% url 'formation:module_detail' seance.module.code %}">{{ seance.module.code }}</a>{% icon "chevron-right" size=14 %}<span>{{ seance.get_jour_display }}</span>{% endblock %}
+{% block crumbs %}<a href="{% url 'formation:modules' %}">{% if est_apprenant %}Mon cours{% else %}Contenu des cours{% endif %}</a>{% icon "chevron-right" size=14 %}<a href="{% url 'formation:module_detail' seance.module.code %}?formation={{ seance.module.formation_id }}">{{ seance.module.code }}</a>{% icon "chevron-right" size=14 %}<span>{{ seance.get_jour_display }}</span>{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>

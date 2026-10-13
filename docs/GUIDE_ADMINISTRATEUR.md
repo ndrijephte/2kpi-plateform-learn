@@ -10,11 +10,17 @@ comment les personnes arrivent sur la plateforme **https://learn.2kpinnov.org**.
 | Rôle (dans l'app) | Qui | Ce qu'il fait |
 |---|---|---|
 | **Apprenant** | apprenants, étudiants | suit ses cours, son agenda, ses quiz, dépose ses livrables — **uniquement** après rattachement à une promotion |
-| **Formateur** | les **enseignants** | anime **ses** promotions : planning, présences, correction, ressources de ses formations |
+| **Formateur** | les **enseignants** | anime, **dans les promotions et sur les modules que l'admin lui attribue**, les séances, présences, livrables et ressources |
 | **Administrateur** | toi, l'équipe 2KPI | pilote tout : utilisateurs, promotions, candidatures, paramètres |
 
 Un **super-utilisateur** (créé par `createsuperuser`) est toujours administrateur, avec en plus
 l'accès complet à `/admin/` (l'administration technique de Django).
+
+> 🔒 **Principe : rien n'est accessible sans ton autorisation.**
+> - Un **apprenant** ne voit une formation que si tu as validé son inscription à une promotion, et
+>   un module que si tu l'as ouvert pour sa promotion (§ 2 ter).
+> - Un **formateur** ne voit une promotion, sa formation et ses modules que si tu l'y as autorisé,
+>   module par module (§ 2 bis). Sans autorisation, il ne voit **aucune** formation.
 
 ---
 
@@ -58,8 +64,8 @@ Connecté en administrateur :
 2. Déplie **« + Nouveau compte »**.
 3. Renseigne prénom, nom, **e-mail** (unique), identifiant de connexion, puis le **Rôle** :
    - **Apprenant** → choisis aussi sa **Promotion** : c'est elle qui ouvre l'accès aux cours ;
-   - **Formateur** → pour un enseignant ; affecte-le ensuite à ses promotions
-     (**Promotions** → colonne *Formateur* de la promotion, ou à la création d'une promotion) ;
+   - **Formateur** → pour un enseignant ; il ne voit rien tant que tu ne l'as pas autorisé sur une
+     promotion (§ 2 bis) ;
    - **Administrateur** → mêmes droits que toi.
 4. Saisis un **mot de passe provisoire** → **Créer le compte**.
 5. Transmets identifiant et mot de passe provisoire à la personne ; elle le change depuis
@@ -71,6 +77,46 @@ d'édition de la ligne : identité, e-mail, rôle, promotion, statut d'inscripti
 
 > Tu ne peux ni retirer ton propre rôle d'administrateur ni désactiver ton propre compte
 > (garde-fou contre le verrouillage).
+
+---
+
+## 2 bis. Autoriser un formateur sur une promotion et ses modules
+
+Deux niveaux, tous deux décidés par toi :
+
+| | Comment | Accès |
+|---|---|---|
+| **Formateur référent** | **Promotions** → menu déroulant de la colonne *Formateurs* | **tous** les modules de la promotion + pilotage du calendrier (génération, « Appliquer le paramétrage ») |
+| **Formateur intervenant** | **Promotions** → bouton **Formateurs** de la promotion | uniquement les **modules cochés** (ou « Tous les modules ») |
+
+Sur l'écran **Formateurs** d'une promotion :
+1. **Autoriser un formateur** : choisis-le, coche les modules qu'il enseigne (ou *Tous les modules*)
+   → **Autoriser**. Il reçoit une notification.
+2. Pour chaque formateur déjà autorisé : modifie les cases → **Enregistrer**, ou **Retirer l'accès**.
+
+Un formateur autorisé sur M1 et M2 de la promotion A :
+- voit la promotion A (et elle seule), la formation de A, et peut ouvrir M1 et M2 ; les autres
+  modules apparaissent **verrouillés** (« non attribué par l'administration ») ;
+- ne voit que les séances de M1 et M2 dans son agenda et le planning, ne saisit que leurs présences,
+  ne corrige que leurs livrables, ne voit que les résultats de leurs quiz ;
+- ne peut déposer de ressources que sur M1 et M2 ;
+- ne peut ni générer le calendrier de la promotion, ni ouvrir un module aux apprenants.
+
+Le tableau de bord admin signale les promotions actives **sans aucun formateur** (ni référent ni
+intervenant). Également possible dans `/admin/` → Promotions → section *Affectations des formateurs*.
+
+---
+
+## 2 ter. Ouvrir les modules aux apprenants (admin uniquement)
+
+**Promotions** → bouton **Accès** de la promotion :
+- **Ouverture automatique selon le calendrier** (case en haut) : chaque module s'ouvre le lundi de la
+  semaine de sa première séance. C'est une autorisation que tu donnes en bloc ; décoche-la pour tout
+  décider à la main.
+- Pour chaque module : **Auto**, **Ouvert** ou **Fermé** (une décision Ouvert/Fermé prime toujours).
+  « prévenir à l'ouverture » notifie les apprenants.
+
+Les formateurs voient cette page **en lecture seule** (l'état de leurs modules).
 
 ---
 

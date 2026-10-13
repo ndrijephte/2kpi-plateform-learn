@@ -6,7 +6,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from apps.agenda.models import Evenement, Promotion
 from apps.comptes.models import Profil
-from apps.core.permissions import ADMIN, APPRENANT, promotions_visibles, role_de
+from apps.core.permissions import ADMIN, APPRENANT, promotions_visibles, q_interventions, role_de
 from apps.evaluation.models import Inscription, Livrable
 from apps.evaluation.utils import inscription_courante
 from apps.formation.acces import etats_modules
@@ -53,10 +53,10 @@ def _pilotage(request, admin):
     user = request.user
     maintenant = timezone.now()
     promos = promotions_visibles(user).filter(active=True)
-    livrables = Livrable.objects.filter(rendu=True, note_sur_20__isnull=True,
-                                        inscription__promotion__in=promos)
+    livrables = Livrable.objects.filter(q_interventions(user, promotion="inscription__promotion"),
+                                        rendu=True, note_sur_20__isnull=True, inscription__promotion__in=promos)
     semaine = maintenant + dt.timedelta(days=7)
-    a_animer = (Evenement.objects.filter(promotion__in=promos, date_debut__gte=maintenant)
+    a_animer = (Evenement.objects.filter(q_interventions(user), promotion__in=promos, date_debut__gte=maintenant)
                 .exclude(statut=Evenement.Statut.ANNULE)
                 .select_related("promotion", "seance", "seance__module").order_by("date_debut"))
     ctx = {
@@ -80,7 +80,7 @@ def _pilotage(request, admin):
             "promotions": Promotion.objects.filter(active=True).count(),
             "inscriptions": Inscription.objects.filter(statut=Inscription.Statut.EN_COURS).count(),
         }
-        ctx["sans_formateur"] = Promotion.objects.filter(active=True, formateur__isnull=True)
+        ctx["sans_formateur"] = Promotion.objects.filter(active=True, formateur__isnull=True, affectations__isnull=True)
         ctx["sans_promotion"] = (User.objects.filter(profil__role=Profil.Role.APPRENANT, is_active=True)
                                  .exclude(inscriptions__promotion__isnull=False).count())
         ctx["derniers_comptes"] = User.objects.select_related("profil").order_by("-date_joined")[:5]

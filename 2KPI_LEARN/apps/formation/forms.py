@@ -19,12 +19,12 @@ class _ModuleChoix(forms.ModelChoiceField):
 
 
 class _CibleMixin:
-    """Rattachement à une séance OU à un module des formations gérées."""
+    """Rattachement à une séance OU à un module parmi ceux attribués à l'utilisateur."""
 
-    def _init_cibles(self, formations):
-        self.fields["seance"].queryset = (Seance.objects.filter(module__formation__in=formations)
+    def _init_cibles(self, modules):
+        self.fields["seance"].queryset = (Seance.objects.filter(module__in=modules)
                                           .select_related("module").order_by("module__ordre", "ordre"))
-        self.fields["module"].queryset = Module.objects.filter(formation__in=formations).order_by("ordre")
+        self.fields["module"].queryset = Module.objects.filter(pk__in=modules.values("pk")).order_by("ordre")
 
     def _verifier_cible(self, d):
         if bool(d.get("seance")) == bool(d.get("module")):
@@ -71,9 +71,9 @@ class RessourceForm(_CibleMixin, forms.ModelForm):
                       "url": "Lien externe : classe virtuelle (Meet, Zoom, Teams), vidéo, dépôt GitHub, données…",
                       "ordre": "Position dans la liste (0 = en premier)."}
 
-    def __init__(self, *a, formations=None, **kw):
+    def __init__(self, *a, modules=None, **kw):
         super().__init__(*a, **kw)
-        self._init_cibles(formations)
+        self._init_cibles(modules if modules is not None else Module.objects.none())
         self.fields["type"].initial = self.instance.type if self.instance.pk else ""
         self.fields["ordre"].required = False
         self.fields["titre"].required = False
@@ -104,9 +104,9 @@ class CibleForm(_CibleMixin, forms.Form):
     module = _ModuleChoix(label="… ou module entier", queryset=Module.objects.none(), required=False,
                           help_text="Documents communs à toutes les séances du module.")
 
-    def __init__(self, *a, formations=None, **kw):
+    def __init__(self, *a, modules=None, **kw):
         super().__init__(*a, **kw)
-        self._init_cibles(formations)
+        self._init_cibles(modules if modules is not None else Module.objects.none())
 
     def clean(self):
         d = super().clean()

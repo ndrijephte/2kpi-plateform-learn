@@ -8,9 +8,11 @@ class Promotion(models.Model):
     formation = models.ForeignKey(Formation, on_delete=models.CASCADE, related_name="promotions")
     nom = models.CharField(max_length=200)
     date_debut = models.DateField(help_text="Date de la première semaine (le calendrier en découle).")
-    formateur = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="Formateur",
+    formateur = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="Formateur référent",
                                   on_delete=models.SET_NULL, null=True, blank=True,
-                                  related_name="promotions_encadrees")
+                                  related_name="promotions_encadrees",
+                                  help_text="Pilote la promotion et intervient sur tous ses modules. "
+                                            "D'autres formateurs s'ajoutent module par module (Affectations).")
     active = models.BooleanField(default=True)
     code_vitrine = models.SlugField(
         "Code session (site vitrine)", max_length=100, blank=True,
@@ -53,8 +55,8 @@ class Promotion(models.Model):
 
     ouverture_auto = models.BooleanField(
         "Ouverture automatique des modules", default=True,
-        help_text="Chaque module s'ouvre le lundi de la semaine de sa première séance. "
-                  "Sinon, le formateur ouvre les modules un à un.")
+        help_text="Décision de l'administration : chaque module s'ouvre aux apprenants le lundi de la "
+                  "semaine de sa première séance. Sinon, l'administration ouvre les modules un à un.")
 
     class Meta:
         verbose_name = "Promotion"
@@ -107,6 +109,28 @@ class AccesModule(models.Model):
 
     def __str__(self):
         return f"{self.module.code} · {self.promotion} : {self.get_etat_display()}"
+
+
+class Affectation(models.Model):
+    """Autorisation donnée par l'administration à un formateur d'intervenir dans une promotion,
+    sur les modules cochés (ou sur tous). Sans affectation (ni rôle de référent), un formateur
+    ne voit ni la promotion, ni sa formation, ni ses modules."""
+    promotion = models.ForeignKey(Promotion, on_delete=models.CASCADE, related_name="affectations")
+    formateur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="affectations")
+    tous_les_modules = models.BooleanField("Tous les modules", default=False)
+    modules = models.ManyToManyField("formation.Module", blank=True, related_name="affectations",
+                                     help_text="Modules que ce formateur enseigne dans la promotion.")
+    accordee_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                     related_name="affectations_accordees")
+    modifiee_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Affectation d'un formateur"
+        verbose_name_plural = "Affectations des formateurs"
+        unique_together = ("promotion", "formateur")
+
+    def __str__(self):
+        return f"{self.formateur} · {self.promotion}"
 
 
 class Indisponibilite(models.Model):

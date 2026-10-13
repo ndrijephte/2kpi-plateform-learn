@@ -113,7 +113,7 @@ note projet · note soutenance · **NOTE GLOBALE = 40 % continu + 40 % projet + 
 │   ├── comptes/             # Profil, rôles, prérequis, auth
 │   ├── formation/           # Formation, Module, Seance, Competence, Ressource
 │   ├── evaluation/          # Quiz, Presence, Livrable, EvaluationCompetence, Projet, Soutenance
-│   ├── agenda/              # Promotion, Evenement (séance datée), Indisponibilite, Notification
+│   ├── agenda/              # Promotion, Affectation (formateur × modules), Evenement (séance datée), Indisponibilite, Notification
 │   └── tableau_bord/        # calculs & pages de synthèse
 ├── templates/               # base.html (barre latérale) · base_auth.html · partials/ · 1 dossier par app
 ├── static/                  # CSS/JS 2KPI
@@ -215,10 +215,21 @@ les rubriques du rôle (`base.html`, variables `est_admin` / `est_formateur` / `
 
 ## 10. Autorisation d'accès aux contenus
 
+Principe : **aucun accès sans décision de l'admin** (promotion, formation, modules).
+
 - `apps/formation/acces.py` : `etats_modules(inscription, modules)` / `etats_promotion(promo, modules)`
-  → `EtatAcces(ouvert, motif, date, source)` ; `acces_module(user, module)` (staff : toujours ouvert).
-- Décisions par promotion : `agenda.AccesModule` (auto / ouvert / fermé) + `Promotion.ouverture_auto`.
+  → `EtatAcces(ouvert, motif, date, source)` ; `etats_formateur(user, modules)` ;
+  `acces_module(user, module)` (admin : toujours ouvert ; formateur : modules attribués uniquement).
+- Apprenants — décisions par promotion, **réservées à l'admin** : `agenda.AccesModule`
+  (auto / ouvert / fermé) + `Promotion.ouverture_auto` (vue `agenda:acces`, lecture seule pour le formateur).
+- Formateurs — `Promotion.formateur` (référent : tous les modules, pilotage du calendrier) et
+  `agenda.Affectation` (promotion, formateur, `tous_les_modules` | `modules`), gérée par l'admin
+  (vue `agenda:affectations`, ou inline dans `/admin/`).
+- `apps/core/permissions.py` : `interventions(user)` → `{promotion_id: None | {module_id}}` (calculé une
+  fois par requête) ; `q_interventions(user, promotion=…, module=…)` filtre tout queryset (séances,
+  livrables…) sur les couples autorisés ; `promotions_visibles`, `modules_gerables`,
+  `formations_gerables`, `pilote_promotion`.
 - Contrôle appliqué à : détail module, séance (et dépôt), quiz, téléchargement de ressource ; un
   contenu fermé rend `formation/verrouille.html` (HTTP 403) avec le motif.
 - Fichiers privés : `core.stockage.StockagePrive` (`PRIVATE_ROOT`), servis par
-  `formation:ressource_fichier` et `evaluation:livrable_fichier` (auteur, formateur de la promotion, admin).
+  `formation:ressource_fichier` et `evaluation:livrable_fichier` (auteur, formateur autorisé sur le module dans la promotion, admin).

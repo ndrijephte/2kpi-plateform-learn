@@ -8,8 +8,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from apps.core.fichiers import valider_fichier
-from apps.core.permissions import APPRENANT, formateur_requis, formations_gerables, role_de
-from .acces import acces_module, etats_modules
+from apps.core.permissions import APPRENANT, formateur_requis, formations_gerables, modules_gerables, role_de
+from .acces import acces_module, etats_formateur, etats_modules
 from .forms import CibleForm, DocumentsFormSet, RessourceForm
 from .models import Formation, Module, Ressource, Seance
 from apps.agenda.models import Evenement
@@ -17,11 +17,20 @@ from apps.evaluation.models import Livrable
 from apps.evaluation.utils import inscription_courante, meilleurs_scores
 
 
-def _formation_de(insc):
-    """Formation suivie par l'apprenant, sinon la première formation active."""
-    if insc:
-        return insc.formation
-    return Formation.objects.filter(active=True).first()
+def _formations_accessibles(request):
+    """Formations qu'on peut parcourir : celle de l'inscription (apprenant), celles où l'admin a
+    attribué des modules (formateur), toutes (admin). Jamais une formation « par défaut »."""
+    if role_de(request.user) == APPRENANT:
+        insc = inscription_courante(request.user)
+        return Formation.objects.filter(pk=insc.formation_id) if insc else Formation.objects.none()
+    return formations_gerables(request.user)
+
+
+def _formation_choisie(request):
+    """Formation affichée : ?formation=<id> parmi les formations accessibles, sinon la première."""
+    formations = _formations_accessibles(request).order_by("-active", "titre")
+    f_id = request.GET.get("formation", "")
+    return (formations.filter(pk=f_id).first() if f_id.isdigit() else None) or formations.first(), formations
 
 
 def _verrouille(request, module, etat):
@@ -46,7 +55,7 @@ def _dates_promo(insc):
 @login_required
 def liste_modules(request):
     insc = inscription_courante(request.user)
-    formation = _formation_de(insc)
+    formation, formations = _formation_choisie(request)
     modules = []
     if formation:
         rendus = _livrables_rendus(insc)
@@ -54,7 +63,7 @@ def liste_modules(request):
         qs = list(formation.modules.annotate(nb_competences=Count("competences", distinct=True))
                   .prefetch_related("seances", "quiz").order_by("ordre"))
         apprenant = role_de(request.user) == APPRENANT
-        etats = etats_modules(insc, qs) if apprenant else {}
+        etats = etats_modules(insc, qs) if apprenant else etats_formateur(request.user, qs)
         for m in qs:
             ids = [s.id for s in m.seances.all()]
             faits = sum(1 for i in ids if i in rendus)
@@ -64,17 +73,23 @@ def liste_modules(request):
                 "pct": round(100 * faits / len(ids)) if ids else 0,
                 "nb_competences": m.nb_competences,
                 "quiz": quiz, "score": scores.get(quiz.id) if quiz else None,
-                "acces": etats.get(m.id) if apprenant else None,
+                "acces": etats.get(m.id),
             })
     return render(request, "formation/modules.html",
-                  {"formation": formation, "modules": modules, "inscription": insc})
+                  {"formation": formation, "modules": modules, "inscription": insc,
+                   "formations": formations if formations.count() > 1 else None})
 
 
 @login_required
 def detail_module(request, code):
     insc = inscription_courante(request.user)
-    formation = _formation_de(insc)
-    module = get_object_or_404(Module, formation=formation, code=code)
+    modules = Module.objects.filter(code=code, formation__in=_formations_accessibles(request))
+    f_id = request.GET.get("formation", "")
+    if f_id.isdigit():
+        modules = modules.filter(formation_id=f_id)
+    module = modules.order_by("formation_id").first()
+    if module is None:
+        raise Http404
     etat = acces_module(request.user, module)
     if not etat.ouvert:
         return _verrouille(request, module, etat)
@@ -87,7 +102,7 @@ def detail_module(request, code):
     return render(request, "formation/module_detail.html", {
         "module": module, "seances": seances, "quiz": quiz, "score": score,
         "competences": module.competences.all(), "ressources": module.ressources.all(),
-        "peut_gerer": formations_gerables(request.user).filter(pk=module.formation_id).exists(),
+        "peut_gerer": role_de(request.user) != APPRENANT,  # module ouvert ⇒ attribué au formateur
     })
 
 
@@ -137,15 +152,15 @@ def detail_seance(request, pk):
         "ressources": ressources, "visios": [r for r in ressources if r.est_visio],
         "evenement": _dates_promo(insc).get(seance.id),
         "precedente": precedente, "suivante": suivante,
-        "peut_gerer": formations_gerables(request.user).filter(pk=seance.module.formation_id).exists(),
+        "peut_gerer": role_de(request.user) != APPRENANT,
         "position": i + 1, "total": len(toutes),
     })
 
 
 # ---------- Ressources pédagogiques (formateur / admin) ----------
 
-def _formation_de_ressource(r):
-    return (r.seance.module.formation_id if r.seance_id else r.module.formation_id)
+def _module_de_ressource(r):
+    return r.seance.module_id if r.seance_id else r.module_id
 
 
 def _retour_sur(request, defaut):
@@ -157,9 +172,10 @@ def _retour_sur(request, defaut):
 
 @formateur_requis
 def ressources(request):
-    """Bibliothèque des ressources des formations gérées, groupées par module."""
+    """Bibliothèque des ressources des modules attribués, groupées par module."""
     formations = formations_gerables(request.user)
-    qs = (Ressource.objects.filter(Q(seance__module__formation__in=formations) | Q(module__formation__in=formations))
+    modules = modules_gerables(request.user)
+    qs = (Ressource.objects.filter(Q(seance__module__in=modules) | Q(module__in=modules))
           .select_related("seance__module", "module", "ajoute_par"))
     f_id = request.GET.get("formation", "")
     if f_id.isdigit():
@@ -178,12 +194,12 @@ def ressources(request):
 
 @formateur_requis
 def ressource_editer(request, pk):
-    formations = formations_gerables(request.user)
+    modules = modules_gerables(request.user)
     r = get_object_or_404(Ressource.objects.select_related("seance__module", "module"), pk=pk)
-    if not formations.filter(pk=_formation_de_ressource(r)).exists():
+    if not modules.filter(pk=_module_de_ressource(r)).exists():
         raise Http404
     ancien = r.fichier.name if r.fichier else None
-    form = RessourceForm(request.POST or None, request.FILES or None, instance=r, formations=formations)
+    form = RessourceForm(request.POST or None, request.FILES or None, instance=r, modules=modules)
     retour = _retour_sur(request, reverse("formation:ressources"))
     if request.method == "POST" and form.is_valid():
         obj = form.save()
@@ -198,9 +214,8 @@ def ressource_editer(request, pk):
 @formateur_requis
 def documents_ajouter(request):
     """Ajout groupé : plusieurs documents (fichiers, notebooks, lien de classe virtuelle…) décrits un à un."""
-    formations = formations_gerables(request.user)
     initial = {k: request.GET[k] for k in ("seance", "module") if request.GET.get(k, "").isdigit()}
-    cible = CibleForm(request.POST or None, formations=formations, initial=initial)
+    cible = CibleForm(request.POST or None, modules=modules_gerables(request.user), initial=initial)
     docs = DocumentsFormSet(request.POST or None, request.FILES or None,
                             queryset=Ressource.objects.none(), prefix="docs")
     retour = _retour_sur(request, reverse("formation:ressources"))
@@ -228,8 +243,8 @@ def documents_ajouter(request):
 @formateur_requis
 def ressource_supprimer(request, pk):
     r = get_object_or_404(Ressource.objects.select_related("seance__module", "module"), pk=pk)
-    if request.method != "POST" or not formations_gerables(request.user).filter(
-            pk=_formation_de_ressource(r)).exists():
+    if request.method != "POST" or not modules_gerables(request.user).filter(
+            pk=_module_de_ressource(r)).exists():
         raise Http404
     if r.fichier:
         r.fichier.storage.delete(r.fichier.name)
