@@ -45,9 +45,6 @@ jobs:
   production:
     needs: tests
     runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: https://learn.2kpinnov.org
     env:
       CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
       CPANEL_USER: ${{ secrets.CPANEL_USER }}
@@ -56,9 +53,23 @@ jobs:
     steps:
       - name: Vérifier la configuration
         run: |
+          erreur() { echo "::error::$1 (voir docs/DEPLOIEMENT_AUTOMATIQUE.md)"; ok=0; }
+          ok=1
           for v in CPANEL_HOST CPANEL_USER CPANEL_TOKEN; do
-            [ -n "${!v}" ] || { echo "::error::Secret $v manquant (voir docs/DEPLOIEMENT_AUTOMATIQUE.md)"; exit 1; }
+            [ -n "${!v}" ] || erreur "Secret $v manquant"
+            case "${!v}" in *CPANEL_*) erreur "Le secret $v contient son propre nom : n'y mets QUE la valeur";; esac
           done
+          # Tolère les copier-coller : espaces / retours à la ligne, « https:// », « :2083 », « /… »
+          hote=$(printf %s "$CPANEL_HOST" | tr -d '[:space:]' | sed -E 's#^https?://##; s#[:/].*$##')
+          user=$(printf %s "$CPANEL_USER" | tr -d '[:space:]')
+          jeton=$(printf %s "$CPANEL_TOKEN" | tr -d '[:space:]')
+          echo "::add-mask::$jeton"
+          [[ "$hote" =~ ^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] || erreur "CPANEL_HOST invalide (${#hote} caractères) : attendu un nom seul, ex. 2kpinnov.org"
+          [[ "$user" =~ ^[a-z0-9_]+$ ]] || erreur "CPANEL_USER invalide (${#user} caractères) : attendu l'identifiant cPanel, ex. c2864961c"
+          [[ "$jeton" =~ ^[A-Za-z0-9]+$ ]] || erreur "CPANEL_TOKEN invalide (${#jeton} caractères) : colle uniquement le jeton (lettres et chiffres)"
+          [ "$ok" = 1 ] || exit 1
+          echo "Serveur : $hote · utilisateur : $user · jeton : ${#jeton} caractères"
+          { echo "CPANEL_HOST=$hote"; echo "CPANEL_USER=$user"; echo "CPANEL_TOKEN=$jeton"; } >> "$GITHUB_ENV"
 
       - name: Récupérer le commit sur le serveur (Update from Remote)
         run: |
