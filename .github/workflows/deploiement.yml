@@ -103,7 +103,14 @@ jobs:
               '.data[] | select((.deploy_id|tostring) == $id) | {t: .timestamps, log: .log_path}')
             if echo "$etat" | jq -e '.t.succeeded' >/dev/null; then echo "Déploiement réussi"; exit 0; fi
             if echo "$etat" | jq -e '.t.failed or .t.canceled' >/dev/null; then
-              echo "::error::Déploiement en échec — journal serveur : $(echo "$etat" | jq -r .log) et 2KPI_LEARN/logs/deploiement.log"
+              echo "::error::Déploiement en échec — journaux du serveur ci-dessous"
+              journal=$(echo "$etat" | jq -r .log)
+              for f in "$journal" "$DEPOT/2KPI_LEARN/logs/deploiement.log"; do
+                echo "::group::$f (fin)"
+                uapi Fileman/get_file_content --get --data-urlencode "dir=$(dirname "$f")" \
+                  --data-urlencode "file=$(basename "$f")" | jq -r '.data.content // .errors' | tail -n 60
+                echo "::endgroup::"
+              done
               exit 1
             fi
           done
