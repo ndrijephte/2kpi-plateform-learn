@@ -130,6 +130,9 @@ VITRINE_ORIGINS = config("VITRINE_ORIGINS", default="https://2kpinnov.org,https:
 
 # E-mail : SMTP de l'hébergeur (465 = SSL, 587 = STARTTLS). Vide = e-mails affichés dans la console.
 EMAIL_HOST = config("EMAIL_HOST", default="")
+if "@" in EMAIL_HOST:  # erreur fréquente : sinon les e-mails échouent sans aucun message visible
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(f"EMAIL_HOST doit être un serveur (ex. mail.2kpinnov.org), pas une adresse : {EMAIL_HOST}")
 if EMAIL_HOST:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_PORT = config("EMAIL_PORT", default=465, cast=int)
