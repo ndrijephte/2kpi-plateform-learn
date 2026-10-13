@@ -14,7 +14,14 @@ DEPOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP="$DEPOT/2KPI_LEARN"
 PUBLIC_HTML="${PUBLIC_HTML:-$HOME/public_html}"
 mkdir -p "$APP/logs"
-exec > >(tee -a "$APP/logs/deploiement.log") 2>&1
+# Sortie copiée dans le journal. Pas de « exec > >(tee …) » : l'environnement de déploiement
+# cPanel n'a pas /dev/fd. Le script se relance donc lui-même derrière un simple tube.
+if [ -z "${DEPLOIEMENT_JOURNALISE:-}" ]; then
+  export DEPLOIEMENT_JOURNALISE=1
+  set +e
+  /bin/bash "${BASH_SOURCE[0]}" "$@" 2>&1 | tee -a "$APP/logs/deploiement.log"
+  exit "${PIPESTATUS[0]}"
+fi
 
 etape() { echo "[$(date '+%F %T')] $*"; }
 trap 'etape "ÉCHEC à la ligne $LINENO — mise en production interrompue"' ERR
