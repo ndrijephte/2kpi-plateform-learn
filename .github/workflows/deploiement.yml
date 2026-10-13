@@ -106,10 +106,11 @@ jobs:
               echo "::error::Déploiement en échec — journaux du serveur ci-dessous"
               journal=$(echo "$etat" | jq -r .log)
               for f in "$journal" "$DEPOT/2KPI_LEARN/logs/deploiement.log"; do
-                echo "::group::$f (fin)"
-                uapi Fileman/get_file_content --get --data-urlencode "dir=$(dirname "$f")" \
-                  --data-urlencode "file=$(basename "$f")" | jq -r '.data.content // .errors' | tail -n 60
-                echo "::endgroup::"
+                fin=$(uapi Fileman/get_file_content --get --data-urlencode "dir=$(dirname "$f")" \
+                  --data-urlencode "file=$(basename "$f")" | jq -r '.data.content // (.errors|tostring)' | tail -n 25)
+                echo "$fin"
+                # en annotation (visible sans connexion) : retours à la ligne encodés
+                echo "::error title=$(basename "$f")::$(printf '%s' "$fin" | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
               done
               exit 1
             fi
