@@ -12,6 +12,14 @@
   <a class="btn btn-secondary" href="{% url 'agenda:promotions' %}">{% icon "arrow-left" size=16 %} Promotions</a>
 </div>
 
+{% if not modules %}
+<div class="msg msg-warning" role="status">{% icon "info" size=18 %}
+  <span><strong>« {{ promotion.formation.titre }} » n'a encore aucun module.</strong>
+  Un formateur affecté verra la formation mais aucun contenu : seule l'option « Tous les modules » est possible pour l'instant.
+  <a href="{% url 'core:formation' promotion.formation.pk %}">Ajouter les modules</a>.</span>
+</div>
+{% endif %}
+
 <div class="card">
   <div class="card-head"><h2 class="section-title">{% icon "user-check" size=18 %} Formateur référent</h2></div>
   {% if promotion.formateur %}

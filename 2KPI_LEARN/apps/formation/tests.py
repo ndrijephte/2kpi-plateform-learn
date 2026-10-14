@@ -106,6 +106,23 @@ class AutorisationsFormateurTests(BaseTest):
                                         {"action": "retirer", "affectation": a.pk})
         self.assertEqual(self.client_de(self.form_c).get("/formation/modules/M2/").status_code, 404)
 
+    def test_formation_sans_module_visible_du_formateur(self):
+        """Affecté (« tous les modules ») à une promotion dont la formation n'a pas encore de module :
+        le formateur voit la formation et la promotion, pas « Aucune formation accessible »."""
+        from apps.agenda.models import Promotion
+        from apps.formation.models import Formation
+        vide = Formation.objects.create(titre="WebSIG", slug="websig")
+        promo = Promotion.objects.create(formation=vide, nom="Promo WebSIG", date_debut=self.promo_a.date_debut)
+        url = reverse("agenda:affectations", args=[promo.pk])
+        self.assertContains(self.client_de(self.admin).get(url), "aucun module")
+        self.client_de(self.admin).post(url, {"action": "enregistrer", "formateur": self.form_c.pk,
+                                              "tous_les_modules": "on"})
+        c = self.client_de(self.form_c)
+        r = c.get(reverse("formation:modules"))
+        self.assertEqual(r.context["formation"], vide)
+        self.assertContains(r, "Contenu à venir")
+        self.assertContains(c.get(reverse("agenda:promotions")), "Promo WebSIG")
+
     def test_reserve_a_l_admin(self):
         url = reverse("agenda:affectations", args=[self.promo_a.pk])
         self.assertEqual(self.client_de(self.form_a).get(url).status_code, 403)

@@ -140,8 +140,10 @@ def appliquer_role(user, role):
 
 
 def formations_gerables(user):
-    """Formations où l'utilisateur intervient : toutes (admin) ou celles d'au moins un module attribué."""
+    """Formations où l'utilisateur intervient : toutes (admin) ou celles des promotions où l'admin
+    l'a affecté — même si la formation n'a pas encore de module (« tous les modules » à venir)."""
     from apps.formation.models import Formation
-    if interventions(user) is None:
+    perimetre = interventions(user)
+    if perimetre is None:
         return Formation.objects.all()
-    return Formation.objects.filter(modules__in=modules_gerables(user)).distinct()
+    return Formation.objects.filter(promotions__in=list(perimetre)).distinct()
