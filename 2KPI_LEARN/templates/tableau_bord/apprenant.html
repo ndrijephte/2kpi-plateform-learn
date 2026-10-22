@@ -66,6 +66,26 @@
   </div>
 
   <div>
+    {% if acquis and acquis.total %}
+    <div class="card">
+      <div class="card-head">
+        <h2 class="section-title">{% icon "target" size=18 %} Mes acquis</h2>
+        <a class="link" href="{% url 'evaluation:mes_acquis' %}">Détail {% icon "arrow-right" size=16 %}</a>
+      </div>
+      <div class="progress-label"><span>{{ acquis.acquis }}/{{ acquis.total }} objectifs acquis · {{ acquis.evalues }} évalué{{ acquis.evalues|pluralize }}</span><strong>{{ acquis.pct_acquis }} %</strong></div>
+      <div class="progress" role="progressbar" aria-valuenow="{{ acquis.pct_acquis }}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{ acquis.pct_acquis }}%"></span></div>
+      <ul class="list stack-sm">
+        {% for a in acquis.a_retravailler|slice:":3" %}
+        <li><a class="list-item" href="{% url 'formation:seance' a.objectif.seance_id %}#autoevaluation">
+          <span class="niveau-badge niveau-{{ a.niveau }}" title="{{ a.get_niveau_display }}">{{ a.niveau }}</span>
+          <span class="grow"><span class="ligne">{{ a.objectif.libelle }}</span><small>{{ a.objectif.seance.module.code }} · à retravailler</small></span>
+          <span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
+        {% empty %}
+        {% if acquis.evalues < acquis.total %}<li class="list-item"><span class="ico-tile coral">{% icon "target" size=18 %}</span><span class="grow muted">{{ acquis.total|add:"0" }} objectif{{ acquis.total|pluralize }} disponible{{ acquis.total|pluralize }} : auto-évalue-toi à la fin de chaque séance.</span></li>{% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
     <div class="card">
       <div class="card-head">
         <h2 class="section-title">{% icon "bell" size=18 %} À lire</h2>

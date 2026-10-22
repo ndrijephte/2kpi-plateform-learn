@@ -1,0 +1,60 @@
+{% load ui %}
+{% if peut_s_evaluer %}
+{% if objectifs %}
+<form method="post" class="card autoeval" id="autoevaluation">{% csrf_token %}
+  <input type="hidden" name="action" value="autoevaluation">
+  <div class="card-head">
+    <h2 class="section-title">{% icon "target" size=18 %} Mon auto-évaluation</h2>
+    <span class="pill{% if bilan_autoeval.complet %} pill-ok{% endif %}">{{ bilan_autoeval.evalues }}/{{ bilan_autoeval.total }} objectif{{ bilan_autoeval.total|pluralize }} évalué{{ bilan_autoeval.evalues|pluralize }}</span>
+  </div>
+  <p class="muted autoeval-consigne">À la fin de la séance, <strong>je suis capable de…</strong> Positionne-toi honnêtement : c'est pour toi et pour aider ton formateur à adapter la suite. Tu pourras te réévaluer à tout moment.</p>
+
+  {% for item in objectifs %}{% with o=item.objectif a=item.eval %}
+  <fieldset class="objectif">
+    <legend><span class="objectif-num">{{ forloop.counter }}</span><span>{{ o.libelle }}</span></legend>
+    <div class="echelle" role="radiogroup" aria-label="Mon niveau pour : {{ o.libelle }}">
+      {% for v, lib, aide in niveaux %}
+      <label class="echelle-choix niveau-{{ v }}" title="{{ aide }}">
+        <input type="radio" name="niveau_{{ o.pk }}" value="{{ v }}" {% if a.niveau == v %}checked{% endif %}>
+        <span><b>{{ v }}</b>{{ lib }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    {% if a %}<p class="objectif-etat">
+      {% if a.acquis %}<span class="pill pill-ok">{% icon "check" size=12 %} Acquis</span>{% else %}<span class="pill pill-warn">À retravailler</span>{% endif %}
+      {% if a.progression > 0 %}<small class="progres">{% icon "trending-up" size=13 %} +{{ a.progression }} depuis ta première évaluation</small>{% endif %}
+      <small class="muted">· mis à jour le {{ a.modifie_le|date:"d/m à H:i" }}</small></p>{% endif %}
+    <details class="objectif-plus" {% if a.commentaire or a.besoin_aide %}open{% endif %}>
+      <summary class="link">{% icon "pencil" size=13 %} Préciser / demander de l'aide</summary>
+      <textarea name="commentaire_{{ o.pk }}" rows="2" maxlength="500" placeholder="Ce qui me bloque, ce que j'ai compris, une question…" aria-label="Commentaire sur : {{ o.libelle }}">{{ a.commentaire }}</textarea>
+      <label class="case"><input type="checkbox" name="aide_{{ o.pk }}" {% if a.besoin_aide %}checked{% endif %}> Je souhaite en reparler avec le formateur</label>
+    </details>
+  </fieldset>
+  {% endwith %}{% endfor %}
+
+  <details class="echelle-legende">
+    <summary class="link">{% icon "info" size=13 %} Que signifient les niveaux ?</summary>
+    <dl>{% for v, lib, aide in niveaux %}<dt class="niveau-{{ v }}"><b>{{ v }}</b> {{ lib }}</dt><dd>{{ aide }}</dd>{% endfor %}</dl>
+  </details>
+  <div class="btn-row"><button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer mon auto-évaluation</button>
+    <a class="link" href="{% url 'evaluation:mes_acquis' %}">Tous mes acquis {% icon "arrow-right" size=14 %}</a></div>
+</form>
+{% endif %}
+
+{% elif est_formateur %}
+<div class="card" id="objectifs">
+  <div class="card-head">
+    <h2 class="section-title">{% icon "target" size=18 %} Objectifs de la séance</h2>
+    {% if peut_gerer %}<a class="btn btn-sm btn-secondary" href="{% url 'formation:objectifs' seance.pk %}">{% icon "pencil" size=14 %} {% if objectifs %}Modifier{% else %}Rédiger les objectifs{% endif %}</a>{% endif %}
+  </div>
+  {% if objectifs %}
+  <p class="muted"><small>Les apprenants s'auto-évaluent sur chacun (« À la fin de la séance, je suis capable de… »).</small></p>
+  <ol class="objectifs-liste">{% for item in objectifs %}<li>{{ item.objectif.libelle }}</li>{% endfor %}</ol>
+  {% for p in promotions_seance %}{% if forloop.first %}<div class="btn-row">{% endif %}
+    <a class="btn btn-sm btn-navy" href="{% url 'evaluation:autoevaluations' p.pk %}?module={{ seance.module_id }}#seance-{{ seance.pk }}">{% icon "gauge" size=14 %} Auto-évaluations · {{ p.nom }}</a>
+  {% if forloop.last %}</div>{% endif %}{% endfor %}
+  {% else %}
+  <div class="empty"><span class="ico-tile coral">{% icon "target" %}</span><strong>Aucun objectif défini</strong>Sans objectif, les apprenants ne peuvent pas s'auto-évaluer sur cette séance.</div>
+  {% endif %}
+</div>
+{% endif %}

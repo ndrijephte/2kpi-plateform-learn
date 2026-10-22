@@ -7,7 +7,8 @@ from django.utils import timezone
 from apps.agenda.models import Evenement, Promotion
 from apps.comptes.models import Profil
 from apps.core.permissions import ADMIN, APPRENANT, promotions_visibles, q_interventions, role_de
-from apps.evaluation.models import Inscription, Livrable
+from apps.evaluation import autoevaluation
+from apps.evaluation.models import AutoEvaluation, Inscription, Livrable
 from apps.evaluation.utils import inscription_courante
 from apps.formation.acces import etats_modules
 from apps.formation.models import Seance
@@ -45,6 +46,7 @@ def _apprenant(request):
         ouverts = [mid for mid, e in etats.items() if e.ouvert]
         ctx["reprendre"] = (Seance.objects.filter(module__formation=inscription.formation, module_id__in=ouverts)
                             .exclude(pk__in=rendus).select_related("module").first())
+        ctx["acquis"] = autoevaluation.synthese_apprenant(inscription, ouverts)
     return render(request, "tableau_bord/apprenant.html", ctx)
 
 
@@ -71,6 +73,11 @@ def _pilotage(request, admin):
         "a_corriger": livrables.select_related("inscription__apprenant", "seance__module")
                                .order_by("seance__module__ordre", "seance__ordre")[:5],
         "notifications": user.notifications.filter(lu=False)[:3],
+        "aides": (AutoEvaluation.objects
+                  .filter(q_interventions(user, promotion="inscription__promotion", module="objectif__seance__module"),
+                          besoin_aide=True, inscription__promotion__in=promos)
+                  .select_related("inscription__apprenant", "inscription__promotion", "objectif__seance__module")
+                  .order_by("-modifie_le")[:5]),
     }
     if admin:
         User = get_user_model()

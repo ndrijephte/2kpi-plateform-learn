@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import (Inscription, Presence, Livrable, Quiz, Question, Choix,
+from .models import (AutoEvaluation, Inscription, Presence, Livrable, Quiz, Question, Choix,
                      TentativeQuiz, EvaluationCompetence, EvaluationProjet, Soutenance)
 
 class ChoixInline(admin.TabularInline):
@@ -46,3 +46,10 @@ class SoutenanceAdmin(admin.ModelAdmin):
     list_display = ("inscription", "note_sur_20", "date")
 
 admin.site.register(TentativeQuiz)
+
+
+@admin.register(AutoEvaluation)
+class AutoEvaluationAdmin(admin.ModelAdmin):
+    list_display = ("inscription", "objectif", "niveau_initial", "niveau", "besoin_aide", "modifie_le")
+    list_filter = ("niveau", "besoin_aide", "inscription__promotion", "objectif__seance__module")
+    search_fields = ("inscription__apprenant__username", "inscription__apprenant__last_name", "objectif__libelle")

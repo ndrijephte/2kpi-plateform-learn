@@ -65,3 +65,91 @@ class LivrablesTests(BaseTest):
                                                         expediteur=self.form_a).exists())
         self.assertEqual(self.client_de(self.form_b).post("/evaluation/livrables/",
                                                           {"livrable": self.livrable.pk, "note": "1"}).status_code, 404)
+
+
+class AutoEvaluationTests(BaseTest):
+    """Auto-évaluation des apprenants sur les objectifs des séances."""
+
+    def setUp(self):
+        super().setUp()
+        from apps.formation.models import definir_objectifs
+        self.seance = self.m1.seances.order_by("ordre").first()
+        definir_objectifs(self.seance, ["Créer un compte Earth Engine", "Charger une image Sentinel-2"])
+        self.o1, self.o2 = self.seance.objectifs_seance.order_by("ordre")
+        self.url = reverse("formation:seance", args=[self.seance.pk])
+
+    def test_apprenant_s_evalue_et_progresse(self):
+        from apps.evaluation.models import AutoEvaluation
+        c = self.client_de(self.app_a)
+        self.assertContains(c.get(self.url), "Mon auto-évaluation")
+        c.post(self.url, {"action": "autoevaluation", f"niveau_{self.o1.pk}": "1"})
+        a = AutoEvaluation.objects.get(objectif=self.o1)
+        self.assertEqual((a.niveau, a.niveau_initial), (1, 1))
+        self.assertFalse(AutoEvaluation.objects.filter(objectif=self.o2).exists())  # réponse partielle
+        c.post(self.url, {"action": "autoevaluation", f"niveau_{self.o1.pk}": "3", f"niveau_{self.o2.pk}": "9"})
+        a.refresh_from_db()
+        self.assertEqual((a.niveau, a.niveau_initial, a.progression, a.acquis), (3, 1, 2, True))
+        self.assertFalse(AutoEvaluation.objects.filter(objectif=self.o2).exists())  # niveau invalide ignoré
+        self.assertFalse(Livrable.objects.exists())  # n'est pas pris pour un dépôt de livrable
+        acquis = c.get(reverse("evaluation:mes_acquis"))
+        self.assertEqual(acquis.context["synthese"]["acquis"], 1)
+        self.assertContains(acquis, "Créer un compte Earth Engine")
+
+    def test_module_ferme_ou_autre_role(self):
+        from apps.evaluation.models import AutoEvaluation
+        self.client_de(self.app_b).post(self.url, {"action": "autoevaluation", f"niveau_{self.o1.pk}": "2"})
+        r = self.client_de(self.form_a).post(self.url, {"action": "autoevaluation", f"niveau_{self.o1.pk}": "2"})
+        self.assertEqual(r.status_code, 302)
+        self.assertFalse(AutoEvaluation.objects.exists())
+
+    def test_demande_d_aide_notifiee_et_traitee(self):
+        from apps.evaluation.models import AutoEvaluation
+        self.client_de(self.app_a).post(self.url, {"action": "autoevaluation", f"niveau_{self.o2.pk}": "1",
+                                                   f"aide_{self.o2.pk}": "on", f"commentaire_{self.o2.pk}": "Erreur d'authentification"})
+        self.assertTrue(self.form_a.notifications.filter(titre__startswith="Demande d'aide").exists())
+        self.assertFalse(self.form_b.notifications.filter(titre__startswith="Demande d'aide").exists())
+        url = reverse("evaluation:autoevaluations", args=[self.promo_a.pk])
+        r = self.client_de(self.form_a).get(url + "?filtre=aide")
+        self.assertContains(r, "Erreur d&#x27;authentification")
+        self.assertContains(self.client_de(self.form_a).get("/"), "Demandes d'aide")
+        a = AutoEvaluation.objects.get()
+        self.client_de(self.form_a).post(url, {"autoevaluation": a.pk})
+        a.refresh_from_db()
+        self.assertFalse(a.besoin_aide)
+        self.assertTrue(self.app_a.notifications.filter(titre__icontains="demande d'aide").exists())
+
+    def test_synthese_reservee_aux_formateurs_de_la_promotion(self):
+        url = reverse("evaluation:autoevaluations", args=[self.promo_a.pk])
+        self.assertEqual(self.client_de(self.form_b).get(url).status_code, 404)
+        self.assertEqual(self.client_de(self.app_a).get(url).status_code, 403)
+        self.assertEqual(self.client_de(self.admin).get(url).status_code, 200)
+
+    def test_objectifs_reformules_sans_perte(self):
+        from apps.evaluation.models import AutoEvaluation
+        from apps.formation.models import definir_objectifs
+        AutoEvaluation.objects.create(inscription=self.insc_a, objectif=self.o1, niveau=2, niveau_initial=2)
+        definir_objectifs(self.seance, ["Charger une image Sentinel-2", "Créer et activer un compte Earth Engine"])
+        self.o2.refresh_from_db()
+        self.assertEqual(self.o2.ordre, 1)                    # inchangé, simplement déplacé
+        self.o1.refresh_from_db()
+        self.assertEqual(self.o1.libelle, "Créer et activer un compte Earth Engine")  # reformulé, réponses gardées
+        definir_objectifs(self.seance, ["Charger une image Sentinel-2", "Exporter un NDVI vers Drive"])
+        self.o1.refresh_from_db()
+        self.assertFalse(self.o1.actif)                       # archivé : il a des réponses
+        self.assertEqual(AutoEvaluation.objects.count(), 1)
+        self.assertTrue(self.seance.objectifs_seance.filter(libelle="Exporter un NDVI vers Drive", actif=True).exists())
+        definir_objectifs(self.seance, ["Créer et activer un compte Earth Engine"])  # réactivé à l'identique
+        self.o1.refresh_from_db()
+        self.assertTrue(self.o1.actif)
+
+    def test_formateur_redige_les_objectifs(self):
+        url = reverse("formation:objectifs", args=[self.seance.pk])
+        sans_acces = self.compte("form_c", "formateur")  # aucune promotion confiée
+        self.assertEqual(self.client_de(sans_acces).get(url).status_code, 404)
+        r = self.client_de(self.form_a).post(url, {"objectifs_liste": "- Objectif A\n\n• Objectif B\nObjectif A"})
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(list(self.seance.objectifs_seance.filter(actif=True).values_list("libelle", flat=True)),
+                         ["Objectif A", "Objectif B"])
+        r = self.client_de(self.form_a).post(url, {"objectifs_liste": "\n".join(f"O{i}" for i in range(13))})
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "12 objectifs au maximum")

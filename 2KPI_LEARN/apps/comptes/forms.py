@@ -12,7 +12,35 @@ User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
-class NouvelUtilisateurForm(forms.Form):
+class PromotionsChoix(forms.ModelMultipleChoiceField):
+    def label_from_instance(self, p):
+        libelle = p.nom if p.nom.strip().casefold() == p.formation.titre.strip().casefold() \
+            else f"{p.nom} — {p.formation.titre}"
+        return libelle + ("" if p.active else " (archivée)")
+
+
+def champ_promotions_formateur():
+    return PromotionsChoix(
+        label="Promotions encadrées (formateur)", required=False, widget=forms.CheckboxSelectMultiple,
+        queryset=Promotion.objects.select_related("formation").order_by("-active", "-date_debut"),
+        help_text="Une ou plusieurs. Le formateur intervient sur tous les modules de chaque promotion cochée ; "
+                  "la répartition module par module se règle dans Promotions › Formateurs.")
+
+
+class ChampsParRoleMixin:
+    """Marque les champs propres à un rôle (data-role) : l'écran n'affiche que ceux du rôle choisi,
+    et la vue ignore les autres à l'enregistrement."""
+    CHAMPS_PAR_ROLE = {"promotion": Profil.Role.APPRENANT, "statut_inscription": Profil.Role.APPRENANT,
+                       "promotions_formateur": Profil.Role.FORMATEUR}
+
+    def marquer_champs_par_role(self):
+        for nom, role in self.CHAMPS_PAR_ROLE.items():
+            if nom in self.fields:
+                self.fields[nom].widget.attrs["data-role"] = role
+        self.fields["role"].widget.attrs["data-choix-role"] = ""
+
+
+class NouvelUtilisateurForm(ChampsParRoleMixin, forms.Form):
     first_name = forms.CharField(label="Prénom", max_length=150)
     last_name = forms.CharField(label="Nom", max_length=150)
     email = forms.EmailField(label="E-mail")
@@ -22,6 +50,12 @@ class NouvelUtilisateurForm(forms.Form):
                                        queryset=Promotion.objects.filter(active=True))
     password = forms.CharField(label="Mot de passe provisoire", widget=forms.PasswordInput,
                                help_text="À communiquer à la personne ; elle pourra le changer depuis son profil.")
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.fields["promotions_formateur"] = champ_promotions_formateur()
+        self.fields["promotions_formateur"].queryset = self.fields["promotions_formateur"].queryset.filter(active=True)
+        self.marquer_champs_par_role()
 
     def clean_username(self):
         u = self.cleaned_data["username"].strip()
@@ -61,13 +95,15 @@ class CompteForm(forms.ModelForm):
         return e
 
 
-class CompteAdminForm(CompteForm):
-    """Version admin : identifiant, activation, rôle, promotion, nouveau mot de passe."""
+class CompteAdminForm(ChampsParRoleMixin, CompteForm):
+    """Version admin : identifiant, activation, rôle, nouveau mot de passe et, selon le rôle,
+    la promotion et l'inscription (apprenant) ou les promotions encadrées (formateur)."""
     role = forms.ChoiceField(label="Rôle", choices=Profil.Role.choices)
     promotion = forms.ModelChoiceField(label="Promotion (apprenant)", required=False,
                                        queryset=Promotion.objects.filter(active=True))
     statut_inscription = forms.ChoiceField(
-        label="Statut de l'inscription", required=False, choices=Inscription.Statut.choices,
+        label="Statut de l'inscription (apprenant)", required=False,
+        choices=[("", "— pas encore inscrit —")] + Inscription.Statut.choices,
         help_text="Seule une inscription « En cours » donne accès aux contenus de la formation.")
     nouveau_mdp = forms.CharField(label="Nouveau mot de passe", required=False, widget=forms.PasswordInput,
                                   help_text="Laisser vide pour ne pas le changer.")
@@ -75,6 +111,18 @@ class CompteAdminForm(CompteForm):
     class Meta(CompteForm.Meta):
         fields = ["username", "first_name", "last_name", "email", "is_active"]
         labels = {**CompteForm.Meta.labels, "username": "Identifiant", "is_active": "Compte actif"}
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.fields["promotions_formateur"] = champ_promotions_formateur()
+        self.marquer_champs_par_role()
+
+    def clean(self):
+        d = super().clean()
+        if d.get("role") == Profil.Role.APPRENANT and d.get("statut_inscription") and not (
+                d.get("promotion") or Inscription.objects.filter(apprenant=self.instance).exists()):
+            self.add_error("promotion", "Choisis la promotion : sans elle, il n'y a pas d'inscription à qualifier.")
+        return d
 
     def clean_username(self):
         u = self.cleaned_data["username"].strip()
@@ -94,6 +142,15 @@ class ProfilForm(forms.ModelForm):
         model = Profil
         fields = ["photo", "categorie", "telephone", "structure", "specialite", "bio"]
         widgets = {"bio": forms.Textarea(attrs={"rows": 3})}
+        labels = {"categorie": "Profil (apprenant)"}
+
+    def __init__(self, *a, role=None, **kw):
+        """role : rôle affiché (None = tous les champs, rôle modifiable à l'écran)."""
+        super().__init__(*a, **kw)
+        if role and role != Profil.Role.APPRENANT:
+            del self.fields["categorie"]  # étudiant / professionnel : n'a de sens que pour un apprenant
+        else:
+            self.fields["categorie"].widget.attrs["data-role"] = Profil.Role.APPRENANT
 
     def clean_photo(self):
         photo = self.cleaned_data.get("photo")

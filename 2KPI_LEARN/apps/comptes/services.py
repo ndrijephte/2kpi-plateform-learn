@@ -146,3 +146,44 @@ def creer_compte_apprenant(request, d):
         {"user": user, "promotion": promo, "connexion": request.build_absolute_uri(reverse("login"))}))
     logger.info("Compte apprenant créé en libre-service : %s (%s)", user.username, user.email)
     return user
+
+
+# ---------- Promotions d'un formateur ----------
+
+def promotions_du_formateur(user):
+    """Promotions où le formateur intervient : référent ou affecté par l'administration."""
+    from apps.agenda.models import Promotion
+    from django.db.models import Q
+    return (Promotion.objects.filter(Q(formateur=user) | Q(affectations__formateur=user))
+            .select_related("formation").distinct().order_by("-active", "-date_debut"))
+
+
+@transaction.atomic
+def definir_promotions_formateur(user, promotions, par):
+    """Aligne les promotions d'un formateur sur la sélection de l'admin (formulaire du compte).
+    Nouvelle promotion : affectation sur « tous les modules » (affinable module par module dans
+    Promotions › Formateurs). Promotion décochée : affectation retirée et, s'il en était le référent,
+    la promotion n'a plus de référent. Les affectations conservées gardent leurs modules.
+    Retourne (ajoutées, retirées)."""
+    from apps.agenda.models import Affectation, Notification
+    from apps.agenda.services import notifier
+    voulues = {p.pk: p for p in promotions}
+    actuelles = {p.pk: p for p in promotions_du_formateur(user)}
+    retirees = [p for pk, p in actuelles.items() if pk not in voulues]
+    ajoutees = [p for pk, p in voulues.items() if pk not in actuelles]
+    for p in retirees:
+        Affectation.objects.filter(promotion=p, formateur=user).delete()
+        if p.formateur_id == user.pk:
+            p.formateur = None
+            p.save(update_fields=["formateur"])
+    for p in ajoutees:
+        Affectation.objects.update_or_create(promotion=p, formateur=user,
+                                             defaults={"tous_les_modules": True, "accordee_par": par})
+    if ajoutees:
+        noms = ", ".join(f"« {p.nom} »" for p in ajoutees)
+        notifier([user], titre="Nouvelle(s) promotion(s) à encadrer",
+                 message=f"L'administration t'a affecté à {noms} (tous les modules).",
+                 type=Notification.Type.INFO, expediteur=par)
+    if hasattr(user, "_interventions"):
+        del user._interventions
+    return ajoutees, retirees

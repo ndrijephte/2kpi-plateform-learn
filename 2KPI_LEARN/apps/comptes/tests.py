@@ -213,3 +213,71 @@ class CreationCompteTests(BaseTest):
     def test_deja_connecte(self):
         self.client.force_login(self.app_a)
         self.assertRedirects(self.client.get(self.URL), reverse("tableau_bord:accueil"), fetch_redirect_response=False)
+
+
+class FormulaireFormateurTests(BaseTest):
+    """Fiche d'un formateur : une ou plusieurs promotions, sans champs d'apprenant."""
+
+    def _post(self, cible, **extra):
+        data = {"c-username": cible.username, "c-first_name": cible.first_name, "c-last_name": "",
+                "c-email": cible.email, "c-is_active": "on", "c-role": "formateur",
+                "p-telephone": "", "p-structure": "", "p-specialite": "", "p-bio": ""}
+        data.update(extra)
+        return self.client_de(self.admin).post(reverse("comptes:utilisateur_editer", args=[cible.pk]), data)
+
+    def test_associer_plusieurs_promotions(self):
+        from apps.agenda.models import Affectation
+        from apps.core.permissions import interventions
+        cible = self.compte("form_c", "formateur")
+        r = self._post(cible, **{"c-promotions_formateur": [self.promo_a.pk, self.promo_b.pk]})
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(set(Affectation.objects.filter(formateur=cible).values_list("promotion", flat=True)),
+                         {self.promo_a.pk, self.promo_b.pk})
+        self.assertTrue(all(a.tous_les_modules for a in Affectation.objects.filter(formateur=cible)))
+        cible.refresh_from_db()
+        self.assertEqual(interventions(cible), {self.promo_a.pk: None, self.promo_b.pk: None})
+        self.assertTrue(cible.notifications.filter(titre__icontains="promotion").exists())
+        # La fiche réaffiche les promotions cochées
+        page = self.client_de(self.admin).get(reverse("comptes:utilisateur_editer", args=[cible.pk]))
+        self.assertEqual({p.pk for p in page.context["compte_form"].initial["promotions_formateur"]},
+                         {self.promo_a.pk, self.promo_b.pk})
+        # Décocher une promotion retire l'accès
+        self._post(cible, **{"c-promotions_formateur": [self.promo_b.pk]})
+        self.assertEqual(list(Affectation.objects.filter(formateur=cible).values_list("promotion", flat=True)),
+                         [self.promo_b.pk])
+
+    def test_affectation_module_par_module_conservee(self):
+        from apps.agenda.models import Affectation
+        a = Affectation.objects.create(promotion=self.promo_a, formateur=self.form_b)
+        a.modules.set([self.m2])
+        self._post(self.form_b, **{"c-promotions_formateur": [self.promo_a.pk, self.promo_b.pk]})
+        a.refresh_from_db()
+        self.assertFalse(a.tous_les_modules)
+        self.assertEqual(list(a.modules.all()), [self.m2])
+
+    def test_referent_decoche(self):
+        self._post(self.form_a, **{"c-promotions_formateur": []})
+        self.promo_a.refresh_from_db()
+        self.assertIsNone(self.promo_a.formateur)
+
+    def test_champs_selon_le_role(self):
+        r = self.client_de(self.admin).get(reverse("comptes:utilisateur_editer", args=[self.form_a.pk]))
+        self.assertContains(r, 'data-role="apprenant"')   # masqués à l'écran pour un formateur
+        self.assertContains(r, 'data-role="formateur"')
+        self.assertEqual(r.context["compte_form"].initial["statut_inscription"], "")
+        self.assertNotIn("categorie", self.client_de(self.form_a).get(reverse("comptes:profil_modifier"))
+                         .context["profil_form"].fields)
+        # Le statut d'inscription ne s'applique pas à un formateur
+        self._post(self.form_a, **{"c-statut_inscription": "abandon", "c-promotion": self.promo_b.pk,
+                                   "c-promotions_formateur": [self.promo_a.pk]})
+        self.assertFalse(Inscription.objects.filter(apprenant=self.form_a).exists())
+
+    def test_creation_formateur_avec_promotions(self):
+        from apps.agenda.models import Affectation
+        r = self.client_de(self.admin).post(reverse("comptes:utilisateurs"), {
+            "first_name": "Awa", "last_name": "K", "email": "awa@exemple.org", "username": "awa",
+            "role": "formateur", "password": MDP, "promotions_formateur": [self.promo_a.pk]})
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(Affectation.objects.filter(formateur__username="awa", promotion=self.promo_a).exists())
+        liste = self.client_de(self.admin).get(reverse("comptes:utilisateurs") + "?role=formateur")
+        self.assertContains(liste, "Promo A")

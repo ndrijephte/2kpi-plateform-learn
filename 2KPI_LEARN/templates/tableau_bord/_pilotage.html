@@ -28,6 +28,19 @@
     </div>
   </div>
   <div>
+    {% if aides %}
+    <div class="card highlight">
+      <h2 class="section-title">{% icon "target" size=18 %} Demandes d'aide (auto-évaluation)</h2>
+      <ul class="list">
+        {% for a in aides %}
+        <li><a class="list-item" href="{% url 'evaluation:autoevaluations' a.inscription.promotion_id %}?filtre=aide#seance-{{ a.objectif.seance_id }}">
+          {% avatar a.inscription.apprenant %}
+          <span class="grow"><strong>{{ a.inscription.apprenant.get_full_name|default:a.inscription.apprenant.username }}</strong><small>{{ a.objectif.seance.module.code }} · {{ a.objectif.libelle|truncatechars:70 }}</small></span>
+          <span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
     <div class="card">
       <div class="card-head">
         <h2 class="section-title">{% icon "clipboard-check" size=18 %} À corriger</h2>

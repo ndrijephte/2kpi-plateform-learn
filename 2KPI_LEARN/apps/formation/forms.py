@@ -3,9 +3,52 @@ from urllib.parse import urlsplit
 from django import forms
 from django.core.files.uploadedfile import UploadedFile
 from apps.core.fichiers import type_depuis_lien, type_depuis_nom, valider_fichier
-from .models import Module, Ressource, Seance
+from .models import Module, Ressource, Seance, definir_objectifs
 
 CHOIX_TYPE = [("", "Détection automatique")] + list(Ressource.Type.choices)
+MAX_OBJECTIFS = 12
+
+
+def champ_objectifs():
+    return forms.CharField(
+        label="Objectifs d'apprentissage (auto-évaluation)", required=False,
+        widget=forms.Textarea(attrs={"rows": 5, "placeholder": "Charger une image Sentinel-2 dans Earth Engine\n"
+                                                               "Calculer et cartographier un NDVI"}),
+        help_text="Un objectif par ligne, formulé comme une action observable : l'apprenant complète "
+                  "« À la fin de la séance, je suis capable de… » et s'auto-évalue sur chacun. "
+                  f"{MAX_OBJECTIFS} au maximum.")
+
+
+class ObjectifsMixin:
+    """Ajoute le champ « objectifs » (un par ligne) à un formulaire portant sur une séance existante
+    ou nouvelle ; à appeler : init_objectifs() dans __init__, enregistrer_objectifs(seance) après save."""
+
+    def init_objectifs(self):
+        self.fields["objectifs_liste"] = champ_objectifs()
+        if self.instance_seance.pk:
+            self.initial["objectifs_liste"] = "\n".join(
+                self.instance_seance.objectifs_seance.filter(actif=True).values_list("libelle", flat=True))
+
+    def clean_objectifs_liste(self):
+        lignes = [l.strip(" \t-•*·").strip() for l in self.cleaned_data.get("objectifs_liste", "").splitlines()]
+        lignes = [l for l in lignes if l]
+        if len(lignes) > MAX_OBJECTIFS:
+            raise forms.ValidationError(f"{MAX_OBJECTIFS} objectifs au maximum par séance (ici {len(lignes)}).")
+        trop_longs = [l for l in lignes if len(l) > 300]
+        if trop_longs:
+            raise forms.ValidationError("Un objectif dépasse 300 caractères : reformule-le plus brièvement.")
+        return lignes
+
+    def enregistrer_objectifs(self, seance):
+        definir_objectifs(seance, self.cleaned_data.get("objectifs_liste", []))
+
+
+class ObjectifsForm(ObjectifsMixin, forms.Form):
+    """Édition des seuls objectifs d'une séance (formateur intervenant sur le module)."""
+    def __init__(self, *a, seance, **kw):
+        super().__init__(*a, **kw)
+        self.instance_seance = seance
+        self.init_objectifs()
 
 
 class _SeanceChoix(forms.ModelChoiceField):

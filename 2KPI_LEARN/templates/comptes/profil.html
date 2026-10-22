@@ -9,6 +9,8 @@
     <div>
       <h1 style="margin:0">{{ user.get_full_name|default:user.username }}</h1>
       <p class="muted"><span class="pill pill-role-{{ role }}">{{ role_libelle }}</span>{% if inscription %} · {{ inscription.formation.titre }}{% if inscription.promotion %} · {{ inscription.promotion.nom }}{% endif %}{% endif %}</p>
+      {% if promotions_encadrees is not None %}<p class="muted"><small>{% icon "users" size=14 %}
+        {% for p in promotions_encadrees %}{{ p.nom }}{% if p.formateur_id == user.pk %} (référent){% endif %}{% if not forloop.last %} · {% endif %}{% empty %}Aucune promotion confiée pour l'instant.{% endfor %}</small></p>{% endif %}
     </div>
   </div>
   <a class="btn" href="{% url 'comptes:profil_modifier' %}">{% icon "pencil" size=16 %} Modifier mon profil</a>

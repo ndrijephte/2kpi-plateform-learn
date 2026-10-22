@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Objectifs — {{ seance.theme|default:"Séance" }}{% endblock %}
+{% block crumbs %}<a href="{% url 'formation:modules' %}">Contenu des cours</a>{% icon "chevron-right" size=14 %}<a href="{% url 'formation:module_detail' seance.module.code %}?formation={{ seance.module.formation_id }}">{{ seance.module.code }}</a>{% icon "chevron-right" size=14 %}<a href="{% url 'formation:seance' seance.pk %}">{{ seance.theme|default:"Séance" }}</a>{% icon "chevron-right" size=14 %}<span>Objectifs</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "target" size=14 %} {{ seance.module.code }} · auto-évaluation</span>
+    <h1>Objectifs de la séance</h1>
+    <p class="muted">{{ seance.theme|default:seance }}</p>
+  </div>
+</div>
+<div class="grid-2">
+  <form method="post" class="card">{% csrf_token %}
+    {% include "partials/form_fields.html" %}
+    <div class="btn-row">
+      <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
+      <a class="btn btn-secondary" href="{% url 'formation:seance' seance.pk %}">Annuler</a>
+    </div>
+  </form>
+  <div>
+    <div class="card highlight">
+      <h2 class="section-title">{% icon "info" size=18 %} Bien formuler un objectif</h2>
+      <ul class="conseils">
+        <li><strong>Un verbe d'action observable</strong> : identifier, calculer, cartographier, automatiser, expliquer… plutôt que « comprendre » ou « connaître ».</li>
+        <li><strong>Une seule capacité par ligne</strong>, que l'apprenant peut vérifier seul.</li>
+        <li><strong>3 à 5 objectifs</strong> par séance suffisent.</li>
+        <li>Ex. : « Calculer un NDVI à partir d'une image Sentinel-2 dans Earth Engine ».</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2 class="section-title">{% icon "shield" size=18 %} Réponses préservées</h2>
+      <p class="muted"><small>Reformuler un objectif conserve les réponses déjà données. Un objectif retiré alors que des apprenants s'y sont déjà évalués est archivé, pas effacé.</small></p>
+      {% if archives %}<p class="muted"><small>Archivés : {% for o in archives %}« {{ o.libelle }} »{% if not forloop.last %}, {% endif %}{% endfor %}. Les réécrire à l'identique les réactive.</small></p>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

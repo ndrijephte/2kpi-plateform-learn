@@ -7,7 +7,7 @@
   <div>
     <span class="eyebrow">{% icon "shield" size=14 %} Administration</span>
     <h1>Utilisateurs</h1>
-    <p class="muted">Crée les comptes, attribue les rôles et rattache les apprenants à leur promotion.</p>
+    <p class="muted">Crée les comptes, attribue les rôles, rattache les apprenants à leur promotion et confie les promotions aux formateurs.</p>
   </div>
 </div>
 
@@ -18,16 +18,7 @@
   </summary>
   <form method="post" novalidate>{% csrf_token %}
     {% if form.non_field_errors %}<ul class="errorlist nonfield">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-    <div class="form-grid">
-      {% for field in form %}
-      <div class="field">
-        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-        {{ field }}
-        {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
-        {{ field.errors }}
-      </div>
-      {% endfor %}
-    </div>
+    <div class="form-grid">{% include "partials/form_fields.html" %}</div>
     <div class="btn-row"><button class="btn" type="submit">{% icon "check" size=16 %} Créer le compte</button></div>
   </form>
 </details>
@@ -50,7 +41,7 @@
 
 <div class="table-wrap">
 <table class="tbl">
-  <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Promotion</th><th>Compte</th></tr></thead>
+  <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Promotion(s)</th><th>Compte</th></tr></thead>
   <tbody>
   {% for l in lignes %}{% with u=l.u %}
     <tr {% if not u.is_active %}class="statut-annule"{% endif %}>
@@ -78,7 +69,10 @@
           </select>
           <noscript><button class="btn btn-sm btn-secondary">OK</button></noscript>
         </form>
-        {% else %}<span class="muted">—</span>{% endif %}
+        {% elif l.role == "formateur" %}
+          {% for p, referent in l.encadrees %}<span class="pill{% if referent %} pill-ok{% endif %}" title="{% if referent %}Formateur référent{% else %}Affecté par l'administration{% endif %}">{{ p.nom }}{% if referent %} · réf.{% endif %}</span> {% empty %}<small class="muted">Aucune promotion</small>{% endfor %}
+          <br><a class="link" style="font-size:.82rem" href="{% url 'comptes:utilisateur_editer' u.pk %}#id_c-promotions_formateur">{% icon "pencil" size=12 %} Gérer</a>
+        {% else %}<span class="muted">Toutes</span>{% endif %}
       </td>
       <td>
         <form method="post" action="{% url 'comptes:utilisateur_modifier' u.pk %}">{% csrf_token %}

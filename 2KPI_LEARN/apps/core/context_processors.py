@@ -11,6 +11,8 @@ RUBRIQUES = {
     "formation": "cours",
     "evaluation": "cours",
     "evaluation:livrables": "livrables",
+    "evaluation:mes_acquis": "acquis",
+    "evaluation:autoevaluations": "promotions",
     "comptes": "profil",
     "comptes:utilisateurs": "utilisateurs",
     "comptes:utilisateur_editer": "utilisateurs",
@@ -41,7 +43,9 @@ def _identite():
     return {
         "parametres": p,
         "site_nom": f"{p.nom_plateforme} {p.suffixe}".strip(),
-        "logo_url": p.logo.url if p.logo else "",
+        # Logo officiel 2KPI par défaut ; un logo déposé dans Paramètres › Identité le remplace.
+        "logo_url": p.logo.url if p.logo else static("img/logo-2kpi.png"),
+        "favicon_url": p.logo.url if p.logo else static("img/favicon-2kpi.png"),
         "image_connexion_url": p.image_connexion.url if p.image_connexion else static("img/connexion.jpg"),
     }
 

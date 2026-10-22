@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Mes acquis — {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "target" size=16 %}<span>Mes acquis</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "target" size=14 %} Auto-évaluation</span>
+    <h1>Mes acquis</h1>
+    <p class="muted">Ton positionnement sur les objectifs de chaque séance. Réévalue-toi après avoir pratiqué : c'est ta progression qui compte.</p>
+  </div>
+</div>
+
+{% if not synthese %}
+<div class="card empty"><span class="ico-tile coral">{% icon "graduation-cap" %}</span><strong>Aucune inscription active</strong>Tes objectifs apparaîtront ici dès l'ouverture de tes modules.</div>
+{% elif not synthese.total %}
+<div class="card empty"><span class="ico-tile">{% icon "target" %}</span><strong>Pas encore d'objectifs à évaluer</strong>Ils apparaissent au fil de l'ouverture des modules, dès que ton formateur les a définis.</div>
+{% else %}
+<div class="kpi-grid kpi-4">
+  <div class="kpi"><span class="kpi-icon green">{% icon "circle-check" %}</span>
+    <div><strong>{{ synthese.acquis }}<small>/{{ synthese.total }}</small></strong><span>Objectifs acquis</span></div></div>
+  <div class="kpi"><span class="kpi-icon">{% icon "list-checks" %}</span>
+    <div><strong>{{ synthese.evalues }}<small>/{{ synthese.total }}</small></strong><span>Objectifs évalués</span></div></div>
+  <div class="kpi"><span class="kpi-icon amber">{% icon "rotate-ccw" %}</span>
+    <div><strong>{{ synthese.a_retravailler|length }}</strong><span>À retravailler</span></div></div>
+  <div class="kpi"><span class="kpi-icon coral">{% icon "trending-up" %}</span>
+    <div><strong>{{ synthese.progres }}</strong><span>En progrès depuis la 1<sup>re</sup> évaluation</span></div></div>
+</div>
+<div class="card">
+  <div class="progress-label"><span>Objectifs acquis (niveau « En autonomie » ou plus)</span><strong>{{ synthese.pct_acquis }} %</strong></div>
+  <div class="progress" role="progressbar" aria-valuenow="{{ synthese.pct_acquis }}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{ synthese.pct_acquis }}%"></span></div>
+</div>
+
+<nav class="tabs" aria-label="Filtrer">
+  <a href="?" {% if not filtre %}class="on"{% endif %}>Toutes les séances</a>
+  <a href="?filtre=a_retravailler" {% if filtre == "a_retravailler" %}class="on"{% endif %}>À retravailler ou non évalués</a>
+</nav>
+
+{% for bloc in synthese.seances %}{% with s=bloc.seance %}
+<div class="card acquis-seance">
+  <div class="card-head">
+    <h2 class="section-title"><span class="pill">{{ s.module.code }}</span> {{ s.theme|default:"Séance" }}</h2>
+    <a class="btn btn-sm {% if bloc.bilan.complet %}btn-secondary{% endif %}" href="{% url 'formation:seance' s.pk %}#autoevaluation">{% if bloc.bilan.complet %}{% icon "rotate-ccw" size=14 %} Me réévaluer{% else %}{% icon "target" size=14 %} M'évaluer{% endif %}</a>
+  </div>
+  <ul class="list">
+    {% for l in bloc.lignes %}
+    <li class="list-item">
+      {% if l.eval %}<span class="niveau-badge niveau-{{ l.eval.niveau }}" title="{{ l.eval.get_niveau_display }}">{{ l.eval.niveau }}</span>
+      {% else %}<span class="niveau-badge" title="Non évalué">–</span>{% endif %}
+      <span class="grow"><span class="ligne">{{ l.objectif.libelle }}</span>
+        <small>{% if l.eval %}{{ l.eval.get_niveau_display }}{% if l.eval.progression > 0 %} · <span class="progres">+{{ l.eval.progression }} depuis « {{ l.eval.get_niveau_initial_display }} »</span>{% endif %}{% if l.eval.besoin_aide %} · aide demandée{% endif %}{% else %}Non évalué{% endif %}</small></span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endwith %}{% empty %}
+<div class="card empty"><span class="ico-tile done">{% icon "check-check" %}</span><strong>Rien à retravailler</strong>Tous tes objectifs évalués sont acquis. Bravo !</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

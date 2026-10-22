@@ -37,9 +37,18 @@ class ParametresTests(BaseTest):
         r = c.post("/parametres/identite/", {"nom_plateforme": "Acme", "suffixe": "Academy", "slogan": "x",
                                              "logo": SimpleUploadedFile("logo.png", b"\x89PNG", "image/png")})
         self.assertEqual(r.status_code, 302)
-        self.assertContains(self.client_de(self.app_a).get("/"), "Acme <em>Academy</em>")
+        page = self.client_de(self.app_a).get("/")
+        self.assertContains(page, 'alt="Acme"')
+        self.assertContains(page, "<em>Academy</em>")
         logo = Parametres.charger().logo.name
+        self.assertContains(page, f'src="/media/{logo}"')
         self.assertEqual(self.client.get(f"/media/{logo}").status_code, 200)
+
+    def test_logo_officiel_par_defaut(self):
+        """Sans logo déposé, la barre latérale et l'onglet affichent le logo officiel 2KPI."""
+        r = self.client_de(self.app_a).get("/")
+        self.assertContains(r, 'src="/static/img/logo-2kpi.png"')
+        self.assertContains(r, 'href="/static/img/favicon-2kpi.png"')
 
     def test_media_publique_liste_blanche(self):
         for url in ("/media/ressources/x.pdf", "/media/livrables/x.pdf", "/media/prive/x"):

@@ -2,7 +2,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import models
 from apps.core.stockage import stockage_prive
-from apps.formation.models import Formation, Module, Seance, Competence
+from apps.formation.models import Formation, Module, ObjectifSeance, Seance, Competence
 
 
 class Inscription(models.Model):
@@ -198,3 +198,42 @@ class Soutenance(models.Model):
 
     def __str__(self):
         return f"Soutenance — {self.inscription.apprenant}"
+
+
+class AutoEvaluation(models.Model):
+    """Position de l'apprenant sur un objectif de séance. Le premier niveau déclaré est conservé
+    (niveau_initial) pour mesurer la progression ; l'apprenant peut se réévaluer autant qu'il veut."""
+    class Niveau(models.IntegerChoices):
+        PAS_ENCORE = 1, "Pas encore"
+        AVEC_AIDE = 2, "Avec de l'aide"
+        AUTONOME = 3, "En autonomie"
+        EXPERT = 4, "Je peux l'expliquer"
+
+    AIDE = {1: "Je ne sais pas encore le faire.", 2: "J'y arrive en m'aidant des supports ou d'une personne.",
+            3: "Je sais le faire seul(e).", 4: "Je maîtrise au point de l'expliquer à quelqu'un d'autre."}
+    SEUIL_ACQUIS = 3  # « En autonomie » et au-delà : objectif atteint
+
+    inscription = models.ForeignKey(Inscription, on_delete=models.CASCADE, related_name="autoevaluations")
+    objectif = models.ForeignKey(ObjectifSeance, on_delete=models.CASCADE, related_name="autoevaluations")
+    niveau = models.PositiveSmallIntegerField(choices=Niveau.choices)
+    niveau_initial = models.PositiveSmallIntegerField(choices=Niveau.choices)
+    commentaire = models.CharField("Ce qui me bloque / ce que j'ai compris", max_length=500, blank=True)
+    besoin_aide = models.BooleanField("Je souhaite en reparler avec le formateur", default=False)
+    cree_le = models.DateTimeField(auto_now_add=True)
+    modifie_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Auto-évaluation"
+        verbose_name_plural = "Auto-évaluations"
+        unique_together = ("inscription", "objectif")
+
+    @property
+    def acquis(self):
+        return self.niveau >= self.SEUIL_ACQUIS
+
+    @property
+    def progression(self):
+        return self.niveau - self.niveau_initial
+
+    def __str__(self):
+        return f"{self.inscription.apprenant} · {self.objectif} : {self.niveau}/4"

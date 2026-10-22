@@ -9,7 +9,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from apps.agenda.models import Promotion
-from apps.core.permissions import ADMIN, admin_requis, appliquer_role, role_de
+from apps.core.permissions import ADMIN, FORMATEUR, admin_requis, appliquer_role, role_de
 from apps.evaluation.models import Inscription
 from apps.evaluation.utils import inscription_courante
 from .forms import (CompteAdminForm, CompteForm, CreationCompteForm, MotDePasseOublieForm, NouvelUtilisateurForm,
@@ -27,9 +27,12 @@ def profil(request):
     items = [(f.verbose_name, getattr(prerequis, f.name), getattr(prerequis, f"get_{f.name}_display")())
              for f in Prerequis._meta.fields if f.choices]
     faits = sum(1 for _, v, _ in items if v == Prerequis.Statut.OK)
+    from .services import promotions_du_formateur
+    formateur = role_de(request.user) == FORMATEUR
     return render(request, "comptes/profil.html", {
         "profil": profil, "prerequis": items, "prerequis_ok": faits,
-        "inscription": inscription_courante(request.user),
+        "inscription": inscription_courante(request.user) if role_de(request.user) == "apprenant" else None,
+        "promotions_encadrees": promotions_du_formateur(request.user) if formateur else None,
     })
 
 
@@ -46,7 +49,7 @@ def profil_modifier(request):
     profil, prerequis = _profil_complet(user)
     data, files = (request.POST, request.FILES) if request.method == "POST" else (None, None)
     compte_form = CompteForm(data, instance=user, prefix="c")
-    profil_form = ProfilForm(data, files, instance=profil, prefix="p")
+    profil_form = ProfilForm(data, files, instance=profil, prefix="p", role=role_de(user))
     prerequis_form = PrerequisForm(data, instance=prerequis, prefix="r") if role_de(user) == "apprenant" else None
     forms_ = [f for f in (compte_form, profil_form, prerequis_form) if f]
     if request.method == "POST" and all(f.is_valid() for f in forms_):
@@ -61,14 +64,17 @@ def profil_modifier(request):
 
 @admin_requis
 def utilisateur_editer(request, pk):
-    """L'admin modifie toutes les informations d'un compte (le sien compris)."""
+    """L'admin modifie toutes les informations d'un compte (le sien compris). Les champs dépendent
+    du rôle : promotion et inscription pour un apprenant, promotions encadrées pour un formateur."""
+    from .services import definir_promotions_formateur, promotions_du_formateur
     cible = get_object_or_404(User, pk=pk)
     profil, prerequis = _profil_complet(cible)
     insc = Inscription.objects.filter(apprenant=cible).order_by("-id").first()
     data, files = (request.POST, request.FILES) if request.method == "POST" else (None, None)
     compte_form = CompteAdminForm(data, instance=cible, prefix="c",
                                   initial={"role": role_de(cible), "promotion": insc.promotion_id if insc else None,
-                                           "statut_inscription": insc.statut if insc else Inscription.Statut.EN_COURS})
+                                           "statut_inscription": insc.statut if insc else "",
+                                           "promotions_formateur": list(promotions_du_formateur(cible))})
     profil_form = ProfilForm(data, files, instance=profil, prefix="p")
     prerequis_form = PrerequisForm(data, instance=prerequis, prefix="r") if role_de(cible) == "apprenant" else None
     forms_ = [f for f in (compte_form, profil_form, prerequis_form) if f]
@@ -86,13 +92,17 @@ def utilisateur_editer(request, pk):
                 if prerequis_form:
                     prerequis_form.save()
                 appliquer_role(cible, role)
-                promo = compte_form.cleaned_data["promotion"]
-                if role == Profil.Role.APPRENANT and promo:
-                    insc = _rattacher(cible, promo)
-                statut = compte_form.cleaned_data.get("statut_inscription")
-                if insc and statut and insc.statut != statut:
-                    insc.statut = statut
-                    insc.save(update_fields=["statut"])
+                if role == Profil.Role.APPRENANT:
+                    promo = compte_form.cleaned_data["promotion"]
+                    if promo:
+                        insc = _rattacher(cible, promo)
+                    statut = compte_form.cleaned_data.get("statut_inscription")
+                    if insc and statut and insc.statut != statut:
+                        insc.statut = statut
+                        insc.save(update_fields=["statut"])
+                elif role == Profil.Role.FORMATEUR:
+                    definir_promotions_formateur(cible, compte_form.cleaned_data["promotions_formateur"],
+                                                 request.user)
             if cible == request.user and compte_form.cleaned_data["nouveau_mdp"]:
                 from django.contrib.auth import update_session_auth_hash
                 update_session_auth_hash(request, cible)
@@ -126,11 +136,15 @@ def utilisateurs(request):
             appliquer_role(user, d["role"])
             if d["role"] == Profil.Role.APPRENANT and d["promotion"]:
                 _rattacher(user, d["promotion"])
+            elif d["role"] == Profil.Role.FORMATEUR and d["promotions_formateur"]:
+                from .services import definir_promotions_formateur
+                definir_promotions_formateur(user, d["promotions_formateur"], request.user)
         messages.success(request, f"Compte « {user.username} » créé ({user.profil.get_role_display()}).")
         return redirect("comptes:utilisateurs")
 
     filtre, q = request.GET.get("role", ""), request.GET.get("q", "").strip()
-    qs = User.objects.select_related("profil").prefetch_related("inscriptions__promotion").order_by(
+    qs = User.objects.select_related("profil").prefetch_related(
+        "inscriptions__promotion", "promotions_encadrees", "affectations__promotion").order_by(
         "-is_active", "last_name", "first_name", "username")
     if filtre in Profil.Role.values:
         qs = qs.filter(profil__role=filtre)
@@ -140,7 +154,14 @@ def utilisateurs(request):
     lignes = []
     for u in qs:
         insc = max(u.inscriptions.all(), key=lambda i: i.id, default=None)
-        lignes.append({"u": u, "role": role_de(u), "promotion": insc.promotion if insc else None})
+        role = role_de(u)
+        encadrees = []
+        if role == FORMATEUR:  # référent d'abord, puis affectations (module par module ou toutes)
+            encadrees = [(p, True) for p in u.promotions_encadrees.all()]
+            vues = {p.pk for p, _ in encadrees}
+            encadrees += [(a.promotion, False) for a in u.affectations.all() if a.promotion_id not in vues]
+        lignes.append({"u": u, "role": role, "promotion": insc.promotion if insc else None,
+                       "encadrees": encadrees})
     compte = {r: Profil.objects.filter(role=r).count() for r in Profil.Role.values}
     return render(request, "comptes/utilisateurs.html", {
         "lignes": lignes, "form": form, "roles": Profil.Role.choices, "filtre": filtre, "q": q,

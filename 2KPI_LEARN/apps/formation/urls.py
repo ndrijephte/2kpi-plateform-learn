@@ -6,6 +6,7 @@ urlpatterns = [
     path("modules/", views.liste_modules, name="modules"),
     path("modules/<str:code>/", views.detail_module, name="module_detail"),
     path("seance/<int:pk>/", views.detail_seance, name="seance"),
+    path("seance/<int:pk>/objectifs/", views.objectifs_seance, name="objectifs"),
     path("ressources/", views.ressources, name="ressources"),
     path("ressources/ajouter/", views.documents_ajouter, name="ressource_ajouter"),
     path("ressources/<int:pk>/modifier/", views.ressource_editer, name="ressource_modifier"),

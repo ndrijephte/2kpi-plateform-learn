@@ -10,10 +10,12 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from apps.core.fichiers import valider_fichier
 from apps.core.permissions import APPRENANT, formateur_requis, formations_gerables, modules_gerables, role_de
 from .acces import acces_module, etats_formateur, etats_modules
-from .forms import CibleForm, DocumentsFormSet, RessourceForm
+from .forms import CibleForm, DocumentsFormSet, ObjectifsForm, RessourceForm
 from .models import Formation, Module, Ressource, Seance
 from apps.agenda.models import Evenement
 from apps.evaluation.models import Livrable
+from apps.evaluation import autoevaluation
+from apps.evaluation.models import AutoEvaluation
 from apps.evaluation.utils import inscription_courante, meilleurs_scores
 
 
@@ -95,8 +97,12 @@ def detail_module(request, code):
         return _verrouille(request, module, etat)
     rendus = _livrables_rendus(insc)
     dates = _dates_promo(insc)
-    seances = [{"seance": s, "rendu": s.id in rendus, "evenement": dates.get(s.id)}
-               for s in module.seances.all()]
+    liste = list(module.seances.prefetch_related("objectifs_seance"))
+    objectifs = {s.id: [o for o in s.objectifs_seance.all() if o.actif] for s in liste}
+    evals = autoevaluation.evaluations_de(insc, [o for objs in objectifs.values() for o in objs])
+    seances = [{"seance": s, "rendu": s.id in rendus, "evenement": dates.get(s.id),
+                "autoeval": autoevaluation.bilan_seance(evals, objectifs[s.id])}
+               for s in liste]
     quiz = module.quiz.first()
     score = meilleurs_scores(insc).get(quiz.id) if quiz else None
     return render(request, "formation/module_detail.html", {
@@ -116,6 +122,21 @@ def detail_seance(request, pk):
     if insc and insc.formation_id != seance.module.formation_id:
         insc = None
     livrable = Livrable.objects.filter(inscription=insc, seance=seance).first() if insc else None
+    objectifs = list(seance.objectifs_seance.filter(actif=True))
+    peut_s_evaluer = bool(insc) and role_de(request.user) == APPRENANT
+
+    if request.method == "POST" and request.POST.get("action") == "autoevaluation":
+        if not peut_s_evaluer:
+            messages.error(request, "L'auto-évaluation est réservée aux apprenants inscrits à la formation.")
+            return redirect("formation:seance", pk=seance.pk)
+        n, aides = autoevaluation.enregistrer(insc, objectifs, request.POST)
+        autoevaluation.signaler_besoin_aide(insc, seance, aides)
+        if not n:
+            messages.error(request, "Choisis ton niveau pour au moins un objectif.")
+        else:
+            messages.success(request, "Auto-évaluation enregistrée." + (
+                " Ton formateur est prévenu de ta demande d'aide." if aides else ""))
+        return redirect(f"{reverse('formation:seance', args=[seance.pk])}#autoevaluation")
 
     if request.method == "POST":
         if not insc:
@@ -147,7 +168,12 @@ def detail_seance(request, pk):
     suivante = toutes[i + 1] if i + 1 < len(toutes) else None
 
     ressources = list(seance.ressources.select_related("ajoute_par"))
+    evals = autoevaluation.evaluations_de(insc, objectifs) if peut_s_evaluer else {}
     return render(request, "formation/seance_detail.html", {
+        "objectifs": [{"objectif": o, "eval": evals.get(o.pk)} for o in objectifs],
+        "bilan_autoeval": autoevaluation.bilan_seance(evals, objectifs),
+        "peut_s_evaluer": peut_s_evaluer, "niveaux": autoevaluation.echelle(),
+        "promotions_seance": _promotions_du_module(request.user, seance.module) if role_de(request.user) != APPRENANT else [],
         "seance": seance, "livrable": livrable, "inscription": insc,
         "ressources": ressources, "visios": [r for r in ressources if r.est_visio],
         "evenement": _dates_promo(insc).get(seance.id),
@@ -155,6 +181,31 @@ def detail_seance(request, pk):
         "peut_gerer": role_de(request.user) != APPRENANT,
         "position": i + 1, "total": len(toutes),
     })
+
+
+def _promotions_du_module(user, module):
+    """Promotions (actives) où l'utilisateur intervient sur ce module : liens vers la synthèse des auto-évaluations."""
+    from apps.core.permissions import interventions, promotions_visibles
+    perimetre = interventions(user)
+    promos = promotions_visibles(user).filter(formation_id=module.formation_id, active=True)
+    if perimetre is not None:
+        promos = [p for p in promos if perimetre.get(p.pk) is None or module.pk in perimetre[p.pk]]
+    return list(promos)
+
+
+@formateur_requis
+def objectifs_seance(request, pk):
+    """Le formateur (ou l'admin) rédige les objectifs d'une séance de ses modules."""
+    seance = get_object_or_404(Seance.objects.select_related("module", "module__formation"), pk=pk)
+    if not modules_gerables(request.user).filter(pk=seance.module_id).exists():
+        raise Http404
+    form = ObjectifsForm(request.POST or None, seance=seance)
+    if request.method == "POST" and form.is_valid():
+        form.enregistrer_objectifs(seance)
+        messages.success(request, "Objectifs de la séance enregistrés.")
+        return redirect("formation:seance", pk=seance.pk)
+    archives = seance.objectifs_seance.filter(actif=False)
+    return render(request, "formation/objectifs_form.html", {"seance": seance, "form": form, "archives": archives})
 
 
 # ---------- Ressources pédagogiques (formateur / admin) ----------

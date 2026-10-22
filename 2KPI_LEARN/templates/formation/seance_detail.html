@@ -13,6 +13,7 @@
 
 <div class="grid-2">
   <div>
+    {% include "formation/_autoevaluation.html" %}
     <div class="card">
       <div class="card-head">
         <h2 class="section-title">{% icon "download" size=18 %} Ressources</h2>
@@ -61,7 +62,7 @@
     {% endfor %}
     {% if seance.objectifs %}
     <div class="card highlight">
-      <h2 class="section-title">{% icon "target" size=18 %} Objectifs &amp; déroulé</h2>
+      <h2 class="section-title">{% icon "info" size=18 %} Présentation &amp; déroulé</h2>
       <p>{{ seance.objectifs|linebreaksbr }}</p>
     </div>
     {% endif %}

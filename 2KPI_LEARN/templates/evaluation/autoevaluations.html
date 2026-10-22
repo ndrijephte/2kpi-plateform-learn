@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Auto-évaluations — {{ promotion.nom }}{% endblock %}
+{% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<a href="{% url 'agenda:planning' promotion.pk %}">{{ promotion.nom }}</a>{% icon "chevron-right" size=14 %}<span>Auto-évaluations</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "gauge" size=14 %} {{ promotion.formation.titre }} · {{ synthese.nb_inscrits }} apprenant{{ synthese.nb_inscrits|pluralize }}</span>
+    <h1>Auto-évaluations — {{ promotion.nom }}</h1>
+    <p class="muted">Comment les apprenants se positionnent sur les objectifs de tes séances : repère les notions à reprendre et réponds aux demandes d'aide.</p>
+  </div>
+  <a class="btn btn-secondary" href="{% url 'agenda:planning' promotion.pk %}">{% icon "arrow-left" size=16 %} Planning</a>
+</div>
+
+<div class="toolbar">
+  <nav class="tabs" aria-label="Filtrer">
+    <a href="?{% if module_id %}module={{ module_id }}{% endif %}" {% if not filtre %}class="on"{% endif %}>Toutes les séances</a>
+    <a href="?filtre=aide{% if module_id %}&module={{ module_id }}{% endif %}" {% if filtre == "aide" %}class="on"{% endif %}>{% icon "bell" size=14 %} Demandes d'aide</a>
+  </nav>
+  {% if modules|length > 1 %}
+  <form method="get">{% if filtre %}<input type="hidden" name="filtre" value="{{ filtre }}">{% endif %}
+    <select name="module" aria-label="Module" onchange="this.form.submit()">
+      <option value="">Tous mes modules</option>
+      {% for m in modules %}<option value="{{ m.pk }}" {% if module_id == m.pk|stringformat:"d" %}selected{% endif %}>{{ m.code }} — {{ m.titre }}</option>{% endfor %}
+    </select><noscript><button class="btn btn-sm btn-secondary">OK</button></noscript>
+  </form>
+  {% endif %}
+</div>
+
+<p class="echelle-cle">{% for v, lib, aide in niveaux %}<span title="{{ aide }}"><i class="niveau-{{ v }}"></i>{{ v }} · {{ lib }}</span>{% endfor %}</p>
+
+{% for bloc in synthese.seances %}{% with s=bloc.seance %}
+<section class="card autoeval-seance" id="seance-{{ s.pk }}">
+  <div class="card-head">
+    <h2 class="section-title"><span class="pill">{{ s.module.code }}</span> <a href="{% url 'formation:seance' s.pk %}">{{ s.theme|default:"Séance" }}</a></h2>
+    <span class="actions">
+      <span class="pill" title="Apprenants ayant répondu à au moins un objectif">{{ bloc.repondants }}/{{ synthese.nb_inscrits }} répondant{{ bloc.repondants|pluralize }}</span>
+      {% if bloc.aides %}<span class="pill pill-ko">{% icon "bell" size=12 %} {{ bloc.aides }} demande{{ bloc.aides|pluralize }} d'aide</span>{% endif %}
+      {% if bloc.alerte %}<span class="pill pill-warn" title="Moins de la moitié des répondants se disent autonomes sur au moins un objectif">À reprendre</span>{% endif %}
+    </span>
+  </div>
+  {% for o in bloc.objectifs %}
+  <div class="objectif-synthese">
+    <div class="objectif-titre">
+      <span class="grow">{{ o.objectif.libelle }}</span>
+      {% if o.pct_acquis is not None %}<strong class="{% if o.pct_acquis < 50 %}texte-alerte{% endif %}">{{ o.pct_acquis }} % autonomes</strong>{% else %}<small class="muted">aucune réponse</small>{% endif %}
+    </div>
+    {% if o.nb %}
+    <div class="repartition" role="img" aria-label="{% for r in o.repartition %}{{ r.libelle }} : {{ r.nb }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+      {% for r in o.repartition %}{% if r.nb %}<span class="niveau-{{ r.niveau }}" style="flex:{{ r.nb }}" title="{{ r.libelle }} : {{ r.nb }} ({{ r.pct }} %)">{{ r.nb }}</span>{% endif %}{% endfor %}
+    </div>
+    <details class="objectif-detail" {% if o.aides %}open{% endif %}>
+      <summary class="link">{% icon "users" size=13 %} Détail par apprenant{% if o.commentaires %} · {{ o.commentaires|length }} commentaire{{ o.commentaires|pluralize }}{% endif %}</summary>
+      <ul class="list">
+        {% for a in o.reponses %}
+        <li class="list-item">
+          <span class="niveau-badge niveau-{{ a.niveau }}" title="{{ a.get_niveau_display }}">{{ a.niveau }}</span>
+          <span class="grow"><strong>{{ a.inscription.apprenant.get_full_name|default:a.inscription.apprenant.username }}</strong>
+            <small>{{ a.get_niveau_display }}{% if a.progression > 0 %} · +{{ a.progression }} depuis la 1<sup>re</sup> évaluation{% endif %} · {{ a.modifie_le|date:"d/m H:i" }}</small>
+            {% if a.commentaire %}<small class="commentaire">« {{ a.commentaire }} »</small>{% endif %}</span>
+          {% if a.besoin_aide %}
+          <form method="post">{% csrf_token %}<input type="hidden" name="autoevaluation" value="{{ a.pk }}">
+            <button class="btn btn-sm" type="submit" title="Prévient l'apprenant et retire la demande">{% icon "check" size=14 %} Aide apportée</button>
+          </form>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% endwith %}{% empty %}
+<div class="card empty"><span class="ico-tile">{% icon "target" %}</span>
+  {% if filtre == "aide" %}<strong>Aucune demande d'aide en attente</strong>Les demandes des apprenants apparaîtront ici (tu en es aussi notifié).
+  {% else %}<strong>Aucun objectif défini sur tes séances</strong>Rédige les objectifs depuis la page de chaque séance (bouton « Rédiger les objectifs ») : les apprenants pourront alors s'auto-évaluer.{% endif %}</div>
+{% endfor %}
+{% endblock %}

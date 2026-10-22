@@ -17,7 +17,7 @@ class Parametres(models.Model):
     suffixe = models.CharField("Suffixe (accent)", max_length=30, default="Learn", blank=True)
     logo = models.FileField("Logo", upload_to="parametres/", blank=True,
                             validators=[FileExtensionValidator(IMAGES)],
-                            help_text="PNG, JPG, WEBP ou SVG, idéalement carré. Vide = pictogramme par défaut.")
+                            help_text="PNG, JPG, WEBP ou SVG, sur fond transparent ou blanc. Vide = logo officiel 2KPI.")
     slogan = models.CharField("Signature (pied de page)", max_length=120,
                               default="Knowledge · Key · Planning · Innovation", blank=True)
     email_contact = models.EmailField("E-mail de contact", blank=True)

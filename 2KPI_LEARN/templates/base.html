@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}{{ site_nom }}{% endblock %}</title>
-{% if logo_url %}<link rel="icon" href="{{ logo_url }}">{% endif %}
+<link rel="icon" href="{{ favicon_url }}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&display=swap">
@@ -71,6 +71,8 @@
         {% icon "dashboard" %}<span>Tableau de bord</span></a>
       <a href="{% url 'formation:modules' %}" {% if rubrique == "cours" %}class="active" aria-current="page"{% endif %}>
         {% icon "book-open" %}<span>Mon cours</span></a>
+      <a href="{% url 'evaluation:mes_acquis' %}" {% if rubrique == "acquis" %}class="active" aria-current="page"{% endif %}>
+        {% icon "target" %}<span>Mes acquis</span></a>
       <a href="{% url 'agenda:mon_agenda' %}" {% if rubrique == "agenda" %}class="active" aria-current="page"{% endif %}>
         {% icon "calendar-days" %}<span>Mon agenda</span></a>
       {% endif %}
@@ -132,6 +134,16 @@
   document.querySelectorAll("[data-nav-close]").forEach(function (el) { el.addEventListener("click", function () { set(false); }); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") set(false); });
 })();
+/* Formulaires de compte : n'afficher que les champs du rôle choisi (apprenant / formateur) */
+document.querySelectorAll("[data-choix-role]").forEach(function (choix) {
+  function maj() {
+    choix.form.querySelectorAll("[data-role]").forEach(function (el) {
+      var champ = el.closest(".field");
+      if (champ) champ.hidden = el.getAttribute("data-role") !== choix.value;
+    });
+  }
+  choix.addEventListener("change", maj); maj();
+});
 </script>
 {% endblock %}
 </body>

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Formation, Module, Seance, Competence, Ressource
+from .models import Formation, Module, ObjectifSeance, Seance, Competence, Ressource
 
 class SeanceInline(admin.TabularInline):
     model = Seance
@@ -21,10 +21,15 @@ class ModuleAdmin(admin.ModelAdmin):
     ordering = ("ordre",)
     inlines = [CompetenceInline, SeanceInline]
 
+class ObjectifSeanceInline(admin.TabularInline):
+    model = ObjectifSeance
+    extra = 0
+
 @admin.register(Seance)
 class SeanceAdmin(admin.ModelAdmin):
     list_display = ("module", "ordre", "theme", "semaine", "jour", "heure_debut", "duree_prevue_h", "mode")
     list_filter = ("module__formation", "jour", "mode")
+    inlines = [ObjectifSeanceInline]
 
 @admin.register(Competence)
 class CompetenceAdmin(admin.ModelAdmin):

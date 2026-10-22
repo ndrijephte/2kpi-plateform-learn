@@ -38,7 +38,9 @@ Pages : `/` (tableau de bord) · `/formation/modules/` · `/agenda/` · `/agenda
 | Planning, présences, correction | — | **ses** promotions, **ses** modules (attribués par l'admin) | toutes |
 | Utilisateurs, rôles, rattachement | — | — | `/comptes/utilisateurs/` |
 | Créer une promotion, choisir le référent | — | — | `/agenda/promotions/` |
+| Confier une ou plusieurs promotions à un formateur | — | — | Utilisateurs › fiche du formateur |
 | Autoriser des formateurs, module par module | — | — | Promotions › **Formateurs** |
+| Auto-évaluation sur les objectifs des séances | s'évalue, **Mes acquis** | rédige les objectifs, synthèse, demandes d'aide | toutes |
 | Ouvrir les modules aux apprenants | — | consultation | Promotions › **Accès** |
 | Générer / recaler le calendrier | — | référent uniquement | toutes |
 | Admin Django | — | — | ✔ (accès synchronisé avec le rôle) |
@@ -54,8 +56,9 @@ Le rôle **Formateur** correspond aux enseignants.
 
 - **Super-admin** : `python manage.py createsuperuser` — renseigner l'**e-mail** (indispensable au
   « mot de passe oublié »).
-- **Apprenants, formateurs, admins** : **Utilisateurs → Nouveau compte** (rôle, promotion, mot de
-  passe provisoire).
+- **Apprenants, formateurs, admins** : **Utilisateurs → Nouveau compte** (rôle, mot de passe
+  provisoire ; promotion pour un apprenant, une ou plusieurs promotions encadrées pour un formateur).
+  La fiche d'un compte n'affiche que les champs de son rôle.
 - **Libre-service** : `/creer-mon-compte/` (bouton « Créer mon compte » de la vitrine) — apprenant ou
   étudiant ; contenus accessibles seulement après rattachement à une promotion (candidature acceptée).
 - **Candidatures** de la vitrine : *Accepter* crée le compte, l'inscrit et envoie le lien d'activation.
@@ -71,16 +74,33 @@ Un **apprenant** n'ouvre un module (séances, ressources, quiz, dépôt de livra
 
 Un **formateur** n'accède à une promotion, à sa formation et à ses modules que s'il en est le
 **référent** (tous les modules) ou s'il y est **affecté** par l'admin (modèle `Affectation` : modules
-cochés, ou tous). Sans affectation, il ne voit aucune formation. Tout est centralisé dans
+cochés, ou tous). Sans affectation, il ne voit aucune formation. Cocher une promotion sur la fiche du
+formateur crée une affectation « tous les modules » (les affectations module par module existantes
+sont conservées) ; la décocher retire l'accès, y compris le rôle de référent. Tout est centralisé dans
 `apps/core/permissions.py` (`interventions`, `q_interventions`, `modules_gerables`) et
 `apps/formation/acces.py`.
 
 Les fichiers des ressources et des livrables sont stockés dans `prive/` (jamais servis par le serveur
 web) et téléchargés uniquement via l'application après contrôle des droits.
 
+### Auto-évaluation sur les objectifs des séances
+
+- Chaque séance porte des **objectifs** formulés pour l'apprenant (« À la fin de la séance, je suis
+  capable de… ») : saisis par l'admin (Paramètres › séance) ou par le formateur du module (bouton
+  « Rédiger les objectifs » sur la page de la séance). Modèle `ObjectifSeance`.
+- L'apprenant se positionne sur chacun (1 Pas encore · 2 Avec de l'aide · 3 En autonomie · 4 Je peux
+  l'expliquer), peut commenter et **demander de l'aide** ; il se réévalue quand il veut, son premier
+  niveau est gardé pour mesurer la progression (`AutoEvaluation`). Vue d'ensemble : **Mes acquis**.
+- Le formateur reçoit les demandes d'aide (notification + tableau de bord) et consulte la **synthèse**
+  de chaque promotion (Planning › *Auto-évaluations*) : répartition des niveaux par objectif, part
+  d'apprenants autonomes, commentaires ; « Aide apportée » prévient l'apprenant.
+- Reformuler un objectif conserve les réponses ; un objectif retiré qui a des réponses est archivé.
+  Logique : `apps/evaluation/autoevaluation.py`.
+
 ### Paramétrage (admin)
 
-- **Identité & logo** : nom, suffixe, logo (barre latérale, connexion, favicon), signature, e-mail de contact.
+- **Identité & logo** : nom, suffixe, logo (barre latérale, connexion, favicon ; vide = logo officiel
+  2KPI `static/img/logo-2kpi.png`), signature, e-mail de contact.
 - **Page de connexion** : image de fond (défaut : `static/img/connexion.jpg`, issue de `docs/accueil.png`),
   titre et accroche ; un voile sombre garantit la lisibilité.
 - **Formations & séances** : chaque séance a son créneau (semaine, jour, heure, durée, mode, lieu)
@@ -115,8 +135,9 @@ Mises à jour : **automatiques à chaque `git push` sur main** (`../docs/DEPLOIE
 ## Tests
 
 ```bash
-python manage.py test        # 55 tests : rôles, autorisations (apprenants, formateurs par module),
-                             # fichiers, quiz, candidatures, création de compte, mot de passe oublié, e-mails
+python manage.py test        # 68 tests : rôles, autorisations (apprenants, formateurs par module),
+                             # promotions des formateurs, auto-évaluation, fichiers, quiz, candidatures,
+                             # création de compte, mot de passe oublié, e-mails
 ```
 
 ## Exploitation

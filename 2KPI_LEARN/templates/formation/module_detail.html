@@ -29,6 +29,7 @@
             <strong>{{ s.theme|default:"Séance à venir" }}</strong>
             <small>Sem. {{ s.semaine_effective }} · {{ s.get_jour_display }} {{ s.heure_debut|time:"H:i" }} · {{ s.duree_prevue_h }} h{% if item.evenement %} · {{ item.evenement.date_debut|date:"D d M, H:i" }}{% endif %}</small>
           </span>
+          {% if est_apprenant and item.autoeval.total %}<span class="pill{% if item.autoeval.complet %} pill-ok{% endif %}" title="Objectifs auto-évalués / acquis">{% icon "target" size=12 %} {{ item.autoeval.acquis }}/{{ item.autoeval.total }} acquis</span>{% endif %}
           {% if item.rendu %}<span class="pill pill-ok">Livrable rendu</span>{% endif %}
           <span class="chev">{% icon "chevron-right" size=18 %}</span>
         </a></li>

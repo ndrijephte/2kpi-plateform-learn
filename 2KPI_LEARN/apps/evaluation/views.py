@@ -142,3 +142,57 @@ def livrable_fichier(request, pk):
         return FileResponse(l.fichier.open("rb"), as_attachment=True, filename=l.fichier.name.rsplit("/", 1)[-1])
     except FileNotFoundError:
         raise Http404
+
+
+# ---------- Auto-évaluation sur les objectifs des séances ----------
+
+@role_requis(APPRENANT)
+def mes_acquis(request):
+    """L'apprenant retrouve toutes ses auto-évaluations (modules ouverts) et ce qu'il doit retravailler."""
+    from apps.formation.acces import etats_modules
+    from . import autoevaluation
+    insc = inscription_courante(request.user)
+    synthese = None
+    if insc:
+        etats = etats_modules(insc, insc.formation.modules.all())
+        synthese = autoevaluation.synthese_apprenant(insc, [mid for mid, e in etats.items() if e.ouvert])
+    filtre = request.GET.get("filtre", "")
+    if synthese and filtre == "a_retravailler":
+        synthese["seances"] = [s for s in synthese["seances"]
+                               if any(not l["eval"] or not l["eval"].acquis for l in s["lignes"])]
+    return render(request, "evaluation/mes_acquis.html", {
+        "inscription": insc, "synthese": synthese, "filtre": filtre})
+
+
+@formateur_requis
+def autoevaluations(request, promo_id):
+    """Synthèse des auto-évaluations d'une promotion, limitée aux séances des modules du formateur."""
+    from apps.formation.models import Seance
+    from . import autoevaluation
+    promo = get_object_or_404(promotions_visibles(request.user).select_related("formation"), pk=promo_id)
+    perimetre = interventions(request.user)
+    seances = Seance.objects.filter(module__formation_id=promo.formation_id)
+    if perimetre is not None and perimetre.get(promo.pk) is not None:
+        seances = seances.filter(module_id__in=perimetre[promo.pk])
+    modules = list(promo.formation.modules.filter(seances__in=seances).distinct().order_by("ordre"))
+    module_id = request.GET.get("module", "")
+    if module_id.isdigit():
+        seances = seances.filter(module_id=module_id)
+    if request.method == "POST":  # le formateur a répondu à une demande d'aide
+        from .models import AutoEvaluation
+        a = get_object_or_404(AutoEvaluation.objects.select_related("inscription__apprenant", "objectif__seance"),
+                              pk=request.POST.get("autoevaluation"), inscription__promotion=promo,
+                              objectif__seance__in=seances, besoin_aide=True)
+        a.besoin_aide = False
+        a.save(update_fields=["besoin_aide"])
+        notifier([a.inscription.apprenant], titre="Ta demande d'aide a été prise en compte",
+                 message=f"Objectif « {a.objectif} » : n'hésite pas à te réévaluer après l'échange avec ton formateur.",
+                 type=Notification.Type.INFO, expediteur=request.user)
+        messages.success(request, f"Demande de {a.inscription.apprenant.get_full_name() or a.inscription.apprenant} marquée comme traitée.")
+        return redirect(f"{request.path}?{request.GET.urlencode()}")
+    synthese = autoevaluation.synthese_promotion(promo, seances)
+    if request.GET.get("filtre") == "aide":
+        synthese["seances"] = [s for s in synthese["seances"] if s["aides"]]
+    return render(request, "evaluation/autoevaluations.html", {
+        "promotion": promo, "synthese": synthese, "modules": modules, "module_id": module_id,
+        "filtre": request.GET.get("filtre", ""), "niveaux": autoevaluation.echelle()})

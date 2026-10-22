@@ -7,4 +7,6 @@ urlpatterns = [
     path("quiz/<int:quiz_id>/resultats/", views.quiz_resultats, name="quiz_resultats"),
     path("livrables/", views.livrables, name="livrables"),
     path("livrables/<int:pk>/fichier/", views.livrable_fichier, name="livrable_fichier"),
+    path("mes-acquis/", views.mes_acquis, name="mes_acquis"),
+    path("promotions/<int:promo_id>/auto-evaluations/", views.autoevaluations, name="autoevaluations"),
 ]

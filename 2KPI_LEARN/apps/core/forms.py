@@ -1,5 +1,6 @@
 from django import forms
 from apps.agenda.models import Indisponibilite
+from apps.formation.forms import ObjectifsMixin
 from apps.formation.models import Competence, Formation, Module, Seance
 from .models import Parametres
 
@@ -47,12 +48,24 @@ class ModuleForm(forms.ModelForm):
         return code
 
 
-class SeanceForm(forms.ModelForm):
+class SeanceForm(ObjectifsMixin, forms.ModelForm):
     class Meta:
         model = Seance
         fields = ["theme", "ordre", "semaine", "jour", "heure_debut", "duree_prevue_h", "mode", "lieu", "objectifs"]
         widgets = {"heure_debut": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
                    "objectifs": forms.Textarea(attrs={"rows": 4})}
+        labels = {"objectifs": "Présentation & déroulé"}
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.instance_seance = self.instance
+        self.init_objectifs()
+
+    def save(self, commit=True):
+        seance = super().save(commit)
+        if commit:
+            self.enregistrer_objectifs(seance)
+        return seance
 
 
 class CompetenceForm(forms.ModelForm):

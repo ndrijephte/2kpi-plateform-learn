@@ -83,6 +83,57 @@ class Seance(models.Model):
         return f"{self.module.code} · {self.get_jour_display()} — {self.theme or 'Séance'}"
 
 
+class ObjectifSeance(models.Model):
+    """Objectif d'apprentissage d'une séance, formulé pour l'apprenant (« Je suis capable de… ») :
+    c'est sur lui que porte l'auto-évaluation. Un objectif retiré alors que des apprenants s'y sont
+    déjà évalués est archivé (actif=False) pour conserver leur historique."""
+    seance = models.ForeignKey(Seance, on_delete=models.CASCADE, related_name="objectifs_seance")
+    libelle = models.CharField("Objectif", max_length=300)
+    ordre = models.PositiveIntegerField(default=0)
+    actif = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Objectif de séance"
+        verbose_name_plural = "Objectifs de séance"
+        ordering = ["seance", "ordre", "id"]
+
+    def __str__(self):
+        return self.libelle
+
+
+def definir_objectifs(seance, libelles):
+    """Remplace les objectifs actifs de la séance par `libelles` (dans l'ordre), sans perdre les
+    auto-évaluations : un libellé inchangé garde son objectif ; un libellé reformulé (texte proche)
+    reprend l'objectif d'origine ; un objectif supprimé est archivé s'il a déjà des réponses,
+    effacé sinon. Un libellé identique à un objectif archivé le réactive."""
+    from difflib import SequenceMatcher
+    libelles = list(dict.fromkeys(l.strip()[:300] for l in libelles if l.strip()))  # sans doublons
+    existants = list(seance.objectifs_seance.all())
+    libres = {o.libelle: o for o in existants}
+    retenus = {}
+    for i, lib in enumerate(libelles):
+        if lib in libres:
+            retenus[i] = libres.pop(lib)
+    # Reformulations : appariement glouton des textes les plus proches (ratio ≥ 0,6)
+    paires = sorted(((SequenceMatcher(None, lib.lower(), o.libelle.lower()).ratio(), i, o.libelle)
+                     for i, lib in enumerate(libelles) if i not in retenus
+                     for o in libres.values() if o.actif), reverse=True)
+    for ratio, i, ancien in paires:
+        if ratio >= 0.6 and i not in retenus and ancien in libres:
+            retenus[i] = libres.pop(ancien)
+    for i, lib in enumerate(libelles):
+        o = retenus.get(i) or ObjectifSeance(seance=seance)
+        o.libelle, o.ordre, o.actif = lib, i + 1, True
+        o.save()
+    for o in libres.values():  # retirés de la liste
+        if o.autoevaluations.exists():
+            if o.actif:
+                o.actif = False
+                o.save(update_fields=["actif"])
+        else:
+            o.delete()
+
+
 class Competence(models.Model):
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name="competences")
     code = models.CharField(max_length=15)  # C1.1..C12.2
