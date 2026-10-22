@@ -46,9 +46,10 @@ class ParametresTests(BaseTest):
 
     def test_logo_officiel_par_defaut(self):
         """Sans logo déposé, la barre latérale et l'onglet affichent le logo officiel 2KPI."""
+        from django.templatetags.static import static  # URL versionnée (manifest) en production
         r = self.client_de(self.app_a).get("/")
-        self.assertContains(r, 'src="/static/img/logo-2kpi.png"')
-        self.assertContains(r, 'href="/static/img/favicon-2kpi.png"')
+        self.assertContains(r, f'src="{static("img/logo-2kpi.png")}"')
+        self.assertContains(r, f'href="{static("img/favicon-2kpi.png")}"')
 
     def test_media_publique_liste_blanche(self):
         for url in ("/media/ressources/x.pdf", "/media/livrables/x.pdf", "/media/prive/x"):
