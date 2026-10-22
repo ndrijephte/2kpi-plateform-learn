@@ -38,8 +38,7 @@ class ParametresTests(BaseTest):
                                              "logo": SimpleUploadedFile("logo.png", b"\x89PNG", "image/png")})
         self.assertEqual(r.status_code, 302)
         page = self.client_de(self.app_a).get("/")
-        self.assertContains(page, 'alt="Acme"')
-        self.assertContains(page, "<em>Academy</em>")
+        self.assertContains(page, "Acme <em>Academy</em>")
         logo = Parametres.charger().logo.name
         self.assertContains(page, f'src="/media/{logo}"')
         self.assertEqual(self.client.get(f"/media/{logo}").status_code, 200)

@@ -1,2 +1,2 @@
-<span class="brand-logo"><img src="{{ logo_url }}" alt="{{ parametres.nom_plateforme }}" width="360" height="246"></span>
-{% if parametres.suffixe %}<span class="brand-name"><em>{{ parametres.suffixe }}</em><small>{{ parametres.slogan|default:"Formation pratique en ligne" }}</small></span>{% endif %}
+<span class="brand-logo"><img src="{{ logo_url }}" alt="" width="360" height="246"></span>
+<span class="brand-name"><strong>{{ parametres.nom_plateforme }}{% if parametres.suffixe %} <em>{{ parametres.suffixe }}</em>{% endif %}</strong><small>{{ parametres.slogan|default:"Formation pratique en ligne" }}</small></span>

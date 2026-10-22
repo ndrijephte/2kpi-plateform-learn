@@ -42,18 +42,29 @@ small{font-size:.82rem}
 .sidebar{width:var(--sidebar-w);background:var(--navy);color:#fff;position:fixed;inset:0 auto 0 0;
   display:flex;flex-direction:column;padding:20px 14px 14px;z-index:40;
   background-image:linear-gradient(180deg,var(--navy) 0%,var(--navy-900) 100%)}
-.sidebar-head{display:flex;align-items:center;justify-content:space-between;padding:0 8px}
-.brand{display:inline-flex;align-items:center;gap:12px;font-weight:700;font-size:1.15rem;color:#fff;letter-spacing:.2px;min-width:0}
+.sidebar-head{position:relative;padding:6px 8px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-head .sidebar-close{position:absolute;top:0;right:0}
+.brand{display:inline-flex;align-items:center;gap:14px;font-weight:700;font-size:1.15rem;color:#fff;letter-spacing:.2px;min-width:0}
 .brand:hover{color:#fff}
 .brand em{font-style:normal;color:var(--coral)}
-/* Logo officiel : texte navy sur fond clair → toujours posé sur une tuile blanche */
-.brand-logo{display:grid;place-items:center;flex-shrink:0;width:92px;height:64px;padding:5px 7px;border-radius:12px;
-  background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+/* Logo officiel inscrit dans un cercle blanc (texte navy du logo → fond clair indispensable),
+   cerclé d'un liseré corail discret */
+.brand-logo{display:grid;place-items:center;flex-shrink:0;width:64px;height:64px;padding:9px;border-radius:50%;
+  background:#fff;box-shadow:0 0 0 3px rgba(239,106,82,.55),0 0 0 7px rgba(255,255,255,.06),0 8px 22px rgba(0,0,0,.28)}
 .brand-logo img{display:block;width:100%;height:100%;object-fit:contain}
-.brand-name{display:flex;flex-direction:column;line-height:1.1;min-width:0}
-.brand-name em{font-size:1.35rem;font-weight:700;letter-spacing:.3px}
-.brand-name small{margin-top:4px;font-size:.72rem;font-weight:500;color:rgba(255,255,255,.62);white-space:normal}
-.nav{display:flex;flex-direction:column;gap:2px;margin-top:22px;flex:1;overflow-y:auto}
+.brand-name{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.brand-name strong{font-size:1.2rem;font-weight:700;letter-spacing:.3px}
+.brand-name small{margin-top:5px;font-size:.66rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(255,255,255,.55);white-space:normal}
+/* Barre latérale : logo centré au-dessus, nom et signature dessous */
+.sidebar .brand{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;text-align:center}
+.sidebar .brand-logo{width:96px;height:96px;padding:13px;transition:transform .25s ease}
+.sidebar .brand:hover .brand-logo{transform:scale(1.04)}
+.sidebar .brand-name{align-items:center}
+.sidebar .brand-name strong{font-size:1.3rem}
+.sidebar .brand-name small{font-size:.58rem;letter-spacing:.05em;white-space:nowrap}
+.nav{display:flex;flex-direction:column;gap:2px;margin-top:14px;flex:1;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
 .nav-section{margin:18px 12px 6px;font-size:.7rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.45)}
 .nav-section:first-child{margin-top:4px}
 .nav a{position:relative;display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;
@@ -267,8 +278,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--coral);b
 .auth-hero-text{max-width:520px}
 .auth-hero-text h2{color:#fff;font-size:2.3rem;font-weight:700;line-height:1.15;margin:0 0 14px;text-shadow:0 2px 18px rgba(0,0,0,.35)}
 .auth-hero-text p{font-size:1.08rem;color:rgba(255,255,255,.88);margin:0 0 26px;text-shadow:0 1px 10px rgba(0,0,0,.3)}
-.brand-lg .brand-logo{width:124px;height:86px;border-radius:14px}
-.brand-lg .brand-name em{font-size:1.7rem}
+.brand-lg .brand-logo{width:88px;height:88px;padding:12px}
+.brand-lg .brand-name strong{font-size:1.6rem}
 .auth-points{list-style:none;padding:0;margin:0;display:grid;gap:12px}
 .auth-points li{display:flex;align-items:center;gap:10px;color:#fff;font-weight:500}
 .auth-points .icon{color:var(--coral);background:rgba(255,255,255,.12);border-radius:8px;padding:6px;width:30px;height:30px}
@@ -279,12 +290,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--coral);b
 .auth-card h1{font-size:1.5rem}
 .brand-card{display:none;color:var(--navy);margin-bottom:22px}
 .brand-card:hover{color:var(--navy)}
-.brand-card .brand-logo{box-shadow:none;border:1px solid var(--border)}
+.brand-card .brand-logo{box-shadow:0 0 0 3px rgba(239,106,82,.45),0 6px 16px rgba(13,32,50,.12)}
 .brand-card .brand-name small{color:var(--soft)}
 .auth-contact{margin:22px 0 0;padding-top:16px;border-top:1px solid var(--border);font-size:.84rem;color:var(--soft);text-align:center}
 .brand-preview{display:inline-flex;align-items:center;gap:12px;padding:14px 18px;border-radius:12px;background:var(--navy);margin-bottom:10px}
 .brand-preview .brand-name{color:#fff}
-.brand-preview .brand-name em{font-style:normal;color:var(--coral)}
 .login-preview{position:relative;height:200px;border-radius:12px;background-size:cover;background-position:center;overflow:hidden;margin-bottom:10px;display:flex;align-items:flex-end}
 .login-preview::before{content:"";position:absolute;inset:0;background:linear-gradient(100deg,rgba(9,24,38,.92),rgba(13,32,50,.45))}
 .login-preview div{position:relative;color:#fff;padding:16px}
@@ -509,5 +519,4 @@ dt.niveau-3,i.niveau-3{color:var(--niv3)} dt.niveau-4,i.niveau-4{color:var(--niv
 .acquis-seance .section-title{display:flex;align-items:center;gap:8px}
 @media (max-width:560px){
   .echelle{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .brand-logo{width:80px;height:56px}
 }
