@@ -139,7 +139,7 @@ Mises à jour : **automatiques à chaque `git push` sur main** (`../docs/DEPLOIE
 ## Tests
 
 ```bash
-python manage.py test        # 72 tests : rôles, autorisations (apprenants, formateurs par module),
+python manage.py test        # 74 tests : rôles, autorisations (apprenants, formateurs par module),
                              # promotions des formateurs, auto-évaluation, fichiers, quiz, candidatures,
                              # création de compte, mot de passe oublié, e-mails
 ```

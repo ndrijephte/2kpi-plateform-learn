@@ -84,5 +84,65 @@ def acces_module(user, module):
         return etats_formateur(user, [module])[module.id]
     from apps.evaluation.models import Inscription
     insc = (Inscription.objects.filter(apprenant=user, formation_id=module.formation_id)
-            .select_related("promotion").order_by("-id").first())
+            .select_related("promotion").order_by("-id"))
+    insc = next((i for i in insc if i.statut == Inscription.Statut.EN_COURS and i.promotion_id), None) or insc.first()
     return etats_modules(insc, [module])[module.id]
+
+
+def diagnostic_apprenant(user):
+    """Pourquoi un apprenant accède (ou non) aux cours : étapes vérifiées dans l'ordre, pour l'admin.
+    Retourne {"ok": bool, "etapes": [(ok, libellé, détail)], "ouverts": [codes], "inscription": insc}."""
+    from apps.agenda.models import AccesModule
+    from apps.evaluation.models import Inscription
+    from apps.evaluation.utils import inscription_courante
+    etapes = []
+
+    def etape(ok, libelle, detail=""):
+        etapes.append((ok, libelle, detail))
+        return ok
+
+    resultat = {"ok": False, "etapes": etapes, "ouverts": [], "inscription": None}
+    role = role_de(user)
+    if not etape(role == APPRENANT, "Rôle apprenant",
+                 "" if role == APPRENANT else f"Le compte a le rôle « {role} » : il ne suit pas les cours comme apprenant."):
+        return resultat
+    if not etape(user.is_active, "Compte actif", "" if user.is_active else "Le compte est désactivé."):
+        return resultat
+    insc = inscription_courante(user)
+    resultat["inscription"] = insc
+    if not etape(insc is not None, "Inscription à une formation",
+                 "Aucune inscription : rattache-le à une promotion (Utilisateurs › Promotion)." if insc is None
+                 else f"{insc.formation}"):
+        return resultat
+    autres = Inscription.objects.filter(apprenant=user).exclude(pk=insc.pk).count()
+    if autres:
+        etapes[-1] = (True, "Inscription à une formation",
+                      f"{insc.formation} (prise en compte ; {autres} autre{'s' if autres > 1 else ''} inscription{'s' if autres > 1 else ''} ignorée{'s' if autres > 1 else ''})")
+    if not etape(insc.statut == Inscription.Statut.EN_COURS, "Inscription « En cours »",
+                 f"Statut actuel : « {insc.get_statut_display()} ». Passe-le à « En cours » sur la fiche du compte."
+                 if insc.statut != Inscription.Statut.EN_COURS else ""):
+        return resultat
+    promo = insc.promotion
+    if not etape(promo is not None, "Rattachement à une promotion",
+                 "Aucune promotion : choisis-la sur la fiche du compte." if promo is None else promo.nom):
+        return resultat
+    if promo.formation_id != insc.formation_id:
+        etape(False, "Promotion de la même formation",
+              f"La promotion « {promo.nom} » relève de « {promo.formation} », l'inscription de « {insc.formation} ». "
+              "Rattache-le de nouveau à la promotion.")
+        return resultat
+    modules = list(insc.formation.modules.order_by("ordre"))
+    etats = etats_promotion(promo, modules)
+    resultat["ouverts"] = [m.code for m in modules if etats[m.id].ouvert]
+    if resultat["ouverts"]:
+        etape(True, "Modules ouverts pour sa promotion", ", ".join(resultat["ouverts"]))
+        resultat["ok"] = True
+    else:
+        ailleurs = sorted({f"{a.module.code} ({a.promotion.nom})" for a in AccesModule.objects.filter(
+            module__formation_id=insc.formation_id, etat=AccesModule.Etat.OUVERT).exclude(promotion=promo)
+            .select_related("module", "promotion")})
+        etape(False, "Modules ouverts pour sa promotion",
+              f"Aucun module ouvert pour « {promo.nom} » (Promotions › Accès)."
+              + (f" Ouverts dans d'autres promotions seulement : {', '.join(ailleurs)}." if ailleurs else "")
+              + ("" if modules else " La formation n'a encore aucun module."))
+    return resultat

@@ -538,3 +538,17 @@ dt.niveau-3,i.niveau-3{color:var(--niv3)} dt.niveau-4,i.niveau-4{color:var(--niv
 @media (max-width:560px){
   .echelle{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* Diagnostic d'accès d'un apprenant (fiche du compte, liste des utilisateurs) */
+.acces-bloque{display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:.78rem;color:var(--coral);text-decoration:none}
+.acces-bloque:hover{text-decoration:underline}
+.diagnostic-ko{box-shadow:inset 3px 0 0 var(--coral)}
+.diagnostic-etapes{list-style:none;margin:0;padding:0}
+.diagnostic-etapes li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--border)}
+.diagnostic-etapes li:first-child{border-top:0}
+.diagnostic-etapes strong{display:block;font-size:.92rem}
+.diagnostic-etapes small{display:block;color:var(--soft)}
+.diagnostic-etapes li.ko small{color:var(--text)}
+.diagnostic-etapes .puce{display:grid;place-items:center;flex-shrink:0;width:22px;height:22px;border-radius:50%;margin-top:1px}
+.diagnostic-etapes .ok .puce{background:#e3f4ea;color:#1f7a4a}
+.diagnostic-etapes .ko .puce{background:#fde8e3;color:var(--coral)}

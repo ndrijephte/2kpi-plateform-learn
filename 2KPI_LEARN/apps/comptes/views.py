@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from apps.agenda.models import Promotion
+from apps.formation.acces import diagnostic_apprenant
 from apps.core.permissions import ADMIN, FORMATEUR, admin_requis, appliquer_role, role_de
 from apps.evaluation.models import Inscription
 from apps.evaluation.utils import inscription_courante
@@ -69,7 +70,7 @@ def utilisateur_editer(request, pk):
     from .services import definir_promotions_formateur, promotions_du_formateur
     cible = get_object_or_404(User, pk=pk)
     profil, prerequis = _profil_complet(cible)
-    insc = Inscription.objects.filter(apprenant=cible).order_by("-id").first()
+    insc = inscription_courante(cible)
     data, files = (request.POST, request.FILES) if request.method == "POST" else (None, None)
     compte_form = CompteAdminForm(data, instance=cible, prefix="c",
                                   initial={"role": role_de(cible), "promotion": insc.promotion_id if insc else None,
@@ -114,6 +115,7 @@ def utilisateur_editer(request, pk):
     return render(request, "comptes/profil_form.html", {
         "compte_form": compte_form, "profil_form": profil_form, "prerequis_form": prerequis_form,
         "cible": cible, "soi": cible == request.user,
+        "diagnostic": diagnostic_apprenant(cible) if role_de(cible) == Profil.Role.APPRENANT else None,
         "retour_url": reverse("comptes:utilisateurs"), "retour_label": "Utilisateurs"})
 
 
@@ -156,15 +158,17 @@ def utilisateurs(request):
                        | Q(last_name__icontains=q) | Q(email__icontains=q))
     lignes = []
     for u in qs:
-        insc = max(u.inscriptions.all(), key=lambda i: i.id, default=None)
         role = role_de(u)
+        insc = inscription_courante(u) if role == Profil.Role.APPRENANT else None
+        diag = diagnostic_apprenant(u) if role == Profil.Role.APPRENANT else None
+        blocage = next((d for ok, _, d in diag["etapes"] if not ok), "") if diag else ""
         encadrees = []
         if role == FORMATEUR:  # référent d'abord, puis affectations (module par module ou toutes)
             encadrees = [(p, True) for p in u.promotions_encadrees.all()]
             vues = {p.pk for p, _ in encadrees}
             encadrees += [(a.promotion, False) for a in u.affectations.all() if a.promotion_id not in vues]
         lignes.append({"u": u, "role": role, "promotion": insc.promotion if insc else None,
-                       "encadrees": encadrees})
+                       "encadrees": encadrees, "blocage": blocage})
     compte = {r: Profil.objects.filter(role=r).count() for r in Profil.Role.values}
     return render(request, "comptes/utilisateurs.html", {
         "lignes": lignes, "form": form, "roles": Profil.Role.choices, "filtre": filtre, "q": q,

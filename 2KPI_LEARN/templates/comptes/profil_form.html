@@ -26,6 +26,21 @@
       </div>
     </div>
     <div>
+      {% if diagnostic %}
+      <div class="card diagnostic{% if not diagnostic.ok %} diagnostic-ko{% endif %}" id="acces">
+        <div class="card-head">
+          <h2 class="section-title">{% icon "shield" size=18 %} Accès aux cours</h2>
+          {% if diagnostic.ok %}<span class="pill pill-ok">{% icon "check" size=12 %} Accès ouvert</span>{% else %}<span class="pill pill-warn">{% icon "lock" size=12 %} Bloqué</span>{% endif %}
+        </div>
+        <ol class="diagnostic-etapes">
+          {% for ok, libelle, detail in diagnostic.etapes %}
+          <li class="{% if ok %}ok{% else %}ko{% endif %}"><span class="puce">{% if ok %}{% icon "check" size=13 stroke=2.5 %}{% else %}{% icon "x" size=13 stroke=2.5 %}{% endif %}</span>
+            <span><strong>{{ libelle }}</strong>{% if detail %}<small>{{ detail }}</small>{% endif %}</span></li>
+          {% endfor %}
+        </ol>
+        {% if diagnostic.inscription.promotion %}<p class="muted"><small>Ouverture des modules : <a class="link" href="{% url 'agenda:promotions' %}">Promotions</a> › {{ diagnostic.inscription.promotion.nom }} › Accès.</small></p>{% endif %}
+      </div>
+      {% endif %}
       {% if prerequis_form %}
       <div class="card">
         <h2 class="section-title">{% icon "list-checks" size=18 %} Prérequis techniques</h2>

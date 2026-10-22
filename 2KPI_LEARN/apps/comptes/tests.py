@@ -314,3 +314,31 @@ class AdministrateurHorsRolesTests(BaseTest):
             debut = html.index(f'name="{champ}"')
             self.assertIn("hidden", html[html.rindex('<div class="field"', 0, debut):debut], champ)
         self.assertNotContains(self.client_de(self.admin).get(reverse("comptes:profil")), "Aucune promotion confiée")
+
+
+class DiagnosticAccesTests(BaseTest):
+    """L'admin voit pourquoi un apprenant accède ou non aux cours."""
+
+    def test_diagnostic_explique_le_blocage(self):
+        from apps.formation.acces import diagnostic_apprenant
+        self.assertTrue(diagnostic_apprenant(self.app_a)["ok"])
+        self.assertEqual(diagnostic_apprenant(self.app_a)["ouverts"], ["M1"])
+        d = diagnostic_apprenant(self.app_b)
+        self.assertFalse(d["ok"])
+        self.assertIn("M1 (Promo A)", d["etapes"][-1][2])  # ouvert ailleurs, pas pour Promo B
+        r = self.client_de(self.admin).get(reverse("comptes:utilisateur_editer", args=[self.app_b.pk]))
+        self.assertContains(r, "Accès aux cours")
+        self.assertContains(r, "Aucun module ouvert pour « Promo B »")
+        self.assertContains(self.client_de(self.admin).get(reverse("comptes:utilisateurs")), "Pas d'accès aux cours")
+        self.insc_a.statut = Inscription.Statut.TERMINEE
+        self.insc_a.save()
+        self.assertIn("Terminée", diagnostic_apprenant(self.app_a)["etapes"][-1][2])
+
+    def test_inscription_plus_recente_ne_masque_pas_le_cours(self):
+        from apps.formation.models import Formation
+        autre = Formation.objects.create(titre="WebSIG")
+        Inscription.objects.create(apprenant=self.app_a, formation=autre, statut=Inscription.Statut.TERMINEE)
+        seance = self.m1.seances.first()
+        c = self.client_de(self.app_a)
+        self.assertEqual(c.get(reverse("formation:seance", args=[seance.pk])).status_code, 200)
+        self.assertEqual(c.get(reverse("formation:modules")).context["formation"], self.formation)

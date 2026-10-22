@@ -57,6 +57,7 @@
           </select>
           <noscript><button class="btn btn-sm btn-secondary">OK</button></noscript>
         </form>
+        {% if l.blocage %}<a class="acces-bloque" href="{% url 'comptes:utilisateur_editer' u.pk %}#acces" title="{{ l.blocage }}">{% icon "lock" size=12 %} Pas d'accès aux cours</a>{% endif %}
         {% if u.is_superuser %}<small class="muted">super-utilisateur</small>{% endif %}
       </td>
       <td>
@@ -69,6 +70,7 @@
           </select>
           <noscript><button class="btn btn-sm btn-secondary">OK</button></noscript>
         </form>
+        {% if l.blocage %}<a class="acces-bloque" href="{% url 'comptes:utilisateur_editer' u.pk %}#acces" title="{{ l.blocage }}">{% icon "lock" size=12 %} Pas d'accès aux cours</a>{% endif %}
         {% elif l.role == "formateur" %}
           {% for p, referent in l.encadrees %}<span class="pill{% if referent %} pill-ok{% endif %}" title="{% if referent %}Formateur référent{% else %}Affecté par l'administration{% endif %}">{{ p.nom }}{% if referent %} · réf.{% endif %}</span> {% empty %}<small class="muted">Aucune promotion</small>{% endfor %}
           <br><a class="link" style="font-size:.82rem" href="{% url 'comptes:utilisateur_editer' u.pk %}#id_c-promotions_formateur">{% icon "pencil" size=12 %} Gérer</a>
