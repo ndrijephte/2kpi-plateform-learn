@@ -144,6 +144,83 @@ document.querySelectorAll("[data-choix-role]").forEach(function (choix) {
   }
   choix.addEventListener("change", maj); maj();
 });
+/* Objectifs de séance : un champ par ligne (Entrée = nouvelle ligne, collage multiligne découpé) */
+document.querySelectorAll("[data-objectifs]").forEach(function (ed) {
+  var liste = ed.querySelector(".objectifs-lignes"), max = +ed.dataset.max || 12;
+  var ajouter = ed.querySelector("[data-ajouter]"), compteur = ed.querySelector("[data-compteur]");
+  var modele = liste.querySelector("li").cloneNode(true);
+  modele.querySelector("input").value = ""; modele.querySelector("input").removeAttribute("id");
+  modele.querySelector("input").placeholder = "Objectif suivant…";
+  function lignes() { return Array.prototype.slice.call(liste.children); }
+  function maj() {
+    var n = lignes().filter(function (li) { return li.querySelector("input").value.trim(); }).length;
+    compteur.textContent = n + " / " + max + " objectif" + (n > 1 ? "s" : "");
+    ajouter.disabled = lignes().length >= max;
+    lignes().forEach(function (li, i) {
+      li.querySelector("input").setAttribute("aria-label", "Objectif " + (i + 1));
+      li.querySelector("[data-monter]").disabled = i === 0;
+      li.querySelector("[data-descendre]").disabled = i === lignes().length - 1;
+    });
+  }
+  function nouvelle(apres, valeur) {
+    if (lignes().length >= max) return null;
+    var li = modele.cloneNode(true);
+    li.querySelector("input").value = valeur || "";
+    liste.insertBefore(li, apres ? apres.nextSibling : null);
+    return li;
+  }
+  /* Sans JS, quelques lignes vides sont proposées ; avec JS, une seule suffit */
+  var vides = liste.querySelectorAll("li[data-vide]");
+  for (var k = 1; k < vides.length; k++) vides[k].remove();
+  if (vides.length && lignes().length > 1) vides[0].remove();
+  ajouter.hidden = false;
+  ajouter.addEventListener("click", function () {
+    var li = nouvelle(null); if (li) li.querySelector("input").focus(); maj();
+  });
+  liste.addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var li = b.closest("li");
+    if (b.hasAttribute("data-retirer")) {
+      var voisin = li.previousElementSibling || li.nextElementSibling;
+      if (lignes().length > 1) li.remove(); else li.querySelector("input").value = "";
+      (voisin || li).querySelector("input").focus();
+    } else if (b.hasAttribute("data-monter") && li.previousElementSibling) {
+      liste.insertBefore(li, li.previousElementSibling); b.focus();
+    } else if (b.hasAttribute("data-descendre") && li.nextElementSibling) {
+      liste.insertBefore(li.nextElementSibling, li); b.focus();
+    }
+    maj();
+  });
+  liste.addEventListener("keydown", function (e) {
+    if (e.target.tagName !== "INPUT") return;
+    var li = e.target.closest("li");
+    if (e.key === "Enter") {
+      e.preventDefault();
+      var suiv = li.nextElementSibling;
+      if (suiv && !suiv.querySelector("input").value) suiv.querySelector("input").focus();
+      else { var n = nouvelle(li); if (n) n.querySelector("input").focus(); }
+    } else if (e.key === "Backspace" && !e.target.value && lignes().length > 1) {
+      e.preventDefault();
+      var prec = li.previousElementSibling || li.nextElementSibling;
+      li.remove(); var champ = prec.querySelector("input"); champ.focus();
+      champ.setSelectionRange(champ.value.length, champ.value.length);
+    }
+    maj();
+  });
+  liste.addEventListener("paste", function (e) {
+    var texte = (e.clipboardData || window.clipboardData).getData("text");
+    var morceaux = texte.split(/\r?\n/).map(function (t) { return t.replace(/^\s*(?:[-•*·]|\d+[.)])\s*/, "").trim(); })
+                        .filter(Boolean);
+    if (morceaux.length < 2) return;
+    e.preventDefault();
+    var li = e.target.closest("li"), champ = e.target;
+    champ.value = (champ.value + " " + morceaux.shift()).trim();
+    morceaux.forEach(function (m) { var n = nouvelle(li, m); if (n) li = n; });
+    maj();
+  });
+  liste.addEventListener("input", maj);
+  maj();
+});
 </script>
 {% endblock %}
 </body>

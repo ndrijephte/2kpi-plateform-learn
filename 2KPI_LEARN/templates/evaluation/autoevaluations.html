@@ -73,6 +73,6 @@
 {% endwith %}{% empty %}
 <div class="card empty"><span class="ico-tile">{% icon "target" %}</span>
   {% if filtre == "aide" %}<strong>Aucune demande d'aide en attente</strong>Les demandes des apprenants apparaîtront ici (tu en es aussi notifié).
-  {% else %}<strong>Aucun objectif défini sur tes séances</strong>Rédige les objectifs depuis la page de chaque séance (bouton « Rédiger les objectifs ») : les apprenants pourront alors s'auto-évaluer.{% endif %}</div>
+  {% else %}<strong>Aucun objectif défini sur tes séances</strong>Rédige les objectifs depuis la page de chaque séance (carte « Objectifs de la séance », un objectif par ligne) : les apprenants pourront alors s'auto-évaluer.{% endif %}</div>
 {% endfor %}
 {% endblock %}

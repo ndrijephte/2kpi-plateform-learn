@@ -490,6 +490,24 @@ dt.niveau-1,i.niveau-1{color:var(--niv1)} dt.niveau-2,i.niveau-2{color:var(--niv
 dt.niveau-3,i.niveau-3{color:var(--niv3)} dt.niveau-4,i.niveau-4{color:var(--niv4)}
 .objectifs-liste{margin:8px 0 0;padding-left:20px}
 .objectifs-liste li{margin:4px 0}
+/* Éditeur d'objectifs, ligne par ligne */
+.objectifs-edition,.objectifs-form{margin-top:14px}
+.objectifs-edition>summary{list-style:none;display:inline-flex;width:auto}
+.objectifs-edition>summary::-webkit-details-marker{display:none}
+.objectifs-edition[open]>summary{margin-bottom:12px}
+.objectifs-editeur{border:1px solid var(--border);border-radius:12px;padding:6px;background:var(--surface,#fff)}
+.objectifs-lignes{list-style:none;margin:0;padding:0;counter-reset:obj}
+.objectif-ligne{counter-increment:obj;display:flex;align-items:center;gap:8px;padding:4px 4px 4px 6px;border-radius:9px}
+.objectif-ligne:focus-within{background:var(--navy-50)}
+.objectif-ligne .objectif-num::before{content:counter(obj)}
+.objectif-ligne input{flex:1;min-width:0;margin:0}
+.ligne-actions{display:flex;flex-shrink:0}
+.ligne-actions .icon-btn{width:30px;height:30px;border-radius:8px;color:var(--soft)}
+.ligne-actions .icon-btn:hover:not(:disabled){color:var(--navy)}
+.ligne-actions [data-retirer]:hover{color:var(--coral)!important}
+.ligne-actions .icon-btn:disabled{opacity:.3;cursor:default;background:none}
+.objectifs-pied{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 6px 4px;flex-wrap:wrap}
+@media (max-width:560px){.ligne-actions [data-monter],.ligne-actions [data-descendre]{display:none}}
 .conseils{margin:0;padding-left:18px}
 .conseils li{margin:6px 0}
 /* Pastille de niveau (listes) */

@@ -1,6 +1,8 @@
 from pathlib import Path
 from urllib.parse import urlsplit
 from django import forms
+from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.core.files.uploadedfile import UploadedFile
 from apps.core.fichiers import type_depuis_lien, type_depuis_nom, valider_fichier
 from .models import Module, Ressource, Seance, definir_objectifs
@@ -9,14 +11,63 @@ CHOIX_TYPE = [("", "Détection automatique")] + list(Ressource.Type.choices)
 MAX_OBJECTIFS = 12
 
 
+class ObjectifsWidget(forms.Widget):
+    """Éditeur d'objectifs ligne par ligne : un champ texte par objectif (même nom), boutons
+    ajouter / monter / descendre / retirer. Sans JavaScript, quelques lignes vides restent disponibles.
+    La valeur soumise est rendue sous forme de texte, un objectif par ligne."""
+    LIGNES_VIDES_SANS_JS = 3
+
+    def value_from_datadict(self, data, files, name):
+        lignes = data.getlist(name) if hasattr(data, "getlist") else [data.get(name, "")]
+        return "\n".join(l for l in lignes if l is not None)
+
+    def value_omitted_from_data(self, data, files, name):
+        return name not in data
+
+    def render(self, name, value, attrs=None, renderer=None):
+        from apps.core.templatetags.ui import icon
+        if isinstance(value, (list, tuple)):
+            lignes = [str(v) for v in value]
+        else:
+            lignes = (value or "").splitlines()
+        lignes = [l for l in lignes if l.strip()]
+        attrs = self.build_attrs(self.attrs, attrs)
+        exemple = attrs.get("placeholder", "")
+
+        def ligne(valeur, i, vide=False):
+            id_ = format_html(' id="{}"', attrs["id"]) if i == 0 and attrs.get("id") else ""
+            return format_html(
+                '<li class="objectif-ligne"{}>'
+                '<span class="objectif-num" aria-hidden="true"></span>'
+                '<input type="text" name="{}" value="{}" maxlength="300"{} placeholder="{}" '
+                'aria-label="Objectif" autocomplete="off">'
+                '<span class="ligne-actions">'
+                '<button type="button" class="icon-btn" data-monter title="Monter" aria-label="Monter">{}</button>'
+                '<button type="button" class="icon-btn" data-descendre title="Descendre" aria-label="Descendre">{}</button>'
+                '<button type="button" class="icon-btn" data-retirer title="Retirer" aria-label="Retirer">{}</button>'
+                '</span></li>',
+                mark_safe(' data-vide' if vide else ""), name, valeur, id_,
+                exemple if i == 0 else "Objectif suivant…",
+                icon("chevron-up", size=16), icon("chevron-down", size=16), icon("x", size=16))
+
+        items = [ligne(v, i) for i, v in enumerate(lignes)]
+        items += [ligne("", len(items) + k, vide=True)
+                  for k in range(max(1, self.LIGNES_VIDES_SANS_JS - len(lignes)) if len(lignes) < MAX_OBJECTIFS else 0)]
+        return format_html(
+            '<div class="objectifs-editeur" data-objectifs data-max="{}">'
+            '<ol class="objectifs-lignes">{}</ol>'
+            '<div class="objectifs-pied"><button type="button" class="btn btn-sm btn-secondary" data-ajouter hidden>'
+            '{} Ajouter un objectif</button><small class="muted" data-compteur aria-live="polite"></small></div></div>',
+            MAX_OBJECTIFS, mark_safe("".join(items)), icon("plus", size=14))
+
+
 def champ_objectifs():
     return forms.CharField(
         label="Objectifs d'apprentissage (auto-évaluation)", required=False,
-        widget=forms.Textarea(attrs={"rows": 5, "placeholder": "Charger une image Sentinel-2 dans Earth Engine\n"
-                                                               "Calculer et cartographier un NDVI"}),
+        widget=ObjectifsWidget(attrs={"placeholder": "Ex. : Calculer et cartographier un NDVI"}),
         help_text="Un objectif par ligne, formulé comme une action observable : l'apprenant complète "
                   "« À la fin de la séance, je suis capable de… » et s'auto-évalue sur chacun. "
-                  f"{MAX_OBJECTIFS} au maximum.")
+                  f"Entrée ajoute une ligne. {MAX_OBJECTIFS} au maximum.")
 
 
 class ObjectifsMixin:
@@ -26,11 +77,11 @@ class ObjectifsMixin:
     def init_objectifs(self):
         self.fields["objectifs_liste"] = champ_objectifs()
         if self.instance_seance.pk:
-            self.initial["objectifs_liste"] = "\n".join(
+            self.initial["objectifs_liste"] = list(
                 self.instance_seance.objectifs_seance.filter(actif=True).values_list("libelle", flat=True))
 
     def clean_objectifs_liste(self):
-        lignes = [l.strip(" \t-•*·").strip() for l in self.cleaned_data.get("objectifs_liste", "").splitlines()]
+        lignes = [l.strip(" \t-•*·").strip() for l in (self.cleaned_data.get("objectifs_liste") or "").splitlines()]
         lignes = [l for l in lignes if l]
         if len(lignes) > MAX_OBJECTIFS:
             raise forms.ValidationError(f"{MAX_OBJECTIFS} objectifs au maximum par séance (ici {len(lignes)}).")
@@ -40,7 +91,8 @@ class ObjectifsMixin:
         return lignes
 
     def enregistrer_objectifs(self, seance):
-        definir_objectifs(seance, self.cleaned_data.get("objectifs_liste", []))
+        """Retourne les objectifs nouveaux pour les apprenants (cf. definir_objectifs)."""
+        return definir_objectifs(seance, self.cleaned_data.get("objectifs_liste", []))
 
 
 class ObjectifsForm(ObjectifsMixin, forms.Form):

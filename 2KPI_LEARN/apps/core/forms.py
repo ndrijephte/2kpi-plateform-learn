@@ -55,6 +55,8 @@ class SeanceForm(ObjectifsMixin, forms.ModelForm):
         widgets = {"heure_debut": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
                    "objectifs": forms.Textarea(attrs={"rows": 4})}
         labels = {"objectifs": "Présentation & déroulé"}
+        help_texts = {"objectifs": "Texte libre affiché aux apprenants (contexte, étapes, consignes). "
+                                   "Les objectifs d'auto-évaluation se saisissent ligne par ligne ci-dessous."}
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
@@ -64,7 +66,8 @@ class SeanceForm(ObjectifsMixin, forms.ModelForm):
     def save(self, commit=True):
         seance = super().save(commit)
         if commit:
-            self.enregistrer_objectifs(seance)
+            from apps.evaluation.autoevaluation import annoncer_objectifs
+            annoncer_objectifs(seance, self.enregistrer_objectifs(seance), par=None)
         return seance
 
 

@@ -74,8 +74,10 @@ def utilisateur_editer(request, pk):
     compte_form = CompteAdminForm(data, instance=cible, prefix="c",
                                   initial={"role": role_de(cible), "promotion": insc.promotion_id if insc else None,
                                            "statut_inscription": insc.statut if insc else "",
-                                           "promotions_formateur": list(promotions_du_formateur(cible))})
+                                           "promotions_formateur": list(promotions_du_formateur(cible))
+                                           if role_de(cible) == FORMATEUR else []})
     profil_form = ProfilForm(data, files, instance=profil, prefix="p")
+    profil_form.masquer_hors_role(compte_form.data.get("c-role") if data else role_de(cible))
     prerequis_form = PrerequisForm(data, instance=prerequis, prefix="r") if role_de(cible) == "apprenant" else None
     forms_ = [f for f in (compte_form, profil_form, prerequis_form) if f]
     if request.method == "POST" and all(f.is_valid() for f in forms_):
@@ -92,6 +94,7 @@ def utilisateur_editer(request, pk):
                 if prerequis_form:
                     prerequis_form.save()
                 appliquer_role(cible, role)
+                role = cible.profil.role  # un super-utilisateur reste administrateur
                 if role == Profil.Role.APPRENANT:
                     promo = compte_form.cleaned_data["promotion"]
                     if promo:

@@ -34,9 +34,12 @@ class ChampsParRoleMixin:
                        "promotions_formateur": Profil.Role.FORMATEUR}
 
     def marquer_champs_par_role(self):
+        courant = (self.data.get(self.add_prefix("role")) if self.is_bound else
+                   self.initial.get("role", self.fields["role"].initial))
         for nom, role in self.CHAMPS_PAR_ROLE.items():
             if nom in self.fields:
                 self.fields[nom].widget.attrs["data-role"] = role
+                self.fields[nom].masque = role != courant  # masqué dès le rendu, sans attendre le script
         self.fields["role"].widget.attrs["data-choix-role"] = ""
 
 
@@ -151,6 +154,11 @@ class ProfilForm(forms.ModelForm):
             del self.fields["categorie"]  # étudiant / professionnel : n'a de sens que pour un apprenant
         else:
             self.fields["categorie"].widget.attrs["data-role"] = Profil.Role.APPRENANT
+
+    def masquer_hors_role(self, role):
+        """Écran où le rôle se choisit : masque d'emblée les champs d'apprenant si ce n'en est pas un."""
+        if "categorie" in self.fields:
+            self.fields["categorie"].masque = role != Profil.Role.APPRENANT
 
     def clean_photo(self):
         photo = self.cleaned_data.get("photo")

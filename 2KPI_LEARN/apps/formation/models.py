@@ -105,7 +105,8 @@ def definir_objectifs(seance, libelles):
     """Remplace les objectifs actifs de la séance par `libelles` (dans l'ordre), sans perdre les
     auto-évaluations : un libellé inchangé garde son objectif ; un libellé reformulé (texte proche)
     reprend l'objectif d'origine ; un objectif supprimé est archivé s'il a déjà des réponses,
-    effacé sinon. Un libellé identique à un objectif archivé le réactive."""
+    effacé sinon. Un libellé identique à un objectif archivé le réactive.
+    Retourne les objectifs nouveaux pour les apprenants (créés ou réactivés)."""
     from difflib import SequenceMatcher
     libelles = list(dict.fromkeys(l.strip()[:300] for l in libelles if l.strip()))  # sans doublons
     existants = list(seance.objectifs_seance.all())
@@ -121,8 +122,11 @@ def definir_objectifs(seance, libelles):
     for ratio, i, ancien in paires:
         if ratio >= 0.6 and i not in retenus and ancien in libres:
             retenus[i] = libres.pop(ancien)
+    nouveaux = []
     for i, lib in enumerate(libelles):
         o = retenus.get(i) or ObjectifSeance(seance=seance)
+        if not o.pk or not o.actif:
+            nouveaux.append(o)
         o.libelle, o.ordre, o.actif = lib, i + 1, True
         o.save()
     for o in libres.values():  # retirés de la liste
@@ -132,6 +136,7 @@ def definir_objectifs(seance, libelles):
                 o.save(update_fields=["actif"])
         else:
             o.delete()
+    return nouveaux
 
 
 class Competence(models.Model):

@@ -49,7 +49,8 @@ Pages : `/` (tableau de bord) · `/formation/modules/` · `/agenda/` · `/agenda
 | Paramètres (identité, logo, page de connexion, formations/séances, jours non travaillés, fichiers) | — | — | `/parametres/` |
 | Modifier son profil | ✔ | ✔ | ✔ (+ tout compte via Utilisateurs) |
 
-Le super-utilisateur est toujours administrateur. Un accès interdit renvoie une page 403.
+Le super-utilisateur est toujours administrateur. L'administrateur n'est ni apprenant ni formateur : il
+n'est jamais référent ni affecté à une promotion (il a déjà tous les droits). Un accès interdit renvoie une page 403.
 Le rôle **Formateur** correspond aux enseignants.
 
 ### Création des comptes
@@ -86,8 +87,11 @@ web) et téléchargés uniquement via l'application après contrôle des droits.
 ### Auto-évaluation sur les objectifs des séances
 
 - Chaque séance porte des **objectifs** formulés pour l'apprenant (« À la fin de la séance, je suis
-  capable de… ») : saisis par l'admin (Paramètres › séance) ou par le formateur du module (bouton
-  « Rédiger les objectifs » sur la page de la séance). Modèle `ObjectifSeance`.
+  capable de… ») : saisis **ligne par ligne** par l'admin (Paramètres › séance, ou page de la séance) ou
+  par le formateur du module (carte « Objectifs de la séance » sur la page de la séance : Entrée ajoute
+  une ligne, collage d'une liste découpé automatiquement, ordre modifiable). Modèle `ObjectifSeance`.
+- Dès leur publication, ils apparaissent côté apprenant et les apprenants dont le module est ouvert
+  sont notifiés des nouveaux objectifs ; sans objectifs, l'apprenant voit « Objectifs pas encore publiés ».
 - L'apprenant se positionne sur chacun (1 Pas encore · 2 Avec de l'aide · 3 En autonomie · 4 Je peux
   l'expliquer), peut commenter et **demander de l'aide** ; il se réévalue quand il veut, son premier
   niveau est gardé pour mesurer la progression (`AutoEvaluation`). Vue d'ensemble : **Mes acquis**.
@@ -135,7 +139,7 @@ Mises à jour : **automatiques à chaque `git push` sur main** (`../docs/DEPLOIE
 ## Tests
 
 ```bash
-python manage.py test        # 68 tests : rôles, autorisations (apprenants, formateurs par module),
+python manage.py test        # 72 tests : rôles, autorisations (apprenants, formateurs par module),
                              # promotions des formateurs, auto-évaluation, fichiers, quiz, candidatures,
                              # création de compte, mot de passe oublié, e-mails
 ```

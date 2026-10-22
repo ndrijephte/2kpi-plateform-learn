@@ -30,6 +30,7 @@
             <small>Sem. {{ s.semaine_effective }} · {{ s.get_jour_display }} {{ s.heure_debut|time:"H:i" }} · {{ s.duree_prevue_h }} h{% if item.evenement %} · {{ item.evenement.date_debut|date:"D d M, H:i" }}{% endif %}</small>
           </span>
           {% if est_apprenant and item.autoeval.total %}<span class="pill{% if item.autoeval.complet %} pill-ok{% endif %}" title="Objectifs auto-évalués / acquis">{% icon "target" size=12 %} {{ item.autoeval.acquis }}/{{ item.autoeval.total }} acquis</span>{% endif %}
+          {% if not est_apprenant %}{% if item.autoeval.total %}<span class="pill" title="Objectifs publiés aux apprenants">{% icon "target" size=12 %} {{ item.autoeval.total }} objectif{{ item.autoeval.total|pluralize }}</span>{% else %}<span class="pill pill-warn" title="Les apprenants ne peuvent pas s'auto-évaluer sans objectifs">{% icon "target" size=12 %} Objectifs à définir</span>{% endif %}{% endif %}
           {% if item.rendu %}<span class="pill pill-ok">Livrable rendu</span>{% endif %}
           <span class="chev">{% icon "chevron-right" size=18 %}</span>
         </a></li>

@@ -125,7 +125,10 @@ def groupe_admin():
 
 
 def appliquer_role(user, role):
-    """Change le rôle et synchronise l'accès à l'admin Django (is_staff + permissions)."""
+    """Change le rôle et synchronise l'accès à l'admin Django (is_staff + permissions).
+    Un super-utilisateur reste administrateur."""
+    if user.is_superuser:
+        role = ADMIN
     profil = user.profil
     profil.role = role
     profil.save(update_fields=["role"])
@@ -137,6 +140,12 @@ def appliquer_role(user, role):
         user.groups.add(groupe_admin())
     else:
         user.groups.remove(*user.groups.filter(name=GROUPE_ADMIN))
+    if role != FORMATEUR:  # ni l'admin ni l'apprenant n'encadrent de promotion
+        from apps.agenda.models import Affectation, Promotion
+        Affectation.objects.filter(formateur=user).delete()
+        Promotion.objects.filter(formateur=user).update(formateur=None)
+        if hasattr(user, "_interventions"):
+            del user._interventions
 
 
 def formations_gerables(user):

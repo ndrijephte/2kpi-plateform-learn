@@ -142,6 +142,29 @@ class AutoEvaluationTests(BaseTest):
         self.o1.refresh_from_db()
         self.assertTrue(self.o1.actif)
 
+    def test_objectifs_ligne_par_ligne_publies_aux_apprenants(self):
+        seance = self.m1.seances.order_by("ordre")[1]
+        url = reverse("formation:seance", args=[seance.pk])
+        self.assertContains(self.client_de(self.app_a).get(url), "Objectifs pas encore publiés")
+        r = self.client_de(self.form_a).get(url)
+        self.assertContains(r, "data-objectifs")
+        self.assertContains(r, "Enregistrer et publier")
+        donnees = {"action": "objectifs", "objectifs_liste": ["Lire un raster", "", "Calculer un NDVI"]}
+        r = self.client_de(self.form_a).post(url, donnees)
+        self.assertRedirects(r, url + "#objectifs", fetch_redirect_response=False)
+        self.assertEqual(list(seance.objectifs_seance.values_list("libelle", flat=True)),
+                         ["Lire un raster", "Calculer un NDVI"])
+        notif = self.app_a.notifications.filter(titre__contains="à auto-évaluer")
+        self.assertEqual(notif.count(), 1)                    # M1 ouvert pour la promotion A
+        self.assertFalse(self.app_b.notifications.filter(titre__contains="à auto-évaluer").exists())
+        self.client_de(self.form_a).post(url, donnees)       # rien de nouveau : pas de 2e notification
+        self.assertEqual(notif.count(), 1)
+        r = self.client_de(self.app_a).get(url)
+        self.assertContains(r, "Mon auto-évaluation")
+        self.assertContains(r, "Calculer un NDVI")
+        self.assertEqual(self.client_de(self.app_a).post(url, donnees).status_code, 403)
+        self.assertFalse(Livrable.objects.exists())
+
     def test_formateur_redige_les_objectifs(self):
         url = reverse("formation:objectifs", args=[self.seance.pk])
         sans_acces = self.compte("form_c", "formateur")  # aucune promotion confiée

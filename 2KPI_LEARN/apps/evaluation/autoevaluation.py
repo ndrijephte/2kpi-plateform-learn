@@ -79,6 +79,37 @@ def signaler_besoin_aide(inscription, seance, objectifs):
              type=Notification.Type.INFO, expediteur=inscription.apprenant)
 
 
+def apprenants_concernes(seance):
+    """Apprenants (inscription en cours, promotion active) pour qui le module de la séance est ouvert."""
+    from apps.formation.acces import etats_promotion
+    from .models import Inscription
+    inscriptions = (Inscription.objects.filter(formation_id=seance.module.formation_id, statut=Inscription.Statut.EN_COURS,
+                                               promotion__active=True, apprenant__is_active=True)
+                    .select_related("apprenant", "promotion"))
+    ouvert, users = {}, []
+    for i in inscriptions:
+        if i.promotion_id not in ouvert:
+            ouvert[i.promotion_id] = etats_promotion(i.promotion, [seance.module])[seance.module_id].ouvert
+        if ouvert[i.promotion_id]:
+            users.append(i.apprenant)
+    return users
+
+
+def annoncer_objectifs(seance, nouveaux, par):
+    """Prévient les apprenants concernés que de nouveaux objectifs les attendent (in-app, sans e-mail)."""
+    from apps.agenda.models import Notification
+    from apps.agenda.services import notifier
+    if not nouveaux:
+        return 0
+    destinataires = apprenants_concernes(seance)
+    n = len(nouveaux)
+    notifier(destinataires, titre=f"{seance.module.code} : {n} objectif{'s' if n > 1 else ''} à auto-évaluer",
+             message=f"Séance « {seance.theme or seance} » — " + " ; ".join(o.libelle for o in nouveaux)
+                     + ". Positionne-toi sur la page de la séance.",
+             type=Notification.Type.INFO, envoyer_email=False, expediteur=par)
+    return len(destinataires)
+
+
 def bilan_seance(evaluations, objectifs):
     """Résumé d'une séance pour l'apprenant : nb évalués, nb acquis, niveau moyen."""
     evals = [evaluations[o.pk] for o in objectifs if o.pk in evaluations]

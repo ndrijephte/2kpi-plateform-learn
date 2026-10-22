@@ -145,8 +145,9 @@ def promotions(request):
     """Admin : crée les promotions et affecte les formateurs. Formateur : ses promotions."""
     from apps.formation.models import Formation
     admin = est_admin(request.user)
-    formateurs = (get_user_model().objects
-                   .filter(profil__role__in=[FORMATEUR, "admin"]).order_by("first_name", "username"))
+    # L'administrateur n'est pas un formateur : il pilote tout sans être référent ni affecté.
+    formateurs = (get_user_model().objects.filter(profil__role=FORMATEUR, is_active=True, is_superuser=False)
+                  .order_by("first_name", "last_name", "username"))
     if request.method == "POST":
         if not admin:
             raise PermissionDenied
@@ -261,7 +262,7 @@ def affectations(request, promo_id):
     """L'admin autorise des formateurs à intervenir dans la promotion, module par module."""
     promo = get_object_or_404(Promotion.objects.select_related("formation", "formateur"), pk=promo_id)
     modules = list(promo.formation.modules.order_by("ordre"))
-    formateurs = (get_user_model().objects.filter(profil__role=FORMATEUR, is_active=True)
+    formateurs = (get_user_model().objects.filter(profil__role=FORMATEUR, is_active=True, is_superuser=False)
                   .order_by("first_name", "last_name", "username"))
     if request.method == "POST":
         action = request.POST.get("action")

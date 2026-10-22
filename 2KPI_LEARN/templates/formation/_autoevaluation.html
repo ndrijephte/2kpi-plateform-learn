@@ -39,22 +39,42 @@
   <div class="btn-row"><button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer mon auto-évaluation</button>
     <a class="link" href="{% url 'evaluation:mes_acquis' %}">Tous mes acquis {% icon "arrow-right" size=14 %}</a></div>
 </form>
+{% else %}
+<div class="card" id="autoevaluation">
+  <h2 class="section-title">{% icon "target" size=18 %} Mon auto-évaluation</h2>
+  <div class="empty"><span class="ico-tile">{% icon "target" %}</span><strong>Objectifs pas encore publiés</strong>Ton formateur va définir les objectifs de cette séance : tu pourras alors t'auto-évaluer sur chacun et suivre ta progression. Tu seras prévenu par une notification.</div>
+</div>
 {% endif %}
 
 {% elif est_formateur %}
 <div class="card" id="objectifs">
   <div class="card-head">
     <h2 class="section-title">{% icon "target" size=18 %} Objectifs de la séance</h2>
-    {% if peut_gerer %}<a class="btn btn-sm btn-secondary" href="{% url 'formation:objectifs' seance.pk %}">{% icon "pencil" size=14 %} {% if objectifs %}Modifier{% else %}Rédiger les objectifs{% endif %}</a>{% endif %}
+    {% if objectifs %}<span class="pill">{{ objectifs|length }} objectif{{ objectifs|length|pluralize }}</span>{% endif %}
   </div>
   {% if objectifs %}
-  <p class="muted"><small>Les apprenants s'auto-évaluent sur chacun (« À la fin de la séance, je suis capable de… »).</small></p>
+  <p class="muted"><small>Publiés aux apprenants : chacun s'auto-évalue sur chaque objectif (« À la fin de la séance, je suis capable de… ») et suit sa progression.</small></p>
   <ol class="objectifs-liste">{% for item in objectifs %}<li>{{ item.objectif.libelle }}</li>{% endfor %}</ol>
   {% for p in promotions_seance %}{% if forloop.first %}<div class="btn-row">{% endif %}
     <a class="btn btn-sm btn-navy" href="{% url 'evaluation:autoevaluations' p.pk %}?module={{ seance.module_id }}#seance-{{ seance.pk }}">{% icon "gauge" size=14 %} Auto-évaluations · {{ p.nom }}</a>
   {% if forloop.last %}</div>{% endif %}{% endfor %}
-  {% else %}
+  {% elif not objectifs_form %}
   <div class="empty"><span class="ico-tile coral">{% icon "target" %}</span><strong>Aucun objectif défini</strong>Sans objectif, les apprenants ne peuvent pas s'auto-évaluer sur cette séance.</div>
+  {% else %}
+  <p class="muted"><small>Aucun objectif pour l'instant : sans eux, les apprenants ne peuvent pas s'auto-évaluer sur cette séance. Saisis-les ci-dessous, <strong>un par ligne</strong>.</small></p>
+  {% endif %}
+  {% if objectifs_form %}
+  {% if objectifs %}<details class="objectifs-edition"{% if editer_objectifs %} open{% endif %}>
+    <summary class="btn btn-sm btn-secondary">{% icon "pencil" size=14 %} Modifier les objectifs</summary>{% endif %}
+    <form method="post" action="{% url 'formation:seance' seance.pk %}#objectifs" class="objectifs-form">{% csrf_token %}
+      <input type="hidden" name="action" value="objectifs">
+      {% include "partials/form_fields.html" with form=objectifs_form %}
+      <div class="btn-row">
+        <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer et publier</button>
+        <a class="link" href="{% url 'formation:objectifs' seance.pk %}">Conseils de rédaction {% icon "arrow-right" size=14 %}</a>
+      </div>
+    </form>
+  {% if objectifs %}</details>{% endif %}
   {% endif %}
 </div>
 {% endif %}

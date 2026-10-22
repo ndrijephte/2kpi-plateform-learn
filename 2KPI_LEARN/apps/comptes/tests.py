@@ -281,3 +281,36 @@ class FormulaireFormateurTests(BaseTest):
         self.assertTrue(Affectation.objects.filter(formateur__username="awa", promotion=self.promo_a).exists())
         liste = self.client_de(self.admin).get(reverse("comptes:utilisateurs") + "?role=formateur")
         self.assertContains(liste, "Promo A")
+
+
+class AdministrateurHorsRolesTests(BaseTest):
+    """L'administrateur n'est ni apprenant ni formateur : jamais référent, affecté ni présenté comme tel."""
+
+    def test_admin_ni_referent_ni_affecte(self):
+        from apps.agenda.models import Affectation
+        from apps.core.permissions import appliquer_role
+        self.promo_b.formateur = self.admin
+        self.promo_b.save()
+        Affectation.objects.create(promotion=self.promo_a, formateur=self.admin, tous_les_modules=True)
+        appliquer_role(self.admin, "admin")
+        self.promo_b.refresh_from_db()
+        self.assertIsNone(self.promo_b.formateur)
+        self.assertFalse(Affectation.objects.filter(formateur=self.admin).exists())
+        r = self.client_de(self.admin).get(reverse("agenda:promotions"))
+        self.assertNotIn(self.admin, r.context["formateurs"])
+        self.assertIn(self.form_a, r.context["formateurs"])
+
+    def test_super_utilisateur_toujours_admin(self):
+        from apps.core.permissions import appliquer_role
+        su = User.objects.create_superuser("racine", "racine@exemple.org", MDP)
+        appliquer_role(su, "formateur")
+        su.profil.refresh_from_db()
+        self.assertEqual(su.profil.role, "admin")
+
+    def test_fiche_admin_sans_champs_formateur_ni_apprenant(self):
+        r = self.client_de(self.admin).get(reverse("comptes:utilisateur_editer", args=[self.admin.pk]))
+        html = r.content.decode()
+        for champ in ("c-promotions_formateur", "c-promotion", "c-statut_inscription", "p-categorie"):
+            debut = html.index(f'name="{champ}"')
+            self.assertIn("hidden", html[html.rindex('<div class="field"', 0, debut):debut], champ)
+        self.assertNotContains(self.client_de(self.admin).get(reverse("comptes:profil")), "Aucune promotion confiée")

@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Count, Max, Q
 from django.http import FileResponse, Http404
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -125,6 +125,17 @@ def detail_seance(request, pk):
     objectifs = list(seance.objectifs_seance.filter(actif=True))
     peut_s_evaluer = bool(insc) and role_de(request.user) == APPRENANT
 
+    gere_objectifs = (role_de(request.user) != APPRENANT
+                      and modules_gerables(request.user).filter(pk=seance.module_id).exists())
+    objectifs_form = ObjectifsForm(request.POST if request.POST.get("action") == "objectifs" else None,
+                                   seance=seance) if gere_objectifs else None
+    if request.method == "POST" and request.POST.get("action") == "objectifs":
+        if not gere_objectifs:
+            raise PermissionDenied
+        if objectifs_form.is_valid():
+            _enregistrer_objectifs(request, seance, objectifs_form)
+            return redirect(f"{reverse('formation:seance', args=[seance.pk])}#objectifs")
+
     if request.method == "POST" and request.POST.get("action") == "autoevaluation":
         if not peut_s_evaluer:
             messages.error(request, "L'auto-évaluation est réservée aux apprenants inscrits à la formation.")
@@ -138,7 +149,7 @@ def detail_seance(request, pk):
                 " Ton formateur est prévenu de ta demande d'aide." if aides else ""))
         return redirect(f"{reverse('formation:seance', args=[seance.pk])}#autoevaluation")
 
-    if request.method == "POST":
+    if request.method == "POST" and request.POST.get("action") != "objectifs":  # dépôt du livrable
         if not insc:
             messages.error(request, "Tu dois être inscrit à la formation pour déposer un livrable.")
             return redirect("formation:seance", pk=seance.pk)
@@ -179,8 +190,21 @@ def detail_seance(request, pk):
         "evenement": _dates_promo(insc).get(seance.id),
         "precedente": precedente, "suivante": suivante,
         "peut_gerer": role_de(request.user) != APPRENANT,
+        "objectifs_form": objectifs_form, "editer_objectifs": bool(objectifs_form and objectifs_form.errors),
         "position": i + 1, "total": len(toutes),
     })
+
+
+def _enregistrer_objectifs(request, seance, form):
+    """Enregistre les objectifs et prévient les apprenants concernés des nouveaux."""
+    nouveaux = form.enregistrer_objectifs(seance)
+    n = autoevaluation.annoncer_objectifs(seance, nouveaux, par=request.user)
+    total = seance.objectifs_seance.filter(actif=True).count()
+    msg = f"{total} objectif{'s' if total > 1 else ''} enregistré{'s' if total > 1 else ''}."
+    if nouveaux:
+        msg += (f" {n} apprenant{'s' if n > 1 else ''} prévenu{'s' if n > 1 else ''}." if n else
+                " Aucun apprenant n'a encore accès à ce module : ils les verront à son ouverture.")
+    messages.success(request, msg)
 
 
 def _promotions_du_module(user, module):
@@ -201,9 +225,8 @@ def objectifs_seance(request, pk):
         raise Http404
     form = ObjectifsForm(request.POST or None, seance=seance)
     if request.method == "POST" and form.is_valid():
-        form.enregistrer_objectifs(seance)
-        messages.success(request, "Objectifs de la séance enregistrés.")
-        return redirect("formation:seance", pk=seance.pk)
+        _enregistrer_objectifs(request, seance, form)
+        return redirect(f"{reverse('formation:seance', args=[seance.pk])}#objectifs")
     archives = seance.objectifs_seance.filter(actif=False)
     return render(request, "formation/objectifs_form.html", {"seance": seance, "form": form, "archives": archives})
 
