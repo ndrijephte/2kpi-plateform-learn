@@ -5,80 +5,43 @@ let globalMaxSuperficie = 40000;
 var map = L.map("map").setView([7.5468545, -5.5470995], 9);
 
 // ------------------------------------------------------
-// %%%%%%%% Fond de carte par défaut %%%%%%%%%%
-// 1/ OpenStreetMap
-var osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+// %%%%%%%% Fonds de carte : tous libres et sans clé API %%%%%%%%%%
+// 1/ OpenStreetMap - fond par défaut (adresse recommandée par l'OSMF, sans sous-domaines)
+var osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
-  attribution: "&copy; OpenStreetMap contributors",
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 });
 
-// 2/ Fond sombre - CartoDB Dark Matter (libre, sans clé API)
-var Stadia_AlidadeSmoothDark = L.tileLayer(
-  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-  {
-    maxZoom: 20,
-    subdomains: "abcd",
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-  },
-);
-
-// 3/ Fond satellite - Esri World Imagery (libre, sans clé API)
-var Stadia_AlidadeSatellite = L.tileLayer(
+// 2/ Satellite - Esri World Imagery
+var satellite = L.tileLayer(
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   {
     maxZoom: 19,
-    attribution:
-      "Tiles &copy; Esri - Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+    attribution: "Tiles &copy; Esri - Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
   },
 );
 
-// 4/ Fond clair - CartoDB Positron (libre, sans clé API)
-var Stadia_StamenTonerLite = L.tileLayer(
-  "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-  {
-    maxZoom: 20,
-    subdomains: "abcd",
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-  },
-);
+// 3/ Relief - OpenTopoMap
+var openTopoMap = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+  maxZoom: 17,
+  attribution:
+    'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+});
 
-// 5/ OpenTopo
-var OpenTopoMap = L.tileLayer(
-  "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
-  {
-    maxZoom: 17,
-    attribution:
-      'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
-  },
-);
+// 4, 5, 6/ CARTO Voyager, clair, sombre (données OpenStreetMap)
+var cartoAttribution =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+var cartoVoyager = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png", {
+  maxZoom: 20, subdomains: "abcd", attribution: cartoAttribution,
+});
+var cartoClair = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {
+  maxZoom: 20, subdomains: "abcd", attribution: cartoAttribution,
+});
+var cartoSombre = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", {
+  maxZoom: 20, subdomains: "abcd", attribution: cartoAttribution,
+});
 
-// 6/ Stadia AlidadeSmooth
-// var Stadia_AlidadeSmooth = L.tileLayer(
-//   "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.{ext}",
-//   {
-//     // apikey: "58784260-e150-4b46-9b00-c8824570ef84",
-//     minZoom: 0,
-//     maxZoom: 20,
-//     attribution:
-//       '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-//     ext: "png",
-//   },
-// );
-
-// 6/ Fond détaillé - CartoDB Voyager (libre, sans clé API) - fond par défaut
-var Stadia_AlidadeSmooth = L.tileLayer(
-  "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-  {
-    maxZoom: 20,
-    subdomains: "abcd",
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-  },
-);
-
-let currentBaseLayer = Stadia_AlidadeSmooth;
+let currentBaseLayer = osm;
 map.addLayer(currentBaseLayer);
 
 // %%%% Échelle graphique (bas à droite) %%%%
@@ -97,32 +60,14 @@ northArrow.onAdd = function () {
 };
 northArrow.addTo(map);
 
-// %%%% Fonds de carte %%%%%
+// %%%% Fonds de carte proposés dans le gestionnaire (OpenStreetMap en premier, sélectionné) %%%%%
 var baseMaps = {
-  "Carto Voyager": {
-    layer: Stadia_AlidadeSmooth,
-    img: "assets/img/stadia_smooth.png",
-  },
-  OpenStreetMap: {
-    layer: osm,
-    img: "assets/img/osm.png",
-  },
-  Satellite: {
-    layer: Stadia_AlidadeSatellite,
-    img: "assets/img/stadia_satellite.png",
-  },
-  "Carto Clair": {
-    layer: Stadia_StamenTonerLite,
-    img: "assets/img/stament_toner.png",
-  },
-  "Carto Sombre": {
-    layer: Stadia_AlidadeSmoothDark,
-    img: "assets/img/stadia_dark.png",
-  },
-  "Relief (OpenTopo)": {
-    layer: OpenTopoMap,
-    img: "assets/img/open_topo.png",
-  },
+  OpenStreetMap: { layer: osm, img: "assets/img/osm.png" },
+  Satellite: { layer: satellite, img: "assets/img/stadia_satellite.png" },
+  "Relief (OpenTopo)": { layer: openTopoMap, img: "assets/img/open_topo.png" },
+  "Carto Voyager": { layer: cartoVoyager, img: "assets/img/stadia_smooth.png" },
+  "Carto Clair": { layer: cartoClair, img: "assets/img/stament_toner.png" },
+  "Carto Sombre": { layer: cartoSombre, img: "assets/img/stadia_dark.png" },
 };
 
 // ---------------------------------------------------------------------
