@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import (AutoEvaluation, Inscription, Presence, Livrable, Quiz, Question, Choix,
+from .models import (AutoEvaluation, Inscription, JournalStatut, Presence, Livrable, Quiz, Question, Choix,
                      TentativeQuiz, EvaluationCompetence, EvaluationProjet, Soutenance)
 
 class ChoixInline(admin.TabularInline):
@@ -8,8 +8,9 @@ class ChoixInline(admin.TabularInline):
 
 @admin.register(Inscription)
 class InscriptionAdmin(admin.ModelAdmin):
-    list_display = ("apprenant", "formation", "promotion", "statut", "date_debut", "date_fin_prevue")
-    list_filter = ("formation", "promotion", "statut")
+    list_display = ("apprenant", "formation", "promotion", "statut", "paiement", "taux_assiduite", "note_finale")
+    list_filter = ("formation", "promotion", "statut", "paiement")
+    readonly_fields = ["statut", "taux_assiduite", "note_finale"]  # workflow (Promotions › Pilotage)
     search_fields = ("apprenant__username", "apprenant__first_name", "apprenant__last_name")
 
 @admin.register(Presence)
@@ -53,3 +54,15 @@ class AutoEvaluationAdmin(admin.ModelAdmin):
     list_display = ("inscription", "objectif", "niveau_initial", "niveau", "besoin_aide", "modifie_le")
     list_filter = ("niveau", "besoin_aide", "inscription__promotion", "objectif__seance__module")
     search_fields = ("inscription__apprenant__username", "inscription__apprenant__last_name", "objectif__libelle")
+
+
+@admin.register(JournalStatut)
+class JournalStatutAdmin(admin.ModelAdmin):
+    list_display = ("le", "promotion", "inscription", "de", "vers", "par", "motif")
+    list_filter = ("vers", "promotion")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

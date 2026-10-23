@@ -171,6 +171,7 @@ Remplace `ACTIVER` par la commande d'activation de l'étape 4 :
 
 | Fréquence | Commande |
 |---|---|
+| Tous les jours à 6 h | `ACTIVER && python manage.py workflow_quotidien >> logs/cron.log 2>&1` |
 | Tous les jours à 18 h | `ACTIVER && python manage.py envoyer_rappels >> logs/cron.log 2>&1` |
 | Tous les jours à 2 h | `ACTIVER && python manage.py sauvegarder --garder 14 >> logs/cron.log 2>&1` |
 

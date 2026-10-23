@@ -552,3 +552,20 @@ dt.niveau-3,i.niveau-3{color:var(--niv3)} dt.niveau-4,i.niveau-4{color:var(--niv
 .diagnostic-etapes .puce{display:grid;place-items:center;flex-shrink:0;width:22px;height:22px;border-radius:50%;margin-top:1px}
 .diagnostic-etapes .ok .puce{background:#e3f4ea;color:#1f7a4a}
 .diagnostic-etapes .ko .puce{background:#fde8e3;color:var(--coral)}
+
+/* Pilotage d'une promotion : étapes du workflow, statuts, journal */
+.etapes-workflow{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin:0 0 20px;padding:0}
+.etapes-workflow li{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--soft);font-size:.84rem;font-weight:600}
+.etapes-workflow .puce{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--navy-50);color:var(--navy);font-size:.75rem}
+.etapes-workflow li.faite{color:var(--text)}
+.etapes-workflow li.faite .puce{background:var(--green-50);color:var(--green)}
+.etapes-workflow li.courante{border-color:var(--navy);color:var(--navy);box-shadow:var(--shadow)}
+.etapes-workflow li.courante .puce{background:var(--navy);color:#fff}
+.pill-promo-inscriptions,.pill-promo-prete,.pill-insc-confirmee{background:var(--navy-50);color:var(--navy)}
+.pill-promo-en_cours,.pill-insc-en_cours,.pill-insc-validee{background:var(--green-50);color:var(--green)}
+.pill-promo-planifiee,.pill-insc-admise{background:var(--amber-50);color:var(--amber)}
+.pill-insc-non_validee,.pill-insc-abandon{background:var(--red-50);color:var(--red)}
+.pill-promo-cloturee,.pill-promo-archivee{background:var(--border);color:var(--soft)}
+.journal{list-style:none;margin:0;padding:0}
+.journal li{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-top:1px solid var(--border);font-size:.88rem}
+.journal li:first-child{border-top:0}

@@ -4,7 +4,21 @@ from apps.formation.models import Formation, Seance
 
 
 class Promotion(models.Model):
-    """Une session/cohorte d'apprenants suivant une formation. Porte le calendrier."""
+    """Une session/cohorte d'apprenants suivant une formation. Porte le calendrier.
+    Son statut ne change que par agenda/workflow.py (conditions vérifiées, changement journalisé)."""
+    class Statut(models.TextChoices):
+        PLANIFIEE = "planifiee", "Planifiée"
+        INSCRIPTIONS = "inscriptions", "Inscriptions ouvertes"
+        PRETE = "prete", "Prête à démarrer"
+        EN_COURS = "en_cours", "En cours"
+        CLOTUREE = "cloturee", "Clôturée"
+        ARCHIVEE = "archivee", "Archivée"
+
+    # Statuts où la session est annoncée sur la vitrine et accepte des candidatures
+    STATUTS_PUBLIABLES = (Statut.INSCRIPTIONS, Statut.PRETE)
+    # Statuts où l'administration peut admettre ou confirmer un apprenant
+    STATUTS_ADMISSION = (Statut.INSCRIPTIONS, Statut.PRETE, Statut.EN_COURS)
+
     formation = models.ForeignKey(Formation, on_delete=models.CASCADE, related_name="promotions")
     nom = models.CharField(max_length=200)
     date_debut = models.DateField(help_text="Date de la première semaine (le calendrier en découle).")
@@ -13,7 +27,11 @@ class Promotion(models.Model):
                                   related_name="promotions_encadrees",
                                   help_text="Pilote la promotion et intervient sur tous ses modules. "
                                             "D'autres formateurs s'ajoutent module par module (Affectations).")
-    active = models.BooleanField(default=True)
+    statut = models.CharField(max_length=12, choices=Statut.choices, default=Statut.PLANIFIEE, editable=False)
+    active = models.BooleanField(default=True, editable=False, help_text="Déduit du statut : faux une fois archivée.")
+    effectif_minimum = models.PositiveSmallIntegerField(
+        "Effectif minimum", default=1,
+        help_text="Inscriptions confirmées nécessaires pour déclarer la promotion prête à démarrer.")
     code_vitrine = models.SlugField(
         "Code session (site vitrine)", max_length=100, blank=True,
         help_text="Identifiant de la session sur le site vitrine (ex. teledetection-sig-initiation) : "
@@ -76,6 +94,9 @@ class Promotion(models.Model):
         return max(0, self.places_total - self.nb_inscrits_actifs - self.places_hors_plateforme)
 
     def save(self, *args, **kwargs):
+        self.active = self.statut != self.Statut.ARCHIVEE
+        if kwargs.get("update_fields") is not None and "statut" in kwargs["update_fields"]:
+            kwargs["update_fields"] = set(kwargs["update_fields"]) | {"active"}
         if self.publiee_vitrine and not self.code_vitrine:  # l'identifiant public est indispensable
             from django.utils.text import slugify
             base = slugify(self.nom)[:90] or "session"

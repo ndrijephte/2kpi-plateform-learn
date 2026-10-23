@@ -93,4 +93,7 @@ class FicheVitrineForm(forms.ModelForm):
         total, ailleurs = d.get("places_total"), d.get("places_hors_plateforme")
         if total is not None and ailleurs is not None and ailleurs > total:
             self.add_error("places_hors_plateforme", "Ne peut pas dépasser le nombre total de places.")
+        if d.get("publiee_vitrine") and self.instance.statut not in self.instance.STATUTS_PUBLIABLES:
+            self.add_error("publiee_vitrine", f"La promotion est « {self.instance.get_statut_display()} » : ouvre "
+                                              "d'abord les inscriptions (Pilotage) pour la publier.")
         return d

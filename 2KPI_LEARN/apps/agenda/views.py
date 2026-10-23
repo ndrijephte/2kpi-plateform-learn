@@ -342,3 +342,66 @@ def acces_contenus(request, promo_id):
     return render(request, "agenda/acces.html", {
         "promotion": promo, "lignes": lignes, "etats_choix": AccesModule.Etat.choices, "peut_decider": admin,
         "nb_ouverts": sum(1 for l in lignes if l["acces"].ouvert)})
+
+
+@formateur_requis
+def pilotage(request, promo_id):
+    """Cycle de vie de la promotion : statut, conditions du passage suivant, inscriptions, journal.
+    Les décisions (passages, paiements, confirmations) sont réservées à l'administration."""
+    from apps.evaluation.models import Inscription, JournalStatut
+    from . import workflow
+    promo = get_object_or_404(promotions_visibles(request.user).select_related("formation", "formateur"), pk=promo_id)
+    admin = est_admin(request.user)
+    if request.method == "POST":
+        if not admin:
+            raise PermissionDenied
+        action, motif = request.POST.get("action"), (request.POST.get("motif") or "").strip()
+        try:
+            if action == "promotion":
+                cible = request.POST.get("cible")
+                if cible not in Promotion.Statut.values:
+                    raise workflow.TransitionRefusee(["Statut inconnu."])
+                messages.success(request, workflow.changer_statut_promotion(promo, cible, request.user, motif))
+            elif action == "desarchiver":
+                messages.success(request, workflow.desarchiver(promo, request.user, motif))
+            elif action in ("inscription", "paiement"):
+                insc = get_object_or_404(promo.inscriptions.select_related("apprenant"), pk=request.POST.get("inscription"))
+                nom = insc.apprenant.get_full_name() or insc.apprenant.username
+                if action == "paiement":
+                    paiement = request.POST.get("paiement")
+                    if paiement not in Inscription.Paiement.values:
+                        raise workflow.TransitionRefusee(["Paiement inconnu."])
+                    insc.paiement = paiement
+                    insc.save(update_fields=["paiement"])
+                    messages.success(request, f"{nom} : paiement « {insc.get_paiement_display()} ».")
+                else:
+                    cible = request.POST.get("cible")
+                    if cible not in Inscription.Statut.values:
+                        raise workflow.TransitionRefusee(["Statut inconnu."])
+                    workflow.changer_statut_inscription(insc, cible, request.user, motif)
+                    messages.success(request, f"{nom} : {insc.get_statut_display()}.")
+        except workflow.TransitionRefusee as refus:
+            messages.error(request, "Passage refusé : " + " ; ".join(refus.manques))
+        return redirect("agenda:pilotage", promo_id=promo.pk)
+
+    inscriptions = list(promo.inscriptions.select_related("apprenant").order_by(
+        "apprenant__last_name", "apprenant__first_name", "apprenant__username"))
+    for i in inscriptions:
+        i.actions = workflow.actions_inscription(i) if admin else []
+        i.paiement_modifiable = i.statut in (Inscription.Statut.ADMISE, Inscription.Statut.CONFIRMEE)
+    journal = list(JournalStatut.objects.filter(promotion=promo).select_related("par", "inscription__apprenant")[:40])
+    for j in journal:
+        libelles = dict(Inscription.Statut.choices if j.inscription_id else Promotion.Statut.choices)
+        j.libelle_de, j.libelle_vers = libelles.get(j.de, j.de), libelles.get(j.vers, j.vers)
+        j.auteur = (j.par.get_full_name() or j.par.username) if j.par else "automatique"
+    etapes = workflow.ETAPES_PROMOTION
+    rang = etapes.index(promo.statut)
+    compte = {s: sum(1 for i in inscriptions if i.statut == s) for s in Inscription.Statut.values}
+    return render(request, "agenda/pilotage.html", {
+        "promotion": promo, "peut_decider": admin,
+        "etapes": [{"valeur": s, "libelle": Promotion.Statut(s).label, "faite": n < rang, "courante": n == rang}
+                   for n, s in enumerate(etapes)],
+        "actions": workflow.actions_promotion(promo),
+        "inscriptions": inscriptions, "compte": compte, "paiements": Inscription.Paiement.choices,
+        "journal": journal,
+    })

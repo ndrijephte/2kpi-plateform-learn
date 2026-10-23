@@ -6,10 +6,23 @@ from apps.formation.models import Formation, Module, ObjectifSeance, Seance, Com
 
 
 class Inscription(models.Model):
+    """Parcours d'un apprenant dans une promotion. Son statut ne change que par agenda/workflow.py :
+    admise → confirmée (paiement) → en cours (démarrage de la promotion) → validée / non validée (clôture)."""
     class Statut(models.TextChoices):
+        ADMISE = "admise", "Admise (à confirmer)"
+        CONFIRMEE = "confirmee", "Confirmée"
         EN_COURS = "en_cours", "En cours"
-        TERMINEE = "terminee", "Terminée"
+        VALIDEE = "validee", "Validée"
+        NON_VALIDEE = "non_validee", "Non validée"
         ABANDON = "abandon", "Abandon"
+
+    class Paiement(models.TextChoices):
+        EN_ATTENTE = "en_attente", "En attente"
+        RECU = "recu", "Reçu"
+        EXONERE = "exonere", "Exonéré"
+
+    # Statuts qui donnent accès aux contenus (sous réserve de l'ouverture des modules)
+    STATUTS_ACTIFS = (Statut.CONFIRMEE, Statut.EN_COURS)
 
     apprenant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                   related_name="inscriptions")
@@ -18,7 +31,15 @@ class Inscription(models.Model):
                                   blank=True, related_name="inscriptions")
     date_debut = models.DateField(null=True, blank=True)
     date_fin_prevue = models.DateField(null=True, blank=True)
-    statut = models.CharField(max_length=12, choices=Statut.choices, default=Statut.EN_COURS)
+    statut = models.CharField(max_length=12, choices=Statut.choices, default=Statut.ADMISE)
+    paiement = models.CharField(max_length=10, choices=Paiement.choices, default=Paiement.EN_ATTENTE)
+    # Résultat figé à la clôture de la promotion
+    taux_assiduite = models.PositiveSmallIntegerField("Assiduité (%)", null=True, blank=True)
+    note_finale = models.DecimalField("Note finale (/20)", max_digits=4, decimal_places=2, null=True, blank=True)
+
+    @property
+    def est_active(self):
+        return self.statut in self.STATUTS_ACTIFS
 
     class Meta:
         verbose_name = "Inscription"
@@ -237,3 +258,25 @@ class AutoEvaluation(models.Model):
 
     def __str__(self):
         return f"{self.inscription.apprenant} · {self.objectif} : {self.niveau}/4"
+
+
+class JournalStatut(models.Model):
+    """Trace de chaque changement de statut d'une promotion ou d'une inscription (agenda/workflow.py)."""
+    promotion = models.ForeignKey("agenda.Promotion", on_delete=models.CASCADE, null=True, blank=True,
+                                  related_name="journal")
+    inscription = models.ForeignKey(Inscription, on_delete=models.CASCADE, null=True, blank=True,
+                                    related_name="journal")
+    de = models.CharField(max_length=12, blank=True)
+    vers = models.CharField(max_length=12)
+    motif = models.CharField(max_length=300, blank=True)
+    par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                            related_name="+", help_text="Vide : changement automatique (tâche quotidienne, clôture).")
+    le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Changement de statut"
+        verbose_name_plural = "Journal des statuts"
+        ordering = ["-le", "-id"]
+
+    def __str__(self):
+        return f"{self.inscription or self.promotion} : {self.de or '—'} → {self.vers}"

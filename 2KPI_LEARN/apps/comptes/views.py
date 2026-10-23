@@ -66,7 +66,7 @@ def profil_modifier(request):
 @admin_requis
 def utilisateur_editer(request, pk):
     """L'admin modifie toutes les informations d'un compte (le sien compris). Les champs dépendent
-    du rôle : promotion et inscription pour un apprenant, promotions encadrées pour un formateur."""
+    du rôle : promotion pour un apprenant, promotions encadrées pour un formateur."""
     from .services import definir_promotions_formateur, promotions_du_formateur
     cible = get_object_or_404(User, pk=pk)
     profil, prerequis = _profil_complet(cible)
@@ -74,7 +74,6 @@ def utilisateur_editer(request, pk):
     data, files = (request.POST, request.FILES) if request.method == "POST" else (None, None)
     compte_form = CompteAdminForm(data, instance=cible, prefix="c",
                                   initial={"role": role_de(cible), "promotion": insc.promotion_id if insc else None,
-                                           "statut_inscription": insc.statut if insc else "",
                                            "promotions_formateur": list(promotions_du_formateur(cible))
                                            if role_de(cible) == FORMATEUR else []})
     profil_form = ProfilForm(data, files, instance=profil, prefix="p")
@@ -99,11 +98,7 @@ def utilisateur_editer(request, pk):
                 if role == Profil.Role.APPRENANT:
                     promo = compte_form.cleaned_data["promotion"]
                     if promo:
-                        insc = _rattacher(cible, promo)
-                    statut = compte_form.cleaned_data.get("statut_inscription")
-                    if insc and statut and insc.statut != statut:
-                        insc.statut = statut
-                        insc.save(update_fields=["statut"])
+                        _rattacher(cible, promo)
                 elif role == Profil.Role.FORMATEUR:
                     definir_promotions_formateur(cible, compte_form.cleaned_data["promotions_formateur"],
                                                  request.user)
@@ -120,7 +115,8 @@ def utilisateur_editer(request, pk):
 
 
 def _rattacher(user, promotion):
-    """Inscrit l'apprenant à la formation de la promotion et le rattache à celle-ci."""
+    """Inscrit l'apprenant à la formation de la promotion et le rattache à celle-ci. Une nouvelle
+    inscription est « admise » : elle donne accès aux contenus une fois confirmée (workflow)."""
     insc, _ = Inscription.objects.get_or_create(
         apprenant=user, formation=promotion.formation,
         defaults={"promotion": promotion, "date_debut": promotion.date_debut})
@@ -223,13 +219,16 @@ def candidatures(request):
         c = get_object_or_404(Candidature, pk=request.POST.get("candidature"))
         action = request.POST.get("action")
         if action == "accepter" and c.statut != Candidature.Statut.ACCEPTEE:
-            promo = Promotion.objects.filter(pk=request.POST.get("promotion") or None, active=True).first()
+            promo = Promotion.objects.filter(pk=request.POST.get("promotion") or None,
+                                             statut__in=Promotion.STATUTS_ADMISSION).first()
             if not promo:
-                messages.error(request, "Choisis la promotion dans laquelle inscrire la personne.")
+                messages.error(request, "Choisis une promotion qui accepte des inscriptions "
+                                        "(inscriptions ouvertes, prête ou en cours).")
             else:
                 user, cree, envoye = services.accepter(request, c, promo)
-                messages.success(request, f"{c.nom_complet} inscrit(e) à « {promo.nom} » "
-                                          f"({'compte créé' if cree else 'compte existant'}, identifiant : {user.username}).")
+                messages.success(request, f"{c.nom_complet} admis(e) dans « {promo.nom} » "
+                                          f"({'compte créé' if cree else 'compte existant'}, identifiant : {user.username}). "
+                                          "Confirme l'inscription dans Promotions › Pilotage dès le paiement reçu.")
                 if not envoye:
                     messages.warning(request, "L'e-mail n'a pas pu partir : vérifie la configuration SMTP, "
                                               "puis utilise « Renvoyer l'invitation ».")
@@ -250,7 +249,8 @@ def candidatures(request):
     compte = {s: Candidature.objects.filter(statut=s).count() for s in Candidature.Statut.values}
     return render(request, "comptes/candidatures.html", {
         "candidatures": qs[:200], "filtre": filtre, "compte": compte, "statuts": Candidature.Statut.choices,
-        "promotions": Promotion.objects.filter(active=True).select_related("formation").order_by("-date_debut")})
+        "promotions": Promotion.objects.filter(statut__in=Promotion.STATUTS_ADMISSION)
+                               .select_related("formation").order_by("-date_debut")})
 
 
 def creer_compte(request):

@@ -18,10 +18,12 @@ class AffectationInline(admin.TabularInline):
 
 @admin.register(Promotion)
 class PromotionAdmin(admin.ModelAdmin):
-    list_display = ("nom", "formation", "date_debut", "formateur", "active", "publiee_vitrine")
-    list_filter = ("active", "publiee_vitrine", "formation")
+    list_display = ("nom", "formation", "date_debut", "formateur", "statut", "publiee_vitrine")
+    list_filter = ("statut", "publiee_vitrine", "formation")
+    readonly_fields = ["statut"]  # change uniquement par le pilotage (agenda/workflow.py)
     fieldsets = [
-        (None, {"fields": ["nom", "formation", "date_debut", "formateur", "active", "ouverture_auto"]}),
+        (None, {"fields": ["nom", "formation", "date_debut", "formateur", "statut", "effectif_minimum",
+                           "ouverture_auto"]}),
         ("Site vitrine", {"fields": ["publiee_vitrine", "code_vitrine", "domaine", "mode", "date_affichage",
                                      "horaire", "duree", "lieu", "places_total", "places_hors_plateforme",
                                      "prix", "description_vitrine"]}),

@@ -183,6 +183,7 @@ cPanel → **Tâches cron**. Remplace `ACTIVER` par la commande d'activation (A6
 
 | Fréquence | Commande |
 |---|---|
+| Tous les jours 6 h | `ACTIVER && python manage.py workflow_quotidien >> logs/cron.log 2>&1` |
 | Tous les jours 18 h | `ACTIVER && python manage.py envoyer_rappels >> logs/cron.log 2>&1` |
 | Tous les jours 2 h | `ACTIVER && python manage.py sauvegarder --garder 14 >> logs/cron.log 2>&1` |
 

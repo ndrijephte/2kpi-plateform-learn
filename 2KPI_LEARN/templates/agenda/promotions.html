@@ -7,7 +7,7 @@
   <div>
     <span class="eyebrow">{% if peut_gerer %}{% icon "shield" size=14 %} Administration{% else %}{% icon "briefcase" size=14 %} Espace formateur{% endif %}</span>
     <h1>{% if peut_gerer %}Promotions{% else %}Mes promotions{% endif %}</h1>
-    <p class="muted">{% if peut_gerer %}Crée les promotions, choisis le formateur référent, autorise les autres formateurs module par module, puis génère le calendrier.{% else %}Les promotions où l'administration t'a autorisé à intervenir : planning, présences et livrables de tes modules.{% endif %}</p>
+    <p class="muted">{% if peut_gerer %}Crée les promotions, choisis le formateur référent, génère le calendrier, puis fais avancer chaque promotion depuis son Pilotage (inscriptions, démarrage, clôture).{% else %}Les promotions où l'administration t'a autorisé à intervenir : planning, présences et livrables de tes modules.{% endif %}</p>
   </div>
 </div>
 
@@ -39,7 +39,7 @@
   <tbody>
   {% for p in promotions %}
     <tr>
-      <td><strong>{{ p.nom }}</strong>{% if not p.active %} <span class="pill">Archivée</span>{% endif %}<br><small class="muted">{{ p.formation.titre }}</small>
+      <td><strong>{{ p.nom }}</strong> <span class="pill pill-promo-{{ p.statut }}">{{ p.get_statut_display }}</span><br><small class="muted">{{ p.formation.titre }}</small>
         {% if p.publiee_vitrine %}<br><small class="muted">{% icon "globe" size=12 %} Sur la vitrine · {{ p.places_restantes }}/{{ p.places_total }} place(s)</small>
         {% elif p.code_vitrine %}<br><small class="muted">{% icon "link" size=12 %} {{ p.code_vitrine }} · non publiée</small>{% endif %}</td>
       <td>
@@ -59,10 +59,11 @@
       <td class="num">{{ p.nb_apprenants }}</td>
       <td class="num">{{ p.nb_evenements }}</td>
       <td><div class="actions">
+        <a class="btn btn-sm btn-navy" href="{% url 'agenda:pilotage' p.id %}" title="Étapes, conditions, inscriptions à confirmer">{% icon "list-checks" size=14 %} Pilotage</a>
         {% if p.pilote %}<form method="post" action="{% url 'agenda:generer_promo' p.id %}" class="inline">{% csrf_token %}
           <button class="btn btn-sm btn-secondary" type="submit" title="Ajoute les séances manquantes">{% icon "calendar-plus" size=14 %} Calendrier</button>
         </form>{% endif %}
-        <a class="btn btn-sm btn-navy" href="{% url 'agenda:planning' p.id %}">{% icon "calendar-days" size=14 %} Planning</a>
+        <a class="btn btn-sm btn-secondary" href="{% url 'agenda:planning' p.id %}">{% icon "calendar-days" size=14 %} Planning</a>
         <a class="btn btn-sm btn-secondary" href="{% url 'agenda:acces' p.id %}" title="Ouverture des modules aux apprenants">{% icon "lock" size=14 %} Accès</a>
         <a class="btn btn-sm btn-secondary" href="{% url 'evaluation:autoevaluations' p.id %}" title="Auto-évaluations des apprenants sur les objectifs des séances">{% icon "gauge" size=14 %} Auto-éval.</a>
         {% if peut_gerer %}<a class="btn btn-sm btn-secondary" href="{% url 'agenda:affectations' p.id %}" title="Autoriser des formateurs, module par module">{% icon "user-check" size=14 %} Formateurs</a>{% endif %}

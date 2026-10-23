@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Pilotage — {{ promotion.nom }}{% endblock %}
+{% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<span>{{ promotion.nom }}</span>{% icon "chevron-right" size=14 %}<span>Pilotage</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "list-checks" size=14 %} Cycle de vie · {{ promotion.formation.titre }}</span>
+    <h1>Pilotage — {{ promotion.nom }}</h1>
+    <p class="muted">Chaque étape ne s'ouvre que lorsque ses conditions sont remplies. Démarrage prévu le {{ promotion.date_debut|date:"d/m/Y" }} ; il se fait automatiquement ce jour-là si la promotion est prête.</p>
+  </div>
+  <a class="btn btn-secondary" href="{% url 'agenda:planning' promotion.pk %}">{% icon "calendar-days" size=16 %} Planning</a>
+</div>
+
+<ol class="etapes-workflow" aria-label="Étapes de la promotion">
+  {% for e in etapes %}<li class="{% if e.faite %}faite{% elif e.courante %}courante{% endif %}"{% if e.courante %} aria-current="step"{% endif %}>
+    <span class="puce">{% if e.faite %}{% icon "check" size=13 stroke=2.5 %}{% else %}{{ forloop.counter }}{% endif %}</span>{{ e.libelle }}</li>{% endfor %}
+</ol>
+
+<div class="grid-2">
+  <div>
+    {% for a in actions %}
+    <div class="card diagnostic{% if not a.possible %} diagnostic-ko{% endif %}">
+      <div class="card-head">
+        <h2 class="section-title">{% icon "arrow-right" size=18 %} {{ a.libelle }}</h2>
+        {% if a.possible %}<span class="pill pill-ok">{% icon "check" size=12 %} Possible</span>{% else %}<span class="pill pill-warn">{% icon "lock" size=12 %} Conditions manquantes</span>{% endif %}
+      </div>
+      {% if a.conditions %}<ol class="diagnostic-etapes">
+        {% for c in a.conditions %}
+        <li class="{% if c.ok %}ok{% else %}ko{% endif %}"><span class="puce">{% if c.ok %}{% icon "check" size=13 stroke=2.5 %}{% else %}{% icon "x" size=13 stroke=2.5 %}{% endif %}</span>
+          <span><strong>{{ c.libelle }}</strong>{% if c.detail %}<small>{{ c.detail }}</small>{% endif %}</span></li>
+        {% endfor %}
+      </ol>{% endif %}
+      {% if peut_decider and a.possible %}
+      <form method="post" class="form-inline" style="margin-top:12px">{% csrf_token %}
+        <input type="hidden" name="action" value="promotion"><input type="hidden" name="cible" value="{{ a.cible }}">
+        <div class="field"><label for="m-{{ a.cible }}">Commentaire <small class="muted">(optionnel)</small></label><input id="m-{{ a.cible }}" type="text" name="motif" maxlength="300"></div>
+        <button class="btn{% if a.cible == 'archivee' %} btn-secondary{% endif %}" type="submit"
+          {% if a.cible == "cloturee" %}onclick="return confirm('Clôturer calcule et fige les résultats de chaque apprenant. Continuer ?')"{% elif a.cible == "archivee" %}onclick="return confirm('{{ a.libelle }} ?')"{% endif %}>{{ a.libelle }}</button>
+      </form>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="card">
+      {% if promotion.statut == "archivee" %}
+        <p class="muted">{% icon "archive" size=14 %} Promotion archivée : plus aucune action n'est attendue.</p>
+        {% if peut_decider %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="desarchiver">
+          <button class="btn btn-sm btn-secondary" type="submit">{% icon "rotate-ccw" size=14 %} Désarchiver</button></form>{% endif %}
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    <h2 class="section-title">{% icon "users" size=18 %} Inscriptions
+      <small class="muted">{{ compte.admise }} à confirmer · {{ compte.confirmee }} confirmée(s) · {{ compte.en_cours }} en cours{% if compte.validee or compte.non_validee %} · {{ compte.validee }} validée(s) · {{ compte.non_validee }} non validée(s){% endif %}{% if compte.abandon %} · {{ compte.abandon }} abandon(s){% endif %}</small></h2>
+    <div class="table-wrap">
+    <table class="tbl">
+      <thead><tr><th>Apprenant</th><th>Statut</th><th>Paiement</th><th>Résultat</th>{% if peut_decider %}<th>Actions</th>{% endif %}</tr></thead>
+      <tbody>
+      {% for i in inscriptions %}
+        <tr>
+          <td><strong>{{ i.apprenant.get_full_name|default:i.apprenant.username }}</strong><br><small class="muted">{{ i.apprenant.email }}</small></td>
+          <td><span class="pill pill-insc-{{ i.statut }}">{{ i.get_statut_display }}</span></td>
+          <td>{% if peut_decider and i.paiement_modifiable %}
+            <form method="post" class="inline-form">{% csrf_token %}
+              <input type="hidden" name="action" value="paiement"><input type="hidden" name="inscription" value="{{ i.pk }}">
+              <select name="paiement" aria-label="Paiement de {{ i.apprenant.get_full_name|default:i.apprenant.username }}" onchange="this.form.submit()">
+                {% for v, l in paiements %}<option value="{{ v }}" {% if i.paiement == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+              </select><noscript><button class="btn btn-sm btn-secondary">OK</button></noscript>
+            </form>{% else %}{{ i.get_paiement_display }}{% endif %}</td>
+          <td>{% if i.note_finale is not None %}{{ i.taux_assiduite }} % · {{ i.note_finale }}/20{% else %}<span class="muted">—</span>{% endif %}</td>
+          {% if peut_decider %}<td>{% if i.actions %}
+            <form method="post" class="inline-form">{% csrf_token %}
+              <input type="hidden" name="action" value="inscription"><input type="hidden" name="inscription" value="{{ i.pk }}">
+              <select name="cible" aria-label="Action sur l'inscription">
+                {% for a in i.actions %}<option value="{{ a.cible }}">{{ a.libelle }}</option>{% endfor %}
+              </select>
+              <input type="text" name="motif" maxlength="300" placeholder="Motif" aria-label="Motif">
+              <button class="btn btn-sm btn-secondary" type="submit">OK</button>
+            </form>{% endif %}</td>{% endif %}
+        </tr>
+      {% empty %}<tr><td colspan="5"><div class="empty"><span class="ico-tile">{% icon "users" %}</span>
+        <strong>Aucune inscription</strong>Les candidatures acceptées et les apprenants rattachés à la promotion apparaissent ici.</div></td></tr>{% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if peut_decider %}<p class="muted"><small>{% icon "info" size=12 %} Une inscription donne accès aux cours une fois <strong>confirmée</strong> (paiement reçu ou exonération). Motif obligatoire pour un abandon ou une dérogation au résultat.</small></p>{% endif %}
+  </div>
+
+  <div class="card">
+    <h2 class="section-title">{% icon "clock" size=18 %} Journal</h2>
+    <ol class="journal">
+      {% for j in journal %}
+      <li><small class="muted">{{ j.le|date:"d/m/Y H:i" }} · {{ j.auteur }}</small>
+        <span>{% if j.inscription %}{{ j.inscription.apprenant.get_full_name|default:j.inscription.apprenant.username }}{% else %}<strong>Promotion</strong>{% endif %} : {{ j.libelle_de|default:"—" }} → {{ j.libelle_vers }}</span>
+        {% if j.motif %}<small>{{ j.motif }}</small>{% endif %}</li>
+      {% empty %}<li class="muted">Aucun changement enregistré.</li>{% endfor %}
+    </ol>
+  </div>
+</div>
+{% endblock %}

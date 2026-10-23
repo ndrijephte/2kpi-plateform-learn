@@ -1,7 +1,7 @@
 """Autorisation d'accès aux contenus (modules, séances, ressources, quiz) — décidée par l'admin.
 
 Un apprenant n'accède à un module que si :
-1. il a une inscription « en cours » à la formation, rattachée à une promotion (validée par l'admin) ;
+1. il a une inscription confirmée (ou en cours) à la formation, rattachée à une promotion — agenda/workflow.py ;
 2. le module est ouvert pour sa promotion, par décision de l'admin :
    - ouvert / fermé explicitement (AccesModule), sinon
    - ouverture automatique (si l'admin l'a activée sur la promotion) le lundi de la semaine
@@ -29,7 +29,7 @@ def etats_modules(inscription, modules):
     from apps.evaluation.models import Inscription
 
     modules = list(modules)
-    if not inscription or inscription.statut != Inscription.Statut.EN_COURS:
+    if not inscription or not inscription.est_active:
         return {m.id: EtatAcces(False, "Ton inscription à cette formation n'est pas active.",
                                 source="inscription") for m in modules}
     if not inscription.promotion_id:
@@ -85,7 +85,7 @@ def acces_module(user, module):
     from apps.evaluation.models import Inscription
     insc = (Inscription.objects.filter(apprenant=user, formation_id=module.formation_id)
             .select_related("promotion").order_by("-id"))
-    insc = next((i for i in insc if i.statut == Inscription.Statut.EN_COURS and i.promotion_id), None) or insc.first()
+    insc = next((i for i in insc if i.est_active and i.promotion_id), None) or insc.first()
     return etats_modules(insc, [module])[module.id]
 
 
@@ -118,9 +118,10 @@ def diagnostic_apprenant(user):
     if autres:
         etapes[-1] = (True, "Inscription à une formation",
                       f"{insc.formation} (prise en compte ; {autres} autre{'s' if autres > 1 else ''} inscription{'s' if autres > 1 else ''} ignorée{'s' if autres > 1 else ''})")
-    if not etape(insc.statut == Inscription.Statut.EN_COURS, "Inscription « En cours »",
-                 f"Statut actuel : « {insc.get_statut_display()} ». Passe-le à « En cours » sur la fiche du compte."
-                 if insc.statut != Inscription.Statut.EN_COURS else ""):
+    if not etape(insc.est_active, "Inscription confirmée",
+                 "" if insc.est_active else f"Statut actuel : « {insc.get_statut_display()} »."
+                 + (" Confirme-la (paiement reçu ou exonération) dans Promotions › Pilotage."
+                    if insc.statut == Inscription.Statut.ADMISE else "")):
         return resultat
     promo = insc.promotion
     if not etape(promo is not None, "Rattachement à une promotion",

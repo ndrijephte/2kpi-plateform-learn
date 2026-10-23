@@ -83,7 +83,7 @@ def apprenants_concernes(seance):
     """Apprenants (inscription en cours, promotion active) pour qui le module de la séance est ouvert."""
     from apps.formation.acces import etats_promotion
     from .models import Inscription
-    inscriptions = (Inscription.objects.filter(formation_id=seance.module.formation_id, statut=Inscription.Statut.EN_COURS,
+    inscriptions = (Inscription.objects.filter(formation_id=seance.module.formation_id, statut__in=Inscription.STATUTS_ACTIFS,
                                                promotion__active=True, apprenant__is_active=True)
                     .select_related("apprenant", "promotion"))
     ouvert, users = {}, []

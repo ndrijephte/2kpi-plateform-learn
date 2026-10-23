@@ -1,8 +1,10 @@
 import datetime as dt
+from decimal import Decimal
 from pathlib import Path
 from django.utils import timezone
 from apps.core.stockage import stockage_prive
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.text import slugify
 
@@ -11,6 +13,12 @@ class Formation(models.Model):
     slug = models.SlugField(max_length=200, unique=True, blank=True)
     description = models.TextField(blank=True)
     active = models.BooleanField(default=True)
+    # Règles de validation appliquées à la clôture d'une promotion (agenda/workflow.py)
+    seuil_assiduite = models.PositiveSmallIntegerField(
+        "Assiduité minimale (%)", default=80, validators=[MaxValueValidator(100)],
+        help_text="Part des séances réalisées où l'apprenant était présent (ou en retard).")
+    note_minimale = models.DecimalField("Note minimale (/20)", max_digits=4, decimal_places=1, default=Decimal("10"),
+                                        validators=[MinValueValidator(0), MaxValueValidator(20)])
 
     class Meta:
         verbose_name = "Formation"

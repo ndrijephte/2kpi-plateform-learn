@@ -85,7 +85,7 @@ def _pilotage(request, admin):
             "apprenants": Profil.objects.filter(role=Profil.Role.APPRENANT, utilisateur__is_active=True).count(),
             "formateurs": Profil.objects.filter(role=Profil.Role.FORMATEUR, utilisateur__is_active=True).count(),
             "promotions": Promotion.objects.filter(active=True).count(),
-            "inscriptions": Inscription.objects.filter(statut=Inscription.Statut.EN_COURS).count(),
+            "inscriptions": Inscription.objects.filter(statut__in=Inscription.STATUTS_ACTIFS).count(),
         }
         ctx["sans_formateur"] = Promotion.objects.filter(active=True, formateur__isnull=True, affectations__isnull=True)
         ctx["sans_promotion"] = (User.objects.filter(profil__role=Profil.Role.APPRENANT, is_active=True)

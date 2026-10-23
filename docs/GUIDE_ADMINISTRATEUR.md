@@ -63,7 +63,8 @@ Connecté en administrateur :
 1. Menu de gauche **Pilotage → Utilisateurs**.
 2. Déplie **« + Nouveau compte »**.
 3. Renseigne prénom, nom, **e-mail** (unique), identifiant de connexion, puis le **Rôle** :
-   - **Apprenant** → choisis aussi sa **Promotion** : c'est elle qui ouvre l'accès aux cours ;
+   - **Apprenant** → choisis aussi sa **Promotion** : il y est **admis** ; l'accès aux cours s'ouvre
+     quand tu **confirmes** son inscription (§ 2 quater) ;
    - **Formateur** → pour un enseignant ; il ne voit rien tant que tu ne l'as pas autorisé sur une
      promotion (§ 2 bis) ;
    - **Administrateur** → mêmes droits que toi.
@@ -73,7 +74,8 @@ Connecté en administrateur :
 
 Toujours dans **Utilisateurs** : changer un rôle, rattacher / détacher d'une promotion,
 désactiver / réactiver un compte, et **modifier toutes les informations** d'un compte (bouton
-d'édition de la ligne : identité, e-mail, rôle, promotion, statut d'inscription, nouveau mot de passe).
+d'édition de la ligne : identité, e-mail, rôle, promotion, nouveau mot de passe). Le **statut
+d'inscription** ne se change pas ici : il suit le pilotage de la promotion (§ 2 quater).
 
 > Tu ne peux ni retirer ton propre rôle d'administrateur ni désactiver ton propre compte
 > (garde-fou contre le verrouillage).
@@ -120,6 +122,29 @@ Les formateurs voient cette page **en lecture seule** (l'état de leurs modules)
 
 ---
 
+## 2 quater. Faire avancer une promotion (Pilotage)
+
+**Promotions** → bouton **Pilotage**. La page montre l'étape actuelle, la **check-list** de l'étape
+suivante (✔ / ✘ avec ce qu'il manque), les inscriptions et le journal de tous les changements.
+Le bouton d'une étape n'apparaît que lorsque toutes ses conditions sont remplies.
+
+1. **Planifiée** : crée la promotion, choisis le référent, génère le calendrier.
+2. **Ouvrir les inscriptions** : la session peut alors être publiée sur la vitrine (bouton Vitrine)
+   et recevoir des candidatures.
+3. Pour chaque apprenant **admis** : indique le **paiement** (Reçu ou Exonéré), puis **Confirmer**.
+   Seule une inscription confirmée donne accès aux cours.
+4. **Déclarer prête à démarrer** dès que l'effectif minimum est confirmé.
+5. **Démarrage** : automatique le jour J (tâche quotidienne) ; les confirmés passent « en cours »,
+   la session quitte la vitrine. Si la promotion n'est pas prête ce jour-là, tu reçois une alerte.
+6. **Clôturer** quand toutes les séances sont réalisées ou annulées, les présences saisies et les
+   livrables notés : chaque apprenant est **validé** (assiduité ≥ 80 % et note ≥ 10/20, réglables dans
+   Paramètres › Formations) ou **non validé**, et reçoit son résultat.
+7. **Archiver** (réversible avec « Désarchiver »).
+
+Abandon d'un apprenant et dérogation à un résultat : **motif obligatoire**, conservé au journal.
+
+---
+
 ## 3. Les autres façons d'arriver sur la plateforme
 
 ### a) L'apprenant / l'étudiant crée lui-même son compte
@@ -132,7 +157,8 @@ structure, et peut choisir une **session**.
   administrateurs reçoivent une notification.
 - **Aucun contenu n'est accessible** tant que l'inscription n'est pas validée.
 - S'il a choisi une session, une **candidature** apparaît dans **Candidatures** → l'accepter le
-  rattache à la promotion (son espace s'ouvre, il est prévenu par e-mail).
+  rattache à la promotion (inscription **admise**, il est prévenu par e-mail) ; son espace s'ouvre
+  quand tu confirmes l'inscription dans **Pilotage**.
 - Sans session choisie : rattache-le toi-même dans **Utilisateurs** (colonne Promotion).
 
 Protections : piège anti-robots, 5 créations de compte par heure et par connexion, e-mail unique.
@@ -140,7 +166,8 @@ Protections : piège anti-robots, 5 créations de compte par heure et par connex
 ### b) La demande d'inscription depuis la vitrine
 
 Page **Sessions → S'inscrire** de la vitrine : la demande arrive dans **Candidatures**.
-**Accepter** (en choisissant la promotion) crée le compte s'il n'existe pas, l'inscrit et envoie
+**Accepter** (en choisissant une promotion aux inscriptions ouvertes, prête ou en cours) crée le
+compte s'il n'existe pas, l'admet dans la promotion et envoie
 un e-mail avec un lien pour **choisir son mot de passe** (valable 3 jours ; ensuite : « Mot de
 passe oublié »). **Refuser** envoie un e-mail de refus (motif facultatif).
 

@@ -84,6 +84,26 @@ sont conservées) ; la décocher retire l'accès, y compris le rôle de référe
 Les fichiers des ressources et des livrables sont stockés dans `prive/` (jamais servis par le serveur
 web) et téléchargés uniquement via l'application après contrôle des droits.
 
+### Workflow d'une promotion (identique pour toute formation)
+
+Les statuts ne se modifient jamais à la main : chaque passage vérifie sa check-list, applique ses effets
+et s'inscrit au journal (`JournalStatut`). Écran : **Promotions › Pilotage** (décisions : admin ;
+consultation : formateurs de la promotion). Logique : `apps/agenda/workflow.py`.
+
+| Promotion | Pour y passer | Effets |
+|---|---|---|
+| Planifiée → **Inscriptions ouvertes** | formation active, chaque module a une séance, référent, calendrier généré, places | publication vitrine possible |
+| → **Prête à démarrer** | idem + effectif minimum d'inscriptions confirmées | — |
+| → **En cours** | date de début atteinte (automatique, `workflow_quotidien`) | confirmées → en cours, retrait de la vitrine, notifications |
+| → **Clôturée** | séances réalisées ou annulées, présences saisies, livrables rendus notés | résultat de chaque apprenant, admises restantes → abandon |
+| → **Archivée** | — (annulation avant démarrage : aucune inscription confirmée) | `active = False` ; désarchivage possible |
+
+Inscription : **admise** (candidature acceptée, rattachement) → **confirmée** (paiement reçu ou exonération ;
+donne accès aux contenus) → **en cours** → **validée / non validée** à la clôture : assiduité ≥ seuil de la
+formation (80 % par défaut, présent ou en retard sur les séances réalisées) **et** note finale ≥ note minimale
+(10/20 par défaut, note globale 40/40/20). Seuils : Paramètres › Formations. Abandon et dérogation au
+résultat : motif obligatoire.
+
 ### Auto-évaluation sur les objectifs des séances
 
 - Chaque séance porte des **objectifs** formulés pour l'apprenant (« À la fin de la séance, je suis
@@ -132,16 +152,16 @@ Mises à jour : **automatiques à chaque `git push` sur main** (`../docs/DEPLOIE
 - `apps/comptes` — profils, rôles, prérequis
 - `apps/formation` — formation, modules, séances, compétences, ressources (+ `seed_geoai`)
 - `apps/evaluation` — présence, livrables, quiz, compétences, projet, soutenance (+ `import_gift`)
-- `apps/agenda` — promotions, calendrier, planning formateur, présences, notifications
+- `apps/agenda` — promotions et leur workflow (`workflow.py`), calendrier, planning formateur, présences, notifications
 - `apps/tableau_bord` — synthèse (note globale 40/40/20) + vue formateur
 - `docs/ARCHITECTURE.md` — architecture détaillée
 
 ## Tests
 
 ```bash
-python manage.py test        # 74 tests : rôles, autorisations (apprenants, formateurs par module),
+python manage.py test        # 80 tests : rôles, autorisations (apprenants, formateurs par module),
                              # promotions des formateurs, auto-évaluation, fichiers, quiz, candidatures,
-                             # création de compte, mot de passe oublié, e-mails
+                             # création de compte, mot de passe oublié, e-mails, workflow des promotions
 ```
 
 ## Exploitation
@@ -150,6 +170,8 @@ python manage.py test        # 74 tests : rôles, autorisations (apprenants, for
   (SMTP, sendmail du serveur) et, avec `--reinitialisation`, rejoue « mot de passe oublié » pour l'adresse
 - E-mails : SMTP du `.env` avec **repli automatique sur sendmail** (cPanel) ; `EMAIL_ENVOI=sendmail` pour l'imposer
 - `python manage.py envoyer_rappels` — rappels J-1 (cron quotidien)
+- `python manage.py workflow_quotidien` — démarre les promotions prêtes à leur date, alerte les admins
+  de celles qui ne le sont pas (cron quotidien, tôt le matin)
 - `python manage.py sauvegarder [--garder 14]` — base + `media/` + `prive/` dans `sauvegardes/` (cron nocturne)
 - Journaux : `logs/2kpi_learn.log` (dont chaque demande « mot de passe oublié » : envoyée, en échec,
   aucun compte, limite atteinte) ; `logs/deploiement.log` ; erreurs 500 envoyées par e-mail aux `ADMINS`

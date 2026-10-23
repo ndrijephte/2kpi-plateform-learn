@@ -56,7 +56,7 @@ class Command(BaseCommand):
                 titre=s["titre"], description=s.get("description", ""))
             promo = Promotion(
                 formation=formation, nom=s["titre"], date_debut=debut or dt.date.today(),
-                active=True, publiee_vitrine=True, code_vitrine=s["id"],
+                statut=Promotion.Statut.INSCRIPTIONS, publiee_vitrine=True, code_vitrine=s["id"],
                 domaine=s.get("domaine") or Promotion.Domaine.SOCLE, mode=s.get("mode") or Promotion.Mode.EN_LIGNE,
                 date_affichage="" if debut else s.get("dateAffichage", ""), horaire=s.get("horaire", ""),
                 duree=s.get("duree", ""), lieu=s.get("lieu", ""), prix=s.get("prix", ""),

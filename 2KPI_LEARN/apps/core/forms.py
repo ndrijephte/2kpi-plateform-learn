@@ -26,7 +26,7 @@ def parametres_form(section):
 class FormationForm(forms.ModelForm):
     class Meta:
         model = Formation
-        fields = ["titre", "slug", "description", "active"]
+        fields = ["titre", "slug", "description", "active", "seuil_assiduite", "note_minimale"]
         widgets = {"description": forms.Textarea(attrs={"rows": 3})}
         help_texts = {"slug": "Identifiant d'URL ; laissé vide, il est déduit du titre."}
 

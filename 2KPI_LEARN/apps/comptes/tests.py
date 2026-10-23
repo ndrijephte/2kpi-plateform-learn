@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.core import mail
 from django.test import override_settings
 from django.urls import reverse
+from apps.agenda.models import Promotion
 from apps.comptes.models import Candidature
 from apps.comptes.services import decouper_nom
 from apps.core.test_utils import MDP, BaseTest
@@ -55,11 +56,17 @@ class CandidaturesAdminTests(BaseTest):
 
     def test_accepter_cree_le_compte_et_invite(self):
         c = self.client_de(self.admin)
-        c.post(reverse("comptes:candidatures"), {"candidature": self.cand.pk, "action": "accepter",
-                                                 "promotion": self.promo_a.pk})
+        accepter = {"candidature": self.cand.pk, "action": "accepter", "promotion": self.promo_a.pk}
+        c.post(reverse("comptes:candidatures"), accepter)  # promotion encore planifiée : refusé
+        self.cand.refresh_from_db()
+        self.assertEqual(self.cand.statut, "nouvelle")
+        self.promo_a.statut = Promotion.Statut.INSCRIPTIONS
+        self.promo_a.save()
+        c.post(reverse("comptes:candidatures"), accepter)
         self.cand.refresh_from_db()
         user = self.cand.utilisateur
         self.assertEqual(self.cand.statut, "acceptee")
+        self.assertEqual(Inscription.objects.get(apprenant=user).statut, Inscription.Statut.ADMISE)
         self.assertEqual((user.first_name, user.last_name), ("Awa", "N'GUESSAN"))
         self.assertFalse(user.has_usable_password())
         self.assertEqual(user.profil.role, "apprenant")
@@ -181,6 +188,7 @@ class CreationCompteTests(BaseTest):
 
     def test_session_choisie_devient_candidature(self):
         self.promo_a.publiee_vitrine, self.promo_a.code_vitrine = True, "geoai-a"
+        self.promo_a.statut = Promotion.Statut.INSCRIPTIONS
         self.promo_a.save()
         r = self.client.get(self.URL + "?session=geoai-a")
         self.assertEqual(r.context["form"]["promotion"].value(), self.promo_a.pk)
@@ -264,12 +272,10 @@ class FormulaireFormateurTests(BaseTest):
         r = self.client_de(self.admin).get(reverse("comptes:utilisateur_editer", args=[self.form_a.pk]))
         self.assertContains(r, 'data-role="apprenant"')   # masqués à l'écran pour un formateur
         self.assertContains(r, 'data-role="formateur"')
-        self.assertEqual(r.context["compte_form"].initial["statut_inscription"], "")
         self.assertNotIn("categorie", self.client_de(self.form_a).get(reverse("comptes:profil_modifier"))
                          .context["profil_form"].fields)
-        # Le statut d'inscription ne s'applique pas à un formateur
-        self._post(self.form_a, **{"c-statut_inscription": "abandon", "c-promotion": self.promo_b.pk,
-                                   "c-promotions_formateur": [self.promo_a.pk]})
+        # La promotion d'apprenant ne s'applique pas à un formateur
+        self._post(self.form_a, **{"c-promotion": self.promo_b.pk, "c-promotions_formateur": [self.promo_a.pk]})
         self.assertFalse(Inscription.objects.filter(apprenant=self.form_a).exists())
 
     def test_creation_formateur_avec_promotions(self):
@@ -310,7 +316,7 @@ class AdministrateurHorsRolesTests(BaseTest):
     def test_fiche_admin_sans_champs_formateur_ni_apprenant(self):
         r = self.client_de(self.admin).get(reverse("comptes:utilisateur_editer", args=[self.admin.pk]))
         html = r.content.decode()
-        for champ in ("c-promotions_formateur", "c-promotion", "c-statut_inscription", "p-categorie"):
+        for champ in ("c-promotions_formateur", "c-promotion", "p-categorie"):
             debut = html.index(f'name="{champ}"')
             self.assertIn("hidden", html[html.rindex('<div class="field"', 0, debut):debut], champ)
         self.assertNotContains(self.client_de(self.admin).get(reverse("comptes:profil")), "Aucune promotion confiée")
@@ -330,14 +336,14 @@ class DiagnosticAccesTests(BaseTest):
         self.assertContains(r, "Accès aux cours")
         self.assertContains(r, "Aucun module ouvert pour « Promo B »")
         self.assertContains(self.client_de(self.admin).get(reverse("comptes:utilisateurs")), "Pas d'accès aux cours")
-        self.insc_a.statut = Inscription.Statut.TERMINEE
+        self.insc_a.statut = Inscription.Statut.ADMISE
         self.insc_a.save()
-        self.assertIn("Terminée", diagnostic_apprenant(self.app_a)["etapes"][-1][2])
+        self.assertIn("Confirme-la", diagnostic_apprenant(self.app_a)["etapes"][-1][2])
 
     def test_inscription_plus_recente_ne_masque_pas_le_cours(self):
         from apps.formation.models import Formation
         autre = Formation.objects.create(titre="WebSIG")
-        Inscription.objects.create(apprenant=self.app_a, formation=autre, statut=Inscription.Statut.TERMINEE)
+        Inscription.objects.create(apprenant=self.app_a, formation=autre, statut=Inscription.Statut.VALIDEE)
         seance = self.m1.seances.first()
         c = self.client_de(self.app_a)
         self.assertEqual(c.get(reverse("formation:seance", args=[seance.pk])).status_code, 200)

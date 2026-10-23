@@ -1,11 +1,14 @@
 import datetime as dt
 import io
+from decimal import Decimal
 from django.core.management import call_command
 from django.test import override_settings
 from django.urls import reverse
-from apps.agenda.models import Indisponibilite, Notification, Promotion
+from django.utils import timezone
+from apps.agenda.models import AccesModule, Evenement, Indisponibilite, Notification, Promotion
 from apps.agenda.services import generer_agenda, synchroniser_agenda
 from apps.core.test_utils import BaseTest
+from apps.evaluation.models import Inscription
 
 
 class AgendaTests(BaseTest):
@@ -74,6 +77,9 @@ class CatalogueVitrineTests(BaseTest):
         c = self.client_de(self.admin)
         base = {"publiee_vitrine": "on", "code_vitrine": "GeoAI Sassandra", "domaine": "Socle", "mode": "Hybride",
                 "places_total": 5, "places_hors_plateforme": 9}
+        self.assertEqual(c.post(url, {**base, "places_hors_plateforme": 1}).status_code, 200)  # promotion planifiée : refusé
+        self.promo_a.statut = Promotion.Statut.INSCRIPTIONS
+        self.promo_a.save()
         self.assertEqual(c.post(url, base).status_code, 200)  # 9 > 5 : refusé
         self.assertRedirects(c.post(url, {**base, "places_hors_plateforme": 1}), reverse("agenda:promotions"))
         self.promo_a.refresh_from_db()
@@ -87,3 +93,140 @@ class CatalogueVitrineTests(BaseTest):
         self.assertEqual((p.date_debut, p.places_restantes, p.publiee_vitrine), (dt.date(2026, 8, 10), 14, True))
         self.assertEqual(Promotion.objects.get(code_vitrine="collecte-donnees-terrain").date_affichage, "Tous les samedis")
         self.assertEqual(Promotion.objects.filter(publiee_vitrine=True).count(), 6)
+
+
+class WorkflowTests(BaseTest):
+    """Cycle de vie d'une promotion et des inscriptions : conditions, effets, journal."""
+
+    def setUp(self):
+        super().setUp()
+        from apps.agenda import workflow
+        self.wf = workflow
+        self.P = Promotion.Statut
+        self.S = Inscription.Statut
+        # Nouvelle promotion de la même formation, sans apprenant
+        self.promo = Promotion.objects.create(formation=self.formation, nom="Promo W", date_debut=self.promo_a.date_debut)
+
+    def manques(self, promo, cible):
+        return [c.libelle for c in self.wf.conditions_promotion(promo, cible) if not c.ok]
+
+    def test_ouverture_exige_referent_et_calendrier(self):
+        self.assertEqual(self.manques(self.promo, self.P.INSCRIPTIONS),
+                         ["Formateur référent désigné", "Calendrier généré"])
+        with self.assertRaises(self.wf.TransitionRefusee):
+            self.wf.changer_statut_promotion(self.promo, self.P.INSCRIPTIONS, self.admin)
+        self.promo.formateur = self.form_a
+        self.promo.save()
+        generer_agenda(self.promo)
+        self.wf.changer_statut_promotion(self.promo, self.P.INSCRIPTIONS, self.admin)
+        self.assertEqual(self.promo.statut, self.P.INSCRIPTIONS)
+        self.assertEqual(self.promo.journal.first().par, self.admin)
+        with self.assertRaises(self.wf.TransitionRefusee):  # pas de saut d'étape
+            self.wf.changer_statut_promotion(self.promo, self.P.CLOTUREE, self.admin)
+
+    def _promo_ouverte_avec(self, apprenant):
+        self.promo.formateur = self.form_a
+        self.promo.statut = self.P.INSCRIPTIONS
+        self.promo.publiee_vitrine = True
+        self.promo.save()
+        generer_agenda(self.promo)
+        return Inscription.objects.create(apprenant=apprenant, formation=self.formation, promotion=self.promo)
+
+    def test_confirmation_exige_le_paiement_et_ouvre_l_acces(self):
+        from apps.formation.acces import etats_modules
+        apprenant = self.compte("app_w", "apprenant")
+        insc = self._promo_ouverte_avec(apprenant)
+        AccesModule.objects.create(promotion=self.promo, module=self.m1, etat=AccesModule.Etat.OUVERT)
+        self.assertEqual(insc.statut, self.S.ADMISE)
+        self.assertFalse(etats_modules(insc, [self.m1])[self.m1.id].ouvert)  # admise : pas encore d'accès
+        self.assertEqual(self.manques(self.promo, self.P.PRETE), ["Au moins 1 inscription confirmée"])
+        with self.assertRaises(self.wf.TransitionRefusee):
+            self.wf.changer_statut_inscription(insc, self.S.CONFIRMEE, self.admin)
+        insc.paiement = Inscription.Paiement.RECU
+        self.wf.changer_statut_inscription(insc, self.S.CONFIRMEE, self.admin)
+        self.assertTrue(etats_modules(insc, [self.m1])[self.m1.id].ouvert)
+        self.assertTrue(apprenant.notifications.filter(titre__startswith="Inscription confirmée").exists())
+        # Prête : la vitrine reste publiée ; au démarrage, elle est retirée et l'inscription passe en cours
+        self.wf.changer_statut_promotion(self.promo, self.P.PRETE, self.admin)
+        self.assertTrue(self.promo.publiee_vitrine)
+        self.assertIn("Date de début atteinte", self.manques(self.promo, self.P.EN_COURS))
+        self.promo.date_debut = timezone.localdate()
+        self.promo.save()
+        demarrees, _ = self.wf.demarrages_du_jour()
+        self.assertEqual(demarrees, [self.promo])
+        self.promo.refresh_from_db()
+        insc.refresh_from_db()
+        self.assertEqual((self.promo.statut, self.promo.publiee_vitrine, insc.statut), (self.P.EN_COURS, False, self.S.EN_COURS))
+        self.assertIsNone(self.promo.journal.filter(vers=self.P.EN_COURS).first().par)  # automatique
+
+    def test_abandon_et_derogation_exigent_un_motif(self):
+        with self.assertRaises(self.wf.TransitionRefusee):
+            self.wf.changer_statut_inscription(self.insc_a, self.S.ABANDON, self.admin)
+        self.wf.changer_statut_inscription(self.insc_a, self.S.ABANDON, self.admin, motif="Déménagement")
+        self.assertEqual(self.insc_a.journal.first().motif, "Déménagement")
+        with self.assertRaises(self.wf.TransitionRefusee):  # « validée » est réservé à la clôture
+            self.wf.changer_statut_inscription(self.insc_b, self.S.VALIDEE, self.admin, motif="x")
+
+    def test_cloture_calcule_les_resultats_80_pourcent_et_10_sur_20(self):
+        from apps.evaluation.models import EvaluationProjet, Livrable, Presence, Soutenance
+        promo = self.promo_a
+        promo.statut = self.P.EN_COURS
+        promo.save()
+        app_c = self.compte("app_c", "apprenant")
+        insc_c = Inscription.objects.create(apprenant=app_c, formation=self.formation, promotion=promo, statut=self.S.EN_COURS)
+        evenements = list(promo.evenements.order_by("date_debut"))
+        self.assertIn("Toutes les séances sont réalisées ou annulées", self.manques(promo, self.P.CLOTUREE))
+        promo.evenements.exclude(pk__in=[e.pk for e in evenements[:5]]).update(statut=Evenement.Statut.ANNULE)
+        promo.evenements.filter(pk__in=[e.pk for e in evenements[:5]]).update(statut=Evenement.Statut.REALISE)
+        self.assertIn("Présences saisies pour chaque séance réalisée", self.manques(promo, self.P.CLOTUREE))
+        for n, ev in enumerate(evenements[:5]):  # A : 4/5 présent (80 %) ; C : 3/5 (60 %)
+            Presence.objects.create(inscription=self.insc_a, evenement=ev,
+                                    statut=Presence.Statut.ABSENT if n == 4 else Presence.Statut.PRESENT)
+            Presence.objects.create(inscription=insc_c, evenement=ev,
+                                    statut=Presence.Statut.PRESENT if n < 3 else Presence.Statut.ABSENT)
+        livrable = Livrable.objects.create(inscription=self.insc_a, seance=evenements[0].seance, rendu=True)
+        self.assertEqual(self.manques(promo, self.P.CLOTUREE), ["Tous les livrables rendus sont notés"])
+        livrable.note_sur_20 = 12
+        livrable.save()
+        # Note A = 0,4 × 12 + 0,4 × 10 + 0,2 × 11 = 11 ; C : bonnes notes mais assiduité insuffisante
+        EvaluationProjet.objects.create(inscription=self.insc_a, **{c: 10 for c in EvaluationProjet.POIDS})
+        Soutenance.objects.create(inscription=self.insc_a, note_sur_20=11)
+        EvaluationProjet.objects.create(inscription=insc_c, **{c: 18 for c in EvaluationProjet.POIDS})
+        Soutenance.objects.create(inscription=insc_c, note_sur_20=18)
+        admise = Inscription.objects.create(apprenant=self.compte("app_d", "apprenant"), formation=self.formation,
+                                            promotion=promo)
+        self.wf.changer_statut_promotion(promo, self.P.CLOTUREE, self.admin)
+        for i in (self.insc_a, insc_c, admise):
+            i.refresh_from_db()
+        self.assertEqual((self.insc_a.statut, self.insc_a.taux_assiduite, self.insc_a.note_finale),
+                         (self.S.VALIDEE, 80, Decimal("11.00")))
+        self.assertEqual((insc_c.statut, insc_c.taux_assiduite), (self.S.NON_VALIDEE, 60))
+        self.assertEqual(admise.statut, self.S.ABANDON)
+        self.assertTrue(self.app_a.notifications.filter(titre__startswith="Résultat").exists())
+        # Dérogation motivée, puis archivage (la promotion n'est plus « active ») et désarchivage
+        self.wf.changer_statut_inscription(insc_c, self.S.VALIDEE, self.admin, motif="Absences justifiées (santé)")
+        self.wf.changer_statut_promotion(promo, self.P.ARCHIVEE, self.admin)
+        self.assertFalse(Promotion.objects.get(pk=promo.pk).active)
+        self.wf.desarchiver(promo, self.admin)
+        self.assertEqual((promo.statut, promo.active), (self.P.CLOTUREE, True))
+
+    def test_annulation_refusee_avec_inscrits_confirmes(self):
+        self.promo_b.statut = self.P.PRETE
+        self.promo_b.save()
+        self.assertEqual(self.manques(self.promo_b, self.P.ARCHIVEE), ["Aucune inscription confirmée"])
+
+    def test_page_pilotage(self):
+        url = reverse("agenda:pilotage", args=[self.promo_a.pk])
+        c = self.client_de(self.admin)
+        r = c.get(url)
+        self.assertContains(r, "Ouvrir les inscriptions")
+        self.assertContains(r, "Conditions manquantes")  # annulation : app_a y suit déjà la formation
+        r = c.post(url, {"action": "promotion", "cible": self.P.INSCRIPTIONS}, follow=True)
+        self.promo_a.refresh_from_db()
+        self.assertEqual(self.promo_a.statut, self.P.INSCRIPTIONS)
+        # Formateur : consultation de SES promotions, aucune décision
+        f = self.client_de(self.form_a)
+        self.assertEqual(f.get(url).status_code, 200)
+        self.assertEqual(f.post(url, {"action": "promotion", "cible": self.P.PLANIFIEE}).status_code, 403)
+        self.assertEqual(f.get(reverse("agenda:pilotage", args=[self.promo_b.pk])).status_code, 404)
+        self.assertEqual(self.client_de(self.app_a).get(url).status_code, 403)

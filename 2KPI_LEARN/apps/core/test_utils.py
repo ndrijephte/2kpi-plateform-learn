@@ -23,7 +23,7 @@ _TMP = tempfile.mkdtemp(prefix="2kpi-tests-")
                    SECURE_SSL_REDIRECT=False)
 class BaseTest(TestCase):
     """Formation GéoAI (12 modules, 48 séances, quiz S1), un admin, deux formateurs,
-    deux apprenants inscrits dans deux promotions (M1 ouvert pour la promotion A)."""
+    deux apprenants en cours de formation dans deux promotions (M1 ouvert pour la promotion A)."""
 
     @classmethod
     def setUpTestData(cls):
@@ -44,8 +44,10 @@ class BaseTest(TestCase):
                                                formateur=cls.form_b)
         generer_agenda(cls.promo_a)
         generer_agenda(cls.promo_b)
-        cls.insc_a = Inscription.objects.create(apprenant=cls.app_a, formation=cls.formation, promotion=cls.promo_a)
-        cls.insc_b = Inscription.objects.create(apprenant=cls.app_b, formation=cls.formation, promotion=cls.promo_b)
+        cls.insc_a = Inscription.objects.create(apprenant=cls.app_a, formation=cls.formation, promotion=cls.promo_a,
+                                                statut=Inscription.Statut.EN_COURS)
+        cls.insc_b = Inscription.objects.create(apprenant=cls.app_b, formation=cls.formation, promotion=cls.promo_b,
+                                                statut=Inscription.Statut.EN_COURS)
         AccesModule.objects.create(promotion=cls.promo_a, module=cls.m1, etat=AccesModule.Etat.OUVERT)
 
     @classmethod

@@ -5,7 +5,6 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from apps.agenda.models import Promotion
-from apps.evaluation.models import Inscription
 from .models import Prerequis, Profil
 
 User = get_user_model()
@@ -30,8 +29,7 @@ def champ_promotions_formateur():
 class ChampsParRoleMixin:
     """Marque les champs propres à un rôle (data-role) : l'écran n'affiche que ceux du rôle choisi,
     et la vue ignore les autres à l'enregistrement."""
-    CHAMPS_PAR_ROLE = {"promotion": Profil.Role.APPRENANT, "statut_inscription": Profil.Role.APPRENANT,
-                       "promotions_formateur": Profil.Role.FORMATEUR}
+    CHAMPS_PAR_ROLE = {"promotion": Profil.Role.APPRENANT, "promotions_formateur": Profil.Role.FORMATEUR}
 
     def marquer_champs_par_role(self):
         courant = (self.data.get(self.add_prefix("role")) if self.is_bound else
@@ -100,14 +98,11 @@ class CompteForm(forms.ModelForm):
 
 class CompteAdminForm(ChampsParRoleMixin, CompteForm):
     """Version admin : identifiant, activation, rôle, nouveau mot de passe et, selon le rôle,
-    la promotion et l'inscription (apprenant) ou les promotions encadrées (formateur)."""
+    la promotion (apprenant) ou les promotions encadrées (formateur). Le statut de l'inscription
+    ne se change pas ici : il suit le workflow (Promotions › Pilotage)."""
     role = forms.ChoiceField(label="Rôle", choices=Profil.Role.choices)
     promotion = forms.ModelChoiceField(label="Promotion (apprenant)", required=False,
                                        queryset=Promotion.objects.filter(active=True))
-    statut_inscription = forms.ChoiceField(
-        label="Statut de l'inscription (apprenant)", required=False,
-        choices=[("", "— pas encore inscrit —")] + Inscription.Statut.choices,
-        help_text="Seule une inscription « En cours » donne accès aux contenus de la formation.")
     nouveau_mdp = forms.CharField(label="Nouveau mot de passe", required=False, widget=forms.PasswordInput,
                                   help_text="Laisser vide pour ne pas le changer.")
 
@@ -119,13 +114,6 @@ class CompteAdminForm(ChampsParRoleMixin, CompteForm):
         super().__init__(*a, **kw)
         self.fields["promotions_formateur"] = champ_promotions_formateur()
         self.marquer_champs_par_role()
-
-    def clean(self):
-        d = super().clean()
-        if d.get("role") == Profil.Role.APPRENANT and d.get("statut_inscription") and not (
-                d.get("promotion") or Inscription.objects.filter(apprenant=self.instance).exists()):
-            self.add_error("promotion", "Choisis la promotion : sans elle, il n'y a pas d'inscription à qualifier.")
-        return d
 
     def clean_username(self):
         u = self.cleaned_data["username"].strip()
