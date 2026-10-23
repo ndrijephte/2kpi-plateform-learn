@@ -28,6 +28,7 @@ RUBRIQUES = {
     "agenda:planning": "promotions",
     "agenda:presences": "promotions",
     "agenda:acces": "promotions",
+    "exercices": "exercices",
 }
 
 

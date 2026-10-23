@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ exercice.titre }} - Exercices{% endblock %}
+{% block crumbs %}<a href="{% url 'exercices:liste' %}">Exercices</a>{% icon "chevron-right" size=14 %}<span>{{ exercice.titre }}</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "pencil" size=14 %} {{ exercice.module.formation.titre }} · {{ exercice.module.code }}</span>
+    <h1>{{ exercice.titre }}</h1>
+    <p class="muted">{{ questions|length }} question{{ questions|length|pluralize }} · barème {{ exercice.bareme|floatformat:"-2" }} points (ramené sur 20 pour l'apprenant).</p>
+  </div>
+  {% if not verrouille %}<a class="btn" href="{% url 'exercices:question_ajouter' exercice.pk %}">{% icon "plus" size=16 %} Ajouter une question</a>{% endif %}
+</div>
+{% if verrouille %}<p class="card muted">{% icon "lock" size=14 %} Des apprenants ont déjà répondu : les questions, le barème et les réponses attendues sont figés pour rester équitables. Le texte de correction reste modifiable.</p>{% endif %}
+
+<div class="grid-2">
+  <div>
+    {% for q in questions %}
+    <div class="card question-exercice">
+      <div class="card-head">
+        <h2 class="section-title"><span class="pill">Q{{ forloop.counter }}</span> {{ q.get_type_display }}</h2>
+        <strong>{{ q.points|floatformat:"-2" }} pt{{ q.points|pluralize }}</strong>
+      </div>
+      <p>{{ q.enonce|linebreaksbr }}</p>
+      {% if q.type == "qcm" or q.type == "vf" %}<ul class="choix-liste">{% for c in q.choix.all %}<li class="{% if c.correct %}juste{% endif %}">{% if c.correct %}{% icon "check" size=14 %}{% else %}{% icon "x" size=14 %}{% endif %} {{ c.texte }}</li>{% endfor %}</ul>
+      {% elif q.type == "courte" %}<p class="muted"><small>Réponses acceptées : {{ q.reponse_attendue }}</small></p>
+      {% elif q.type == "numerique" %}<p class="muted"><small>Attendu : {{ q.reponse_attendue }}</small></p>
+      {% else %}<p class="muted"><small>Réponse rédigée : notée par le formateur après la date limite.</small></p>{% endif %}
+      {% if q.correction %}<p class="correction"><strong>Correction :</strong> {{ q.correction|linebreaksbr }}</p>{% endif %}
+      <div class="actions">
+        <a class="btn btn-sm btn-secondary" href="{% url 'exercices:question' exercice.pk q.pk %}">{% icon "pencil" size=14 %} {% if verrouille %}Modifier la correction{% else %}Modifier{% endif %}</a>
+        {% if not verrouille %}<form method="post" action="{% url 'exercices:question_supprimer' exercice.pk q.pk %}" class="inline" onsubmit="return confirm('Supprimer cette question ?')">{% csrf_token %}
+          <button class="btn btn-sm btn-secondary" type="submit">{% icon "trash" size=14 %}<span class="sr-only">Supprimer</span></button></form>{% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="card"><div class="empty"><span class="ico-tile">{% icon "list-checks" %}</span><strong>Aucune question</strong>Ajoute la première : choix multiple, vrai/faux, réponse courte, valeur numérique ou réponse rédigée.</div></div>
+    {% endfor %}
+  </div>
+
+  <div>
+    <div class="card">
+      <h2 class="section-title">{% icon "calendar-days" size=18 %} Donner l'exercice à une promotion</h2>
+      {% for l in planifs %}{% with p=l.planif %}
+      <div class="list-item">
+        <span class="ico-tile{% if p.ouvert %} done{% endif %}">{% icon "users" size=18 %}</span>
+        <span class="grow"><strong>{{ p.promotion.nom }}</strong>
+          <small>{{ p.ouverture|date:"d/m H:i" }} → {{ p.date_limite|date:"d/m/Y H:i" }} · {% if p.a_venir %}à venir{% elif p.ouvert %}ouvert{% else %}terminé{% endif %} · {{ l.nb_copies }} copie{{ l.nb_copies|pluralize }}</small></span>
+        {% if l.peut_suivre %}<a class="btn btn-sm btn-navy" href="{% url 'exercices:suivi' p.pk %}">Suivi</a>{% endif %}
+        {% if not l.nb_copies %}<form method="post" class="inline" onsubmit="return confirm('Retirer cet exercice de la promotion ?')">{% csrf_token %}<input type="hidden" name="quoi" value="deplanifier"><input type="hidden" name="planification" value="{{ p.pk }}">
+          <button class="btn btn-sm btn-secondary" type="submit" title="Retirer">{% icon "x" size=14 %}<span class="sr-only">Retirer</span></button></form>{% endif %}
+      </div>
+      {% endwith %}{% endfor %}
+      <form method="post" class="stack-sm" style="margin-top:12px">{% csrf_token %}<input type="hidden" name="quoi" value="planifier">
+        {% include "partials/form_fields.html" with form=planif_form %}
+        <button class="btn" type="submit">{% icon "send" size=16 %} Planifier et prévenir les apprenants</button>
+      </form>
+    </div>
+    <details class="card panel" {% if form.errors %}open{% endif %}>
+      <summary class="card-head" style="margin:0"><h2 class="section-title">{% icon "sliders" size=18 %} Titre, module, consignes</h2><span class="chev">{% icon "chevron-right" size=18 %}</span></summary>
+      <form method="post" class="stack-sm">{% csrf_token %}<input type="hidden" name="quoi" value="exercice">
+        {% include "partials/form_fields.html" %}
+        <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
+      </form>
+      {% if not verrouille %}<form method="post" style="margin-top:12px" onsubmit="return confirm('Supprimer définitivement cet exercice ?')">{% csrf_token %}<input type="hidden" name="quoi" value="supprimer">
+        <button class="btn btn-sm btn-secondary" type="submit">{% icon "trash" size=14 %} Supprimer l'exercice</button></form>{% endif %}
+    </details>
+  </div>
+</div>
+{% endblock %}

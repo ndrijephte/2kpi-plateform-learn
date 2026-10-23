@@ -144,6 +144,11 @@ Le bouton d'une étape n'apparaît que lorsque toutes ses conditions sont rempli
    Renseigne le signataire dans **Paramètres → Attestations**.
 8. **Archiver** (réversible avec « Désarchiver »).
 
+**Exercices** (menu *Exercices*, formateurs et administration) : *Nouvel exercice* → choisir le module →
+ajouter les questions (type, énoncé, **barème** en points, **correction**) → *Donner l'exercice à une
+promotion* (ouverture et date limite ; les apprenants sont notifiés). Après la date limite : *Suivi* →
+noter les réponses rédigées ; l'apprenant voit alors sa note et la correction (il est prévenu).
+
 Ton tableau de bord commence par la liste **À faire** : tout ce que le workflow attend de toi, les
 urgences en premier, chaque ligne menant à l'écran où agir.
 

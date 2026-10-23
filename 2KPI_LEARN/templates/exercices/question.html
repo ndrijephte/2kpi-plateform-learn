@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Question - {{ exercice.titre }}{% endblock %}
+{% block crumbs %}<a href="{% url 'exercices:liste' %}">Exercices</a>{% icon "chevron-right" size=14 %}<a href="{% url 'exercices:exercice' exercice.pk %}">{{ exercice.titre }}</a>{% icon "chevron-right" size=14 %}<span>{% if question.pk %}Question{% else %}Nouvelle question{% endif %}</span>{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <span class="eyebrow">{% icon "pencil" size=14 %} {{ exercice.titre }}</span>
+  <h1>{% if question.pk %}Modifier la question{% else %}Nouvelle question{% endif %}</h1>
+</div></div>
+
+{% if verrouille %}
+<form method="post" class="card stack-sm">{% csrf_token %}
+  <p class="muted">{% icon "lock" size=14 %} Des apprenants ont déjà répondu : seule la correction est modifiable.</p>
+  <p><strong>{{ question.enonce|linebreaksbr }}</strong></p>
+  {% include "partials/form_fields.html" %}
+  <div class="btn-row"><button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
+    <a class="btn btn-secondary" href="{% url 'exercices:exercice' exercice.pk %}">Annuler</a></div>
+</form>
+{% else %}
+<form method="post">{% csrf_token %}
+  {{ formset.management_form }}
+  {% if erreurs or form.non_field_errors or formset.non_form_errors %}<ul class="errorlist nonfield">{% for e in erreurs %}<li>{{ e }}</li>{% endfor %}{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}{% for e in formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+  <div class="grid-2">
+    <div class="card">
+      <div class="form-grid">
+        <div class="field"><label for="{{ form.type.id_for_label }}">Type de question</label>{{ form.type }}{{ form.type.errors }}</div>
+        <div class="field"><label for="{{ form.points.id_for_label }}">Barème (points)</label>{{ form.points }}{{ form.points.errors }}</div>
+      </div>
+      <div class="field"><label for="{{ form.enonce.id_for_label }}">Énoncé</label>{{ form.enonce }}{{ form.enonce.errors }}</div>
+
+      <div data-pour="qcm">
+        <label class="field-label">Propositions <small class="muted">(coche la ou les bonnes réponses ; tout ou rien)</small></label>
+        <table class="tbl choix-tbl">
+          <thead><tr><th>Proposition</th><th class="col-correct">Bonne réponse</th><th class="num">Retirer</th></tr></thead>
+          <tbody>{% for f in formset %}<tr>{{ f.id }}
+            <td>{{ f.texte }}{{ f.texte.errors }}</td><td class="col-correct">{{ f.correct }}</td>
+            <td class="num">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+        <p class="muted"><small>Lignes vides ignorées ; enregistre puis rouvre la question pour en ajouter.</small></p>
+      </div>
+      <div class="field" data-pour="vf"><label>Bonne réponse</label><div class="seg">{% for r in form.bonne_reponse_vf %}{{ r.tag }}<label for="{{ r.id_for_label }}">{{ r.choice_label }}</label>{% endfor %}</div>{{ form.bonne_reponse_vf.errors }}</div>
+      <div class="field" data-pour="courte"><label for="{{ form.reponses_acceptees.id_for_label }}">Réponses acceptées</label>{{ form.reponses_acceptees }}
+        <div class="help">Variantes séparées par « | », par ex. <code>NDVI|indice de végétation</code>. Majuscules, accents et espaces sont ignorés.</div>{{ form.reponses_acceptees.errors }}</div>
+      <div class="form-grid" data-pour="numerique">
+        <div class="field"><label for="{{ form.valeur_attendue.id_for_label }}">Valeur attendue</label>{{ form.valeur_attendue }}{{ form.valeur_attendue.errors }}</div>
+        <div class="field"><label for="{{ form.tolerance.id_for_label }}">Tolérance (±)</label>{{ form.tolerance }}{{ form.tolerance.errors }}</div>
+      </div>
+      <p class="muted" data-pour="redaction"><small>{% icon "info" size=12 %} L'apprenant rédige sa réponse ; tu la notes (sur le barème) après la date limite, depuis le suivi de la promotion.</small></p>
+    </div>
+    <div class="card">
+      <div class="field"><label for="{{ form.correction.id_for_label }}">Correction</label>{{ form.correction }}
+        <div class="help">Corrigé ou explication. L'apprenant le voit avec son résultat, après la date limite.</div>{{ form.correction.errors }}</div>
+      <div class="field" style="max-width:140px"><label for="{{ form.ordre.id_for_label }}">Ordre</label>{{ form.ordre }}</div>
+      <div class="btn-row">
+        <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
+        {% if not question.pk %}<button class="btn btn-secondary" type="submit" name="suite" value="1">{% icon "plus" size=16 %} Enregistrer et ajouter une autre</button>{% endif %}
+        <a class="btn btn-secondary" href="{% url 'exercices:exercice' exercice.pk %}">Annuler</a>
+      </div>
+    </div>
+  </div>
+</form>
+<script>
+(function () {
+  var sel = document.getElementById("{{ form.type.id_for_label }}");
+  function maj() {
+    document.querySelectorAll("[data-pour]").forEach(function (b) { b.hidden = b.dataset.pour.split(" ").indexOf(sel.value) < 0; });
+  }
+  sel.addEventListener("change", maj); maj();
+})();
+</script>
+{% endif %}
+{% endblock %}

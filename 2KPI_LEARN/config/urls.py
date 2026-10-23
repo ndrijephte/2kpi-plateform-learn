@@ -30,6 +30,7 @@ urlpatterns = [
     path("formation/", include("apps.formation.urls")),
     path("evaluation/", include("apps.evaluation.urls")),
     path("agenda/", include("apps.agenda.urls")),
+    path("exercices/", include("apps.exercices.urls")),
     path("parametres/", include("apps.core.urls")),
     path("api/candidatures/", candidature_api, name="api_candidatures"),
     path("api/sessions/", sessions_api, name="api_sessions"),

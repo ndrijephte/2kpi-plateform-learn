@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "apps.evaluation",
     "apps.agenda",
     "apps.tableau_bord",
+    "apps.exercices",
 ]
 
 MIDDLEWARE = [

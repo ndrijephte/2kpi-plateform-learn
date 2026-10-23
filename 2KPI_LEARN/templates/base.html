@@ -40,6 +40,8 @@
         {% icon "calendar-days" %}<span>Agenda des séances</span></a>
       <a href="{% url 'evaluation:livrables' %}" {% if rubrique == "livrables" %}class="active" aria-current="page"{% endif %}>
         {% icon "clipboard-check" %}<span>Livrables</span></a>
+      <a href="{% url 'exercices:liste' %}" {% if rubrique == "exercices" %}class="active" aria-current="page"{% endif %}>
+        {% icon "pencil" %}<span>Exercices</span></a>
       <a href="{% url 'formation:ressources' %}" {% if rubrique == "ressources" %}class="active" aria-current="page"{% endif %}>
         {% icon "folder" %}<span>Ressources</span></a>
       <a href="{% url 'formation:modules' %}" {% if rubrique == "cours" %}class="active" aria-current="page"{% endif %}>
@@ -60,6 +62,8 @@
         {% icon "calendar-days" %}<span>Mes séances</span></a>
       <a href="{% url 'evaluation:livrables' %}" {% if rubrique == "livrables" %}class="active" aria-current="page"{% endif %}>
         {% icon "clipboard-check" %}<span>Livrables à corriger</span></a>
+      <a href="{% url 'exercices:liste' %}" {% if rubrique == "exercices" %}class="active" aria-current="page"{% endif %}>
+        {% icon "pencil" %}<span>Exercices</span></a>
       <a href="{% url 'formation:ressources' %}" {% if rubrique == "ressources" %}class="active" aria-current="page"{% endif %}>
         {% icon "folder" %}<span>Mes ressources</span></a>
       <a href="{% url 'formation:modules' %}" {% if rubrique == "cours" %}class="active" aria-current="page"{% endif %}>
@@ -73,6 +77,8 @@
         {% icon "book-open" %}<span>Mon cours</span></a>
       <a href="{% url 'evaluation:mes_acquis' %}" {% if rubrique == "acquis" %}class="active" aria-current="page"{% endif %}>
         {% icon "target" %}<span>Mes acquis</span></a>
+      <a href="{% url 'exercices:liste' %}" {% if rubrique == "exercices" %}class="active" aria-current="page"{% endif %}>
+        {% icon "pencil" %}<span>Mes exercices</span></a>
       <a href="{% url 'agenda:mon_agenda' %}" {% if rubrique == "agenda" %}class="active" aria-current="page"{% endif %}>
         {% icon "calendar-days" %}<span>Mon agenda</span></a>
       {% endif %}

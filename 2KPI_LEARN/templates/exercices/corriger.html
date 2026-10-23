@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Copie - {{ copie.inscription.apprenant.get_full_name|default:copie.inscription.apprenant.username }}{% endblock %}
+{% block crumbs %}<a href="{% url 'exercices:liste' %}">Exercices</a>{% icon "chevron-right" size=14 %}<a href="{% url 'exercices:suivi' planif.pk %}">{{ planif.exercice.titre }} · {{ planif.promotion.nom }}</a>{% icon "chevron-right" size=14 %}<span>Copie</span>{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <span class="eyebrow">{% icon "pencil" size=14 %} {{ planif.exercice.titre }}</span>
+  <h1>{{ copie.inscription.apprenant.get_full_name|default:copie.inscription.apprenant.username }}</h1>
+  <p class="muted">{{ resultat.points|floatformat:"-2" }} / {{ resultat.bareme|floatformat:"-2" }} points{% if resultat.complet %} · {{ resultat.note_sur_20 }}/20{% else %} · {{ resultat.a_corriger }} réponse{{ resultat.a_corriger|pluralize }} à noter{% endif %}
+    {% if not planif.termine %} · la correction s'ouvre le {{ planif.date_limite|date:"d/m/Y à H:i" }}{% endif %}</p>
+</div>
+<a class="btn btn-secondary" href="{% url 'exercices:suivi' planif.pk %}">{% icon "arrow-left" size=16 %} Retour au suivi</a></div>
+<form method="post">{% csrf_token %}
+  {% for item in items %}{% with q=item.q r=item.r %}
+  <div class="card question-exercice">
+    <div class="card-head"><h2 class="section-title"><span class="pill">Q{{ forloop.counter }}</span> {{ q.get_type_display }}</h2>
+      <strong>{% if r and r.points is not None %}{{ r.points|floatformat:"-2" }}{% else %}…{% endif %} / {{ q.points|floatformat:"-2" }}</strong></div>
+    <p>{{ q.enonce|linebreaksbr }}</p>
+    {% include "exercices/_reponse.html" with montrer_attendu=True %}
+    {% if r %}
+    <div class="form-grid correction-saisie">
+      {% if q.type == "redaction" and r.valeur %}<div class="field"><label for="p{{ q.pk }}">Points (sur {{ q.points|floatformat:"-2" }})</label>
+        <input id="p{{ q.pk }}" type="text" inputmode="decimal" name="points_{{ q.pk }}" value="{{ r.points|default_if_none:'' }}" {% if not planif.termine %}disabled{% endif %}></div>{% endif %}
+      <div class="field"><label for="c{{ q.pk }}">Commentaire pour l'apprenant</label>
+        <input id="c{{ q.pk }}" type="text" name="commentaire_{{ q.pk }}" value="{{ r.commentaire }}" maxlength="1000" {% if not planif.termine %}disabled{% endif %}></div>
+    </div>
+    {% endif %}
+  </div>
+  {% endwith %}{% endfor %}
+  {% if planif.termine %}<div class="btn-row"><button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer la correction</button></div>{% endif %}
+</form>
+{% endblock %}

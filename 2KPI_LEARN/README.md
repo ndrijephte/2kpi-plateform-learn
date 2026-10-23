@@ -122,6 +122,15 @@ Logique : `apps/evaluation/attestation.py`.
 présences en retard (admin) ; feuilles de présence, corrections, demandes d'aide, évaluation finale
 (formateur) ; confirmation en attente, prérequis, attestation (apprenant). `apps/tableau_bord/a_faire.py`.
 
+**Exercices** (menu *Exercices*, app `apps/exercices`) : le formateur compose, sur ses modules, des
+exercices dont chaque question a un barème (points) et une correction - choix multiple, vrai/faux, réponse
+courte (variantes acceptées), valeur numérique (± tolérance) ou réponse rédigée notée à la main. Il les
+planifie pour une promotion (ouverture, date limite) ; les apprenants sont prévenus, répondent et peuvent
+modifier leurs réponses jusqu'à la date limite. Ensuite seulement, et une fois les réponses rédigées notées,
+chacun voit sa note (ramenée sur 20), ses réponses, les réponses attendues, la correction et les commentaires.
+Dès la première réponse, questions et barème sont figés (seule la correction reste modifiable). Distincts
+des *quiz* de module (auto-tests illimités gérés dans Paramètres).
+
 **Présences** : une séance ne devient « réalisée » qu'à l'enregistrement de sa feuille de présence complète
 (apprenants confirmés ou en cours), ouverte dès le début de la séance. Les séances passées sans feuille
 apparaissent dans le planning et le tableau de bord ; `workflow_quotidien` relance les formateurs de la
@@ -182,7 +191,7 @@ Mises à jour : **automatiques à chaque `git push` sur main** (`../docs/DEPLOIE
 ## Tests
 
 ```bash
-python manage.py test        # 91 tests : rôles, autorisations (apprenants, formateurs par module),
+python manage.py test        # 96 tests : rôles, autorisations (apprenants, formateurs par module),
                              # promotions des formateurs, auto-évaluation, fichiers, quiz, candidatures,
                              # création de compte, mot de passe oublié, e-mails, workflow des promotions
 ```

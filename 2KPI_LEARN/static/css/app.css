@@ -589,3 +589,17 @@ dt.niveau-3,i.niveau-3{color:var(--niv3)} dt.niveau-4,i.niveau-4{color:var(--niv
 .choix-tbl input[type=text]{min-width:0}
 .badge-compte{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--coral);color:#fff;font-size:.74rem;font-weight:700;margin-left:4px}
 .a-faire .list-item .pill{margin-left:auto}
+
+/* Exercices */
+.question-exercice p{margin:0 0 10px}
+.choix-liste{list-style:none;margin:6px 0 10px;padding:0;display:flex;flex-direction:column;gap:6px}
+.choix-liste li{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.92rem}
+.choix-liste li.juste{border-color:var(--green);background:var(--green-50)}
+.choix-liste li.coche:not(.juste){border-color:var(--red);background:var(--red-50)}
+.choix-liste .case-vide{display:inline-block;width:14px;height:14px;border:1.5px solid var(--border-strong);border-radius:50%}
+.reponse-texte{padding:10px 12px;border-radius:var(--radius-sm);background:var(--bg);border:1px solid var(--border);white-space:normal}
+.correction,.commentaire{margin-top:10px!important;padding:10px 12px;border-radius:var(--radius-sm);background:var(--navy-50);font-size:.92rem}
+.commentaire{background:var(--amber-50)}
+.correction-saisie{margin-top:12px}
+fieldset.question-exercice{min-width:0}
+fieldset.question-exercice textarea{width:100%}

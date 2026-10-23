@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ planif.exercice.titre }} - Exercices{% endblock %}
+{% block crumbs %}<a href="{% url 'exercices:liste' %}">Mes exercices</a>{% icon "chevron-right" size=14 %}<span>{{ planif.exercice.titre }}</span>{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <span class="eyebrow">{% icon "pencil" size=14 %} {{ planif.exercice.module.code }} · {{ planif.exercice.bareme|floatformat:"-2" }} points</span>
+  <h1>{{ planif.exercice.titre }}</h1>
+  {% if planif.a_venir %}<p class="muted">Cet exercice ouvre le {{ planif.ouverture|date:"l d F à H:i" }}.</p>
+  {% else %}<p class="alert-inline">{% icon "clock" size=14 %} À rendre avant le {{ planif.date_limite|date:"l d F à H:i" }}</p>{% endif %}
+</div></div>
+{% if planif.ouvert %}
+{% if planif.exercice.consignes %}<div class="card"><h2 class="section-title">{% icon "info" size=18 %} Consignes</h2><p>{{ planif.exercice.consignes|linebreaksbr }}</p></div>{% endif %}
+<form method="post">{% csrf_token %}
+  {% for item in items %}{% with q=item.q %}
+  <fieldset class="card question-exercice">
+    <legend class="sr-only">Question {{ forloop.counter }}</legend>
+    <div class="card-head"><h2 class="section-title"><span class="pill">Q{{ forloop.counter }}</span></h2><small class="muted">{{ q.points|floatformat:"-2" }} pt{{ q.points|pluralize }}</small></div>
+    <p>{{ q.enonce|linebreaksbr }}</p>
+    {% if q.type == "qcm" or q.type == "vf" %}
+      <div class="choice-list">{% for c in q.choix.all %}
+        <label class="opt"><input type="{% if q.type == 'vf' %}radio{% else %}checkbox{% endif %}" name="q{{ q.pk }}" value="{{ c.pk }}" {% if c.pk in item.coches %}checked{% endif %}> <span>{{ c.texte }}</span></label>{% endfor %}</div>
+      {% if q.type == "qcm" %}<p class="muted"><small>Une ou plusieurs bonnes réponses.</small></p>{% endif %}
+    {% elif q.type == "redaction" %}
+      <textarea name="q{{ q.pk }}" rows="6" aria-label="Ta réponse">{{ item.valeur }}</textarea>
+    {% else %}
+      <input type="text" name="q{{ q.pk }}" value="{{ item.valeur }}" {% if q.type == "numerique" %}inputmode="decimal"{% endif %} aria-label="Ta réponse" style="max-width:420px">
+    {% endif %}
+  </fieldset>
+  {% endwith %}{% endfor %}
+  <div class="btn-row"><button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer mes réponses</button>
+    <small class="muted">{% if copie %}Dernier enregistrement : {{ copie.enregistree_le|date:"d/m à H:i" }}. {% endif %}Modifiable jusqu'à la date limite.</small></div>
+</form>
+{% endif %}
+{% endblock %}

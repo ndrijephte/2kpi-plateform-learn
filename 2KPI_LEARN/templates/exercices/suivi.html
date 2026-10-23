@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Suivi - {{ planif.exercice.titre }}{% endblock %}
+{% block crumbs %}<a href="{% url 'exercices:liste' %}">Exercices</a>{% icon "chevron-right" size=14 %}<a href="{% url 'exercices:exercice' planif.exercice.pk %}">{{ planif.exercice.titre }}</a>{% icon "chevron-right" size=14 %}<span>{{ planif.promotion.nom }}</span>{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <span class="eyebrow">{% icon "users" size=14 %} {{ planif.promotion.nom }}</span>
+  <h1>{{ planif.exercice.titre }}</h1>
+  <p class="muted">Ouvert du {{ planif.ouverture|date:"d/m/Y H:i" }} au {{ planif.date_limite|date:"d/m/Y H:i" }} ·
+    {% if planif.a_venir %}pas encore ouvert{% elif planif.ouvert %}en cours : les apprenants peuvent encore modifier leurs réponses{% else %}terminé{% endif %}.</p>
+</div></div>
+<div class="kpi-grid">
+  <div class="kpi"><span class="kpi-icon">{% icon "inbox" %}</span><div><strong>{{ nb_rendues }}<small>/{{ lignes|length }}</small></strong><span>Copies</span></div></div>
+  <div class="kpi"><span class="kpi-icon amber">{% icon "pencil" %}</span><div><strong>{{ a_corriger }}</strong><span>À corriger (réponses rédigées)</span></div></div>
+  <div class="kpi"><span class="kpi-icon green">{% icon "award" %}</span><div><strong>{% if moyenne is not None %}{{ moyenne }}<small>/20</small>{% else %}-{% endif %}</strong><span>Moyenne (copies corrigées)</span></div></div>
+</div>
+<div class="table-wrap">
+<table class="tbl">
+  <thead><tr><th>Apprenant</th><th>Copie</th><th class="num">Points</th><th class="num">Note /20</th><th></th></tr></thead>
+  <tbody>
+  {% for l in lignes %}{% with i=l.inscription c=l.copie r=l.resultat %}
+    <tr>
+      <td><strong>{{ i.apprenant.get_full_name|default:i.apprenant.username }}</strong></td>
+      <td>{% if c %}Enregistrée le {{ c.enregistree_le|date:"d/m H:i" }}{% else %}<span class="muted">Aucune réponse</span>{% endif %}</td>
+      <td class="num">{% if r %}{{ r.points|floatformat:"-2" }} / {{ r.bareme|floatformat:"-2" }}{% else %}-{% endif %}</td>
+      <td class="num">{% if r and r.complet and planif.termine %}<strong>{{ r.note_sur_20 }}</strong>{% elif r and not r.complet %}<span class="pill pill-warn">{{ r.a_corriger }} à corriger</span>{% else %}-{% endif %}</td>
+      <td>{% if c %}<a class="btn btn-sm {% if r and not r.complet and planif.termine %}btn-navy{% else %}btn-secondary{% endif %}" href="{% url 'exercices:corriger' c.pk %}">{% if planif.termine and r and not r.complet %}Corriger{% else %}Voir{% endif %}</a>{% endif %}</td>
+    </tr>
+  {% endwith %}{% empty %}
+    <tr><td colspan="5"><div class="empty"><strong>Aucun apprenant confirmé dans la promotion</strong></div></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

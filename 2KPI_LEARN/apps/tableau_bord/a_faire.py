@@ -106,6 +106,19 @@ def taches_formateur(user):
     if n:
         taches.append(Tache("target", f"{_p(n, 'demande')} d'aide", "Signalées dans les auto-évaluations",
                             reverse("tableau_bord:accueil") + "#aides"))
+    # Exercices : réponses rédigées à noter une fois la date limite passée
+    from apps.exercices.models import Planification, Reponse
+    from apps.exercices.services import peut_suivre
+    attente = (Reponse.objects.filter(points__isnull=True, copie__planification__date_limite__lte=timezone.now(),
+                                      copie__planification__promotion__in=promos)
+               .values_list("copie__planification", flat=True))
+    for planif in Planification.objects.filter(pk__in=set(attente)).select_related("exercice", "promotion"):
+        if peut_suivre(user, planif):
+            n = len({c for c in Reponse.objects.filter(points__isnull=True, copie__planification=planif)
+                     .values_list("copie", flat=True)})
+            taches.append(Tache("pencil", f"{planif.exercice.titre} : {_p(n, 'copie')} à corriger",
+                                f"{planif.promotion.nom} - les apprenants attendent leur résultat",
+                                reverse("exercices:suivi", args=[planif.pk]), urgent=True))
     # Référent : évaluation finale à compléter une fois toutes les séances passées
     from apps.evaluation.grille import evaluation_incomplete
     for promo in promos.filter(statut=Promotion.Statut.EN_COURS).select_related("formation"):
@@ -135,6 +148,17 @@ def taches_apprenant(user, inscription):
         taches.append(Tache("award", "Ton attestation de réussite est disponible",
                             f"{inscription.formation.titre} - n° {inscription.code_attestation}",
                             reverse("evaluation:attestation_pdf", args=[inscription.pk])))
+    if inscription.est_active:
+        from apps.exercices.models import Copie
+        from apps.exercices.services import planifications_apprenant
+        maintenant = timezone.now()
+        faites = set(Copie.objects.filter(inscription=inscription).values_list("planification", flat=True))
+        for p in planifications_apprenant(inscription).filter(ouverture__lte=maintenant, date_limite__gt=maintenant):
+            if p.pk not in faites:
+                fin = timezone.localtime(p.date_limite)
+                taches.append(Tache("pencil", f"Exercice à faire : {p.exercice.titre}",
+                                    f"À rendre avant le {fin:%d/%m à %H:%M}", reverse("exercices:faire", args=[p.pk]),
+                                    urgent=p.date_limite - maintenant < dt.timedelta(hours=48)))
     if inscription.statut == Inscription.Statut.ADMISE:
         taches.append(Tache("clock", "Inscription en attente de confirmation",
                             "Ton espace s'ouvre dès que l'administration confirme ton inscription (paiement).",

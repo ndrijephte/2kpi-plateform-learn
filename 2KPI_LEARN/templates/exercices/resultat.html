@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Résultat - {{ planif.exercice.titre }}{% endblock %}
+{% block crumbs %}<a href="{% url 'exercices:liste' %}">Mes exercices</a>{% icon "chevron-right" size=14 %}<span>{{ planif.exercice.titre }}</span>{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <span class="eyebrow">{% icon "award" size=14 %} {{ planif.exercice.module.code }} · terminé le {{ planif.date_limite|date:"d/m/Y à H:i" }}</span>
+  <h1>{{ planif.exercice.titre }}</h1>
+</div></div>
+{% if not visible %}
+<div class="card"><div class="empty"><span class="ico-tile">{% icon "clock" %}</span><strong>Correction en cours</strong>Ton formateur corrige les réponses rédigées. Tu seras prévenu dès que ton résultat sera disponible.</div></div>
+{% else %}
+<div class="kpi-grid">
+  <div class="kpi"><span class="kpi-icon coral">{% icon "award" %}</span><div><strong>{{ resultat.note_sur_20 }}<small>/20</small></strong><span>Note</span></div></div>
+  <div class="kpi"><span class="kpi-icon">{% icon "list-checks" %}</span><div><strong>{{ resultat.points|floatformat:"-2" }}<small>/{{ resultat.bareme|floatformat:"-2" }}</small></strong><span>Points</span></div></div>
+  {% if not copie %}<div class="kpi"><span class="kpi-icon amber">{% icon "alert" %}</span><div><strong>-</strong><span>Aucune réponse rendue</span></div></div>{% endif %}
+</div>
+{% for item in items %}{% with q=item.q r=item.r %}
+<div class="card question-exercice">
+  <div class="card-head"><h2 class="section-title"><span class="pill">Q{{ forloop.counter }}</span>
+    {% if r and r.points == q.points %}<span class="pill pill-ok">Juste</span>{% elif r and r.points %}<span class="pill pill-warn">Partiel</span>{% else %}<span class="pill pill-ko">Faux</span>{% endif %}</h2>
+    <strong>{% if r and r.points is not None %}{{ r.points|floatformat:"-2" }}{% else %}0{% endif %} / {{ q.points|floatformat:"-2" }}</strong></div>
+  <p>{{ q.enonce|linebreaksbr }}</p>
+  {% include "exercices/_reponse.html" with montrer_attendu=True %}
+  {% if r.commentaire %}<p class="commentaire">{% icon "info" size=14 %} <strong>Ton formateur :</strong> {{ r.commentaire }}</p>{% endif %}
+  {% if q.correction %}<p class="correction"><strong>Correction :</strong> {{ q.correction|linebreaksbr }}</p>{% endif %}
+</div>
+{% endwith %}{% endfor %}
+{% endif %}
+{% endblock %}

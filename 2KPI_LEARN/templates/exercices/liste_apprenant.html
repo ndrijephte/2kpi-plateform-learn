@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Mes exercices - {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "pencil" size=16 %}<span>Mes exercices</span>{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <span class="eyebrow">{% icon "pencil" size=14 %} {% if inscription.promotion %}{{ inscription.promotion.nom }}{% else %}Apprentissage{% endif %}</span>
+  <h1>Mes exercices</h1>
+  <p class="muted">Réponds avant la date limite ; tu peux modifier tes réponses jusque-là. Ton résultat et la correction s'affichent ensuite.</p>
+</div></div>
+<ul class="list card">
+  {% for l in lignes %}{% with p=l.planif %}
+  <li><a class="list-item" href="{% if p.termine %}{% url 'exercices:resultat' p.pk %}{% else %}{% url 'exercices:faire' p.pk %}{% endif %}">
+    <span class="ico-tile{% if l.resultat %} done{% elif p.ouvert and not l.copie %} coral{% endif %}">{% if l.resultat %}{% icon "award" size=18 %}{% else %}{% icon "pencil" size=18 %}{% endif %}</span>
+    <span class="grow"><strong>{{ p.exercice.titre }}</strong>
+      <small>{{ p.exercice.module.code }} ·
+        {% if p.a_venir %}ouvre le {{ p.ouverture|date:"d/m à H:i" }}
+        {% elif p.ouvert %}à rendre avant le {{ p.date_limite|date:"d/m à H:i" }}{% if l.copie %} · réponses enregistrées{% endif %}
+        {% elif l.resultat %}terminé · résultat disponible
+        {% else %}terminé · correction en cours{% endif %}</small></span>
+    {% if l.resultat %}<span class="pill pill-ok">{{ l.resultat.note_sur_20 }}/20</span>
+    {% elif p.ouvert and not l.copie %}<span class="pill pill-ko">À faire</span>
+    {% elif p.a_venir %}<span class="pill">À venir</span>{% endif %}
+    <span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
+  {% endwith %}{% empty %}
+  <li class="empty"><span class="ico-tile">{% icon "pencil" %}</span><strong>Aucun exercice pour l'instant</strong>Ton formateur t'en proposera au fil de la formation.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% load ui %}{# Affiche la réponse de l'apprenant à une question (item = {q, r, coches}) #}
+{% with q=item.q r=item.r %}
+{% if q.type == "qcm" or q.type == "vf" %}
+  <ul class="choix-liste">{% for c in q.choix.all %}
+    <li class="{% if c.correct %}juste{% endif %}{% if c.pk in item.coches %} coche{% endif %}">
+      {% if c.pk in item.coches %}{% icon "circle-check" size=14 %}{% else %}<span class="case-vide"></span>{% endif %} {{ c.texte }}
+      {% if montrer_attendu and c.correct %}<small class="result-ok">(bonne réponse)</small>{% endif %}</li>{% endfor %}</ul>
+{% else %}
+  <div class="reponse-texte">{% if r and r.valeur %}{{ r.valeur|linebreaksbr }}{% else %}<span class="muted">Pas de réponse</span>{% endif %}</div>
+  {% if montrer_attendu and q.type == "courte" %}<p class="muted"><small>Réponses acceptées : {{ q.reponse_attendue }}</small></p>{% endif %}
+  {% if montrer_attendu and q.type == "numerique" %}<p class="muted"><small>Attendu : {{ q.reponse_attendue }}</small></p>{% endif %}
+{% endif %}
+{% endwith %}
