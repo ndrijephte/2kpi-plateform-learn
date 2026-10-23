@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Planning — {{ promotion.nom }}{% endblock %}
+{% block title %}Planning - {{ promotion.nom }}{% endblock %}
 {% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<span>{{ promotion.nom }}</span>{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
     <span class="eyebrow">{% icon "briefcase" size=14 %} {% if est_admin %}Administration{% else %}Espace formateur{% endif %} · {{ nb_apprenants }} apprenant{{ nb_apprenants|pluralize }}</span>
-    <h1>Planning — {{ promotion.nom }}</h1>
+    <h1>Planning - {{ promotion.nom }}</h1>
     <p class="muted">Confirme, reporte ou annule les séances et notifie la promotion. Une séance devient « réalisée » quand sa feuille de présence est enregistrée.</p>
     {% if nb_a_pointer %}<p class="alert-inline">{% icon "alert" size=14 %} {{ nb_a_pointer }} séance{{ nb_a_pointer|pluralize }} passée{{ nb_a_pointer|pluralize }} sans feuille de présence.</p>{% endif %}
   </div>

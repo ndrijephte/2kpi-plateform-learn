@@ -1,6 +1,6 @@
 """API publique lue par le site vitrine : catalogue des sessions ouvertes.
 
-GET /api/sessions/ — promotions publiées sur la vitrine (inscriptions ouvertes ou prêtes), au format attendu par
+GET /api/sessions/ - promotions publiées sur la vitrine (inscriptions ouvertes ou prêtes), au format attendu par
 VITRINE_2KPI/js/sessions-data.js. Lecture seule, données publiques ; CORS limité à
 settings.VITRINE_ORIGINS, jamais mis en cache pour que les places restent exactes.
 """
@@ -30,7 +30,7 @@ def fiche(p, inscrits):
         "lieu": p.lieu or ("En ligne (visioconférence)" if p.mode == Promotion.Mode.EN_LIGNE else ""),
         "placesTotal": p.places_total,
         "placesRestantes": restantes,
-        "prix": p.prix,
+        "prix": p.prix if p.afficher_prix else "",  # affiché seulement si l'administration le décide
         "description": p.description_vitrine or p.formation.description[:300],
     }
 

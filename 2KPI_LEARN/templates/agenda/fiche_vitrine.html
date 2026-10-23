@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Fiche vitrine — {{ promo.nom }} — {{ site_nom }}{% endblock %}
+{% block title %}Fiche vitrine - {{ promo.nom }} - {{ site_nom }}{% endblock %}
 {% block crumbs %}{% icon "users" size=16 %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<span>{{ promo.nom }}</span>{% endblock %}
 {% block content %}
 <div class="page-head">

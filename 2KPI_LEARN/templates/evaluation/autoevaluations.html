@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Auto-évaluations — {{ promotion.nom }}{% endblock %}
+{% block title %}Auto-évaluations - {{ promotion.nom }}{% endblock %}
 {% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<a href="{% url 'agenda:planning' promotion.pk %}">{{ promotion.nom }}</a>{% icon "chevron-right" size=14 %}<span>Auto-évaluations</span>{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
     <span class="eyebrow">{% icon "gauge" size=14 %} {{ promotion.formation.titre }} · {{ synthese.nb_inscrits }} apprenant{{ synthese.nb_inscrits|pluralize }}</span>
-    <h1>Auto-évaluations — {{ promotion.nom }}</h1>
+    <h1>Auto-évaluations - {{ promotion.nom }}</h1>
     <p class="muted">Comment les apprenants se positionnent sur les objectifs de tes séances : repère les notions à reprendre et réponds aux demandes d'aide.</p>
   </div>
   <a class="btn btn-secondary" href="{% url 'agenda:planning' promotion.pk %}">{% icon "arrow-left" size=16 %} Planning</a>
@@ -21,7 +21,7 @@
   <form method="get">{% if filtre %}<input type="hidden" name="filtre" value="{{ filtre }}">{% endif %}
     <select name="module" aria-label="Module" onchange="this.form.submit()">
       <option value="">Tous mes modules</option>
-      {% for m in modules %}<option value="{{ m.pk }}" {% if module_id == m.pk|stringformat:"d" %}selected{% endif %}>{{ m.code }} — {{ m.titre }}</option>{% endfor %}
+      {% for m in modules %}<option value="{{ m.pk }}" {% if module_id == m.pk|stringformat:"d" %}selected{% endif %}>{{ m.code }} - {{ m.titre }}</option>{% endfor %}
     </select><noscript><button class="btn btn-sm btn-secondary">OK</button></noscript>
   </form>
   {% endif %}

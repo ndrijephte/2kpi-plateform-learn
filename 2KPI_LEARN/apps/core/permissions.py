@@ -7,9 +7,9 @@ Trois profils :
 
 Rien n'est accessible sans décision de l'administration :
 - apprenant : inscription « en cours » rattachée à une promotion, puis module ouvert pour cette
-  promotion (ouverture décidée par l'admin, ou automatique si l'admin l'a activée) — formation/acces.py ;
+  promotion (ouverture décidée par l'admin, ou automatique si l'admin l'a activée) - formation/acces.py ;
 - formateur : référent d'une promotion (tous ses modules) ou affecté par l'admin à une promotion,
-  sur les modules cochés (Affectation) — voir interventions().
+  sur les modules cochés (Affectation) - voir interventions().
 """
 from functools import wraps
 from django.contrib.auth.decorators import login_required
@@ -150,7 +150,7 @@ def appliquer_role(user, role):
 
 def formations_gerables(user):
     """Formations où l'utilisateur intervient : toutes (admin) ou celles des promotions où l'admin
-    l'a affecté — même si la formation n'a pas encore de module (« tous les modules » à venir)."""
+    l'a affecté - même si la formation n'a pas encore de module (« tous les modules » à venir)."""
     from apps.formation.models import Formation
     perimetre = interventions(user)
     if perimetre is None:

@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Accès aux contenus — {{ promotion.nom }}{% endblock %}
+{% block title %}Accès aux contenus - {{ promotion.nom }}{% endblock %}
 {% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<a href="{% url 'agenda:planning' promotion.pk %}">{{ promotion.nom }}</a>{% icon "chevron-right" size=14 %}<span>Accès aux contenus</span>{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
     <span class="eyebrow">{% icon "lock" size=14 %} Autorisations · {{ nb_ouverts }}/{{ lignes|length }} modules ouverts</span>
-    <h1>Accès aux contenus — {{ promotion.nom }}</h1>
+    <h1>Accès aux contenus - {{ promotion.nom }}</h1>
     <p class="muted">Un apprenant n'accède aux séances, ressources et quiz d'un module que lorsqu'il est ouvert pour sa promotion.{% if not peut_decider %} L'ouverture est décidée par l'administration ; tu vois ici l'état de tes modules.{% endif %}</p>
   </div>
   <a class="btn btn-secondary" href="{% url 'agenda:planning' promotion.pk %}">{% icon "calendar-days" size=16 %} Planning</a>

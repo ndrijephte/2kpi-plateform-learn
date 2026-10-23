@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Évaluation — {{ promotion.nom }}{% endblock %}
+{% block title %}Évaluation - {{ promotion.nom }}{% endblock %}
 {% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<span>{{ promotion.nom }}</span>{% icon "chevron-right" size=14 %}<span>Évaluation</span>{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
     <span class="eyebrow">{% icon "gauge" size=14 %} {{ formation.titre }}</span>
-    <h1>Évaluation — {{ promotion.nom }}</h1>
+    <h1>Évaluation - {{ promotion.nom }}</h1>
     <p class="muted">Note finale = {% for cle, libelle, poids in composantes %}{{ libelle|lower }} {{ poids }} %{% if not forloop.last %} · {% endif %}{% empty %}aucune composante{% endfor %}. Validation : assiduité ≥ {{ formation.seuil_assiduite }} % et note ≥ {{ formation.note_minimale }}/20.{% if not peut_saisir %} Consultation : la saisie revient au formateur référent et à l'administration.{% endif %}</p>
   </div>
   <a class="btn btn-secondary" href="{% url 'agenda:planning' promotion.pk %}">{% icon "calendar-days" size=16 %} Planning</a>
@@ -31,8 +31,8 @@
           <td class="num note-finale"><strong>{% if i.note_finale is not None %}{{ i.note_finale|floatformat:2 }}{% else %}{{ l.finale|floatformat:2 }}{% endif %}</strong></td>
           <td class="num muted">{{ l.continu|floatformat:2 }}</td>
           {% if criteres %}<td class="num muted">{{ l.projet|floatformat:2 }}</td>{% endif %}
-          {% if formation.poids_soutenance %}<td class="num col-saisie">{% if l.modifiable %}<input class="note-input" type="text" inputmode="decimal" name="s_{{ i.pk }}" value="{{ l.soutenance|default_if_none:'' }}" aria-label="Soutenance — {{ i.apprenant.get_full_name|default:i.apprenant.username }}">{% else %}{{ l.soutenance|default_if_none:"—" }}{% endif %}</td>{% endif %}
-          {% for n in l.notes %}<td class="num col-saisie">{% if l.modifiable %}<input class="note-input" type="text" inputmode="decimal" name="n_{{ i.pk }}_{{ n.critere.pk }}" value="{{ n.note|default_if_none:'' }}" aria-label="{{ n.critere.libelle }} — {{ i.apprenant.get_full_name|default:i.apprenant.username }}">{% else %}{{ n.note|default_if_none:"—" }}{% endif %}</td>{% endfor %}
+          {% if formation.poids_soutenance %}<td class="num col-saisie">{% if l.modifiable %}<input class="note-input" type="text" inputmode="decimal" name="s_{{ i.pk }}" value="{{ l.soutenance|default_if_none:'' }}" aria-label="Soutenance - {{ i.apprenant.get_full_name|default:i.apprenant.username }}">{% else %}{{ l.soutenance|default_if_none:"—" }}{% endif %}</td>{% endif %}
+          {% for n in l.notes %}<td class="num col-saisie">{% if l.modifiable %}<input class="note-input" type="text" inputmode="decimal" name="n_{{ i.pk }}_{{ n.critere.pk }}" value="{{ n.note|default_if_none:'' }}" aria-label="{{ n.critere.libelle }} - {{ i.apprenant.get_full_name|default:i.apprenant.username }}">{% else %}{{ n.note|default_if_none:"—" }}{% endif %}</td>{% endfor %}
         </tr>
       {% endwith %}{% endfor %}
       </tbody>
@@ -55,7 +55,7 @@
       <tbody>
       {% for l in lignes_prerequis %}{% with i=l.inscription %}
         <tr><td><strong>{{ i.apprenant.get_full_name|default:i.apprenant.username }}</strong><br><small class="muted">{{ l.faits }}/{{ prerequis|length }} · {{ i.get_statut_display }}</small></td>
-          {% for c in l.cases %}<td>{% if peut_saisir %}<select name="p_{{ i.pk }}_{{ c.prerequis.pk }}" aria-label="{{ c.prerequis.libelle }} — {{ i.apprenant.get_full_name|default:i.apprenant.username }}">
+          {% for c in l.cases %}<td>{% if peut_saisir %}<select name="p_{{ i.pk }}_{{ c.prerequis.pk }}" aria-label="{{ c.prerequis.libelle }} - {{ i.apprenant.get_full_name|default:i.apprenant.username }}">
               {% for v, lib in statuts_prerequis %}<option value="{{ v }}" {% if c.statut == v %}selected{% endif %}>{{ lib }}</option>{% endfor %}</select>
             {% else %}<span class="pill pill-{{ c.statut }}">{{ c.libelle }}</span>{% endif %}</td>{% endfor %}</tr>
       {% endwith %}{% endfor %}

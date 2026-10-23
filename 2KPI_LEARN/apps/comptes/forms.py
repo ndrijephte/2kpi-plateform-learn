@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class PromotionsChoix(forms.ModelMultipleChoiceField):
     def label_from_instance(self, p):
         libelle = p.nom if p.nom.strip().casefold() == p.formation.titre.strip().casefold() \
-            else f"{p.nom} — {p.formation.titre}"
+            else f"{p.nom} - {p.formation.titre}"
         return libelle + ("" if p.active else " (archivée)")
 
 
@@ -260,7 +260,7 @@ class MotDePasseOublieForm(PasswordResetForm):
             logger.info("Mot de passe oublié : lien envoyé à %s (%s)", to_email, context["user"].username)
         except Exception:
             self.echecs = getattr(self, "echecs", 0) + 1
-            logger.exception("Mot de passe oublié : ÉCHEC d'envoi à %s — vérifier la configuration e-mail "
+            logger.exception("Mot de passe oublié : ÉCHEC d'envoi à %s - vérifier la configuration e-mail "
                              "(python manage.py tester_email %s)", to_email, to_email)
 
     def save(self, *a, use_https=False, extra_email_context=None, **kw):

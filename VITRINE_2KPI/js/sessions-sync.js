@@ -1,6 +1,6 @@
-/* 2KPI — Catalogue synchronisé avec la plateforme 2KPI Learn
+/* 2KPI - Catalogue synchronisé avec la plateforme 2KPI Learn
    Les sessions publiées sont gérées dans l'app (Promotions › Vitrine) et lues ici via
-   LEARN_URL/api/sessions/ : dates, lieu, prix et places restantes toujours à jour.
+   LEARN_URL/api/sessions/ : dates, lieu, places restantes (et prix si l'administration l'affiche) toujours à jour.
    Si l'app ne répond pas (5 s), on garde la liste de secours de js/sessions-data.js. */
 function chargerSessions(suite) {
   var fini = false;

@@ -15,11 +15,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         module = Module.objects.filter(code="M1").first()
         if not module:
-            self.stderr.write("Module M1 introuvable — lance d'abord `seed_geoai`.")
+            self.stderr.write("Module M1 introuvable - lance d'abord `seed_geoai`.")
             return
         if not DATA.exists():
             self.stderr.write(f"Fichier GIFT introuvable : {DATA}")
             return
-        quiz, _ = Quiz.objects.get_or_create(module=module, titre="Test — Semaine 1")
+        quiz, _ = Quiz.objects.get_or_create(module=module, titre="Test - Semaine 1")
         n = importer_gift(quiz, DATA.read_text(encoding="utf-8"), remplacer=True)
-        self.stdout.write(self.style.SUCCESS(f"OK — {n} questions importées dans « {quiz.titre} »."))
+        self.stdout.write(self.style.SUCCESS(f"OK - {n} questions importées dans « {quiz.titre} »."))

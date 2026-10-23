@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Résultats — {{ quiz.titre }}{% endblock %}
+{% block title %}Résultats - {{ quiz.titre }}{% endblock %}
 {% block crumbs %}<a href="{% url 'formation:modules' %}">Contenu des cours</a>{% icon "chevron-right" size=14 %}<a href="{% url 'formation:module_detail' quiz.module.code %}?formation={{ quiz.module.formation_id }}">{{ quiz.module.code }}</a>{% icon "chevron-right" size=14 %}<span>Résultats du quiz</span>{% endblock %}
 {% block content %}
 <div class="page-head">

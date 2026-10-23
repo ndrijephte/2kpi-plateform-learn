@@ -26,7 +26,7 @@ class PromotionAdmin(admin.ModelAdmin):
                            "ouverture_auto"]}),
         ("Site vitrine", {"fields": ["publiee_vitrine", "code_vitrine", "domaine", "mode", "date_affichage",
                                      "horaire", "duree", "lieu", "places_total", "places_hors_plateforme",
-                                     "prix", "description_vitrine"]}),
+                                     "prix", "afficher_prix", "description_vitrine"]}),
     ]
     inlines = [AffectationInline, IndispoInline]
     actions = ["action_generer_agenda"]

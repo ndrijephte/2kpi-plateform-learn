@@ -67,6 +67,9 @@ class Promotion(models.Model):
         "Places déjà attribuées hors plateforme", default=0,
         help_text="Inscrits reçus par e-mail, téléphone… Les inscrits de la plateforme sont comptés automatiquement.")
     prix = models.CharField(max_length=60, blank=True, help_text="Ex. « 150 000 FCFA ».")
+    afficher_prix = models.BooleanField(
+        "Afficher le prix sur le site vitrine", default=False,
+        help_text="Décoché : le prix reste connu de l'administration mais n'apparaît pas sur le site.")
     description_vitrine = models.TextField(
         "Résumé (vitrine)", max_length=400, blank=True,
         help_text="Deux lignes affichées sur la carte. Vide = la description de la formation.")
@@ -172,7 +175,7 @@ class Indisponibilite(models.Model):
         return self.date_debut <= d <= fin
 
     def __str__(self):
-        return f"{self.date_debut}{'→'+str(self.date_fin) if self.date_fin else ''} — {self.motif}"
+        return f"{self.date_debut}{'→'+str(self.date_fin) if self.date_fin else ''} - {self.motif}"
 
 
 class Evenement(models.Model):
@@ -211,7 +214,7 @@ class Evenement(models.Model):
         if self.titre:
             return self.titre
         if self.seance:
-            return self.seance.theme or f"{self.seance.module.code} — séance"
+            return self.seance.theme or f"{self.seance.module.code} - séance"
         return "Séance"
 
     @property
@@ -219,7 +222,7 @@ class Evenement(models.Model):
         return self.seance.module.code if self.seance else ""
 
     def __str__(self):
-        return f"{self.date_debut:%d/%m %H:%M} — {self.libelle}"
+        return f"{self.date_debut:%d/%m %H:%M} - {self.libelle}"
 
 
 class Annonce(models.Model):

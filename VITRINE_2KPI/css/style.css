@@ -1,5 +1,5 @@
 /* =================================================================
-   2KPI — Feuille de style unique (design system léger)
+   2KPI - Feuille de style unique (design system léger)
    Palette dérivée du logo officiel : navy (savoir/donnée), corail
    (innovation), vert (territoire/durabilité), crème (lumière/idée).
    ================================================================= */
@@ -613,6 +613,13 @@ strong { color: var(--navy); }
 }
 .social-row a:hover { background: var(--coral); transform: translateY(-2px); }
 .social-row svg { width: 18px; height: 18px; color: #fff; }
+/* Bloc « Nos coordonnées » : contenu centré dans la carte */
+.info-card { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.info-lines { display: inline-flex; flex-direction: column; align-items: flex-start; text-align: left; margin-top: 8px; }
+.info-card .info-line { align-items: center; }
+.info-card .info-line svg { margin-top: 0; }
+.info-card .social-row { justify-content: center; }
+.info-card p { max-width: 380px; margin-left: auto; margin-right: auto; }
 
 .form-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 40px; box-shadow: var(--shadow-sm); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }

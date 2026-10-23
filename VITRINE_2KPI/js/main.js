@@ -1,4 +1,4 @@
-/* 2KPI — script unique, sans dépendance externe */
+/* 2KPI - script unique, sans dépendance externe */
 (function () {
   "use strict";
 

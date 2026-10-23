@@ -77,7 +77,7 @@ class FicheVitrineForm(forms.ModelForm):
         from .models import Promotion
         model = Promotion
         fields = ["publiee_vitrine", "code_vitrine", "domaine", "mode", "date_affichage", "horaire",
-                  "duree", "lieu", "places_total", "places_hors_plateforme", "prix", "description_vitrine"]
+                  "duree", "lieu", "places_total", "places_hors_plateforme", "prix", "afficher_prix", "description_vitrine"]
         widgets = {"description_vitrine": forms.Textarea(attrs={"rows": 3, "maxlength": 400})}
 
     def clean_code_vitrine(self):

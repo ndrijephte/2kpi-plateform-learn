@@ -55,7 +55,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         formation, _ = Formation.objects.get_or_create(
             slug="geoai-sassandra",
-            defaults={"titre": "Formation GéoAI — Sassandra",
+            defaults={"titre": "Formation GéoAI - Sassandra",
                       "description": "12 semaines, 48 séances, de la GéoAI aux systèmes d'alerte."},
         )
 
@@ -81,7 +81,7 @@ class Command(BaseCommand):
                     if not module:
                         continue
                     short = row.get("Shortname", "")
-                    libelle = short.split(" — ", 1)[1] if " — " in short else short
+                    libelle = short.split(" - ", 1)[1] if " - " in short else short
                     mniv = re.search(r"niveau vis[ée]\s*:\s*(\d)", row.get("Description", ""))
                     niveau = int(mniv.group(1)) if mniv else 3
                     Competence.objects.update_or_create(
@@ -112,5 +112,5 @@ class Command(BaseCommand):
                 CritereEvaluation(formation=formation, libelle=l, poids=p, ordre=n) for n, (l, p) in enumerate(CRITERES, 1))
 
         self.stdout.write(self.style.SUCCESS(
-            f"OK — {len(modules)} modules, {nb_comp} compétences, {nb_seances} séances, "
+            f"OK - {len(modules)} modules, {nb_comp} compétences, {nb_seances} séances, "
             f"{formation.prerequis.count()} prérequis, {formation.criteres.count()} critères d'évaluation."))

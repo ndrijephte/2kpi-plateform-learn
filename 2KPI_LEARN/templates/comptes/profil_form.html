@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}{% if soi %}Modifier mon profil{% else %}Modifier {{ cible.username }}{% endif %} — {{ site_nom }}{% endblock %}
+{% block title %}{% if soi %}Modifier mon profil{% else %}Modifier {{ cible.username }}{% endif %} - {{ site_nom }}{% endblock %}
 {% block crumbs %}<a href="{{ retour_url }}">{{ retour_label }}</a>{% icon "chevron-right" size=14 %}<span>Modifier</span>{% endblock %}
 {% block content %}
 <div class="page-head">

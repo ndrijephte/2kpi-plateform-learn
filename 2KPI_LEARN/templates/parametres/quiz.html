@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Paramètres — {{ quiz.titre }}{% endblock %}
+{% block title %}Paramètres - {{ quiz.titre }}{% endblock %}
 {% block crumbs %}{% include "parametres/_fil.html" %}{% endblock %}
 {% block content %}
-{% include "parametres/_tete.html" with titre_page=quiz.titre sous_titre=quiz.module.code|add:" — "|add:quiz.module.titre %}
+{% include "parametres/_tete.html" with titre_page=quiz.titre sous_titre=quiz.module.code|add:" - "|add:quiz.module.titre %}
 <div class="card-head">
   <h2 class="section-title">{% icon "list-checks" size=18 %} Questions <span class="pill">{{ questions|length }}</span></h2>
   <a class="btn" href="{% url 'core:question_ajouter' quiz.pk %}">{% icon "plus" size=16 %} Ajouter une question</a>

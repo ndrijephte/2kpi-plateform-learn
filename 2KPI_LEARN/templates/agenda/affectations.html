@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Formateurs — {{ promotion.nom }}{% endblock %}
+{% block title %}Formateurs - {{ promotion.nom }}{% endblock %}
 {% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<span>{{ promotion.nom }}</span>{% icon "chevron-right" size=14 %}<span>Formateurs</span>{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
     <span class="eyebrow">{% icon "shield" size=14 %} Autorisations · {{ promotion.formation.titre }}</span>
-    <h1>Formateurs — {{ promotion.nom }}</h1>
+    <h1>Formateurs - {{ promotion.nom }}</h1>
     <p class="muted">Un formateur ne voit une promotion, sa formation et ses modules que si tu l'y autorises ici. Il anime alors les séances, présences et livrables <strong>des modules cochés</strong> et peut y déposer des ressources.</p>
   </div>
   <a class="btn btn-secondary" href="{% url 'agenda:promotions' %}">{% icon "arrow-left" size=16 %} Promotions</a>
@@ -23,7 +23,7 @@
 <div class="card">
   <div class="card-head"><h2 class="section-title">{% icon "user-check" size=18 %} Formateur référent</h2></div>
   {% if promotion.formateur %}
-  <p><strong>{{ promotion.formateur.get_full_name|default:promotion.formateur.username }}</strong> — <span class="pill pill-ok">tous les modules</span></p>
+  <p><strong>{{ promotion.formateur.get_full_name|default:promotion.formateur.username }}</strong> - <span class="pill pill-ok">tous les modules</span></p>
   <p class="muted"><small>Le référent pilote la promotion (calendrier compris). Il se change dans la liste des <a href="{% url 'agenda:promotions' %}">Promotions</a>.</small></p>
   {% else %}
   <p class="muted">Aucun référent. Choisis-le dans la liste des <a href="{% url 'agenda:promotions' %}">Promotions</a>.</p>

@@ -57,7 +57,7 @@ def envoyer_invitation(request, user, promotion=None):
     """E-mail de bienvenue avec lien pour définir son mot de passe (valable PASSWORD_RESET_TIMEOUT)."""
     from apps.core.models import Parametres
     return _envoyer(
-        f"Bienvenue sur {Parametres.charger().nom_plateforme} — activez votre compte",
+        f"Bienvenue sur {Parametres.charger().nom_plateforme} - activez votre compte",
         "emails/invitation.txt", user.email,
         {"user": user, "promotion": promotion, "lien": lien_definition_mdp(request, user),
          "connexion": request.build_absolute_uri(reverse("login")),
@@ -142,7 +142,7 @@ def creer_compte_apprenant(request, d):
                     f"{profil.get_categorie_display()} · {user.email} · {profil.telephone}"
                     + (f" · demande la session « {promo.nom} »" if promo else ""))
     transaction.on_commit(lambda: _envoyer(
-        "Bienvenue sur 2KPI Learn — votre compte est créé", "emails/compte_cree.txt", user.email,
+        "Bienvenue sur 2KPI Learn - votre compte est créé", "emails/compte_cree.txt", user.email,
         {"user": user, "promotion": promo, "connexion": request.build_absolute_uri(reverse("login"))}))
     logger.info("Compte apprenant créé en libre-service : %s (%s)", user.username, user.email)
     return user

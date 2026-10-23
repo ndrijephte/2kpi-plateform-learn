@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Paramètres — {{ module.code }}{% endblock %}
+{% block title %}Paramètres - {{ module.code }}{% endblock %}
 {% block crumbs %}{% include "parametres/_fil.html" %}{% endblock %}
 {% block content %}
-{% include "parametres/_tete.html" with titre_page=module.code|add:" — "|add:module.titre sous_titre="Chaque séance porte son propre créneau : semaine, jour, heure, durée, mode et lieu." %}
+{% include "parametres/_tete.html" with titre_page=module.code|add:" - "|add:module.titre sous_titre="Chaque séance porte son propre créneau : semaine, jour, heure, durée, mode et lieu." %}
 
 <div class="card-head"><h2 class="section-title">{% icon "calendar-days" size=18 %} Séances</h2></div>
 <div class="table-wrap">

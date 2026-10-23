@@ -151,7 +151,7 @@ def evenement_action(request, ev_id):
         heure = timezone.localtime(ev.date_debut).strftime("%d/%m à %H:%M")
         notifier(apprenants_de(ev.promotion),
                  titre=f"Séance planifiée : {ev.libelle}",
-                 message=f"Rendez-vous le {heure} — {ev.get_mode_display()}"
+                 message=f"Rendez-vous le {heure} - {ev.get_mode_display()}"
                          + (f" · {ev.lieu}" if ev.lieu else ""),
                  evenement=ev, type=Notification.Type.AGENDA, expediteur=request.user)
         messages.success(request, "Apprenant(s) notifié(s) (in-app + e-mail si configuré).")

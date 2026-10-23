@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Ajouter des documents — {{ site_nom }}{% endblock %}
+{% block title %}Ajouter des documents - {{ site_nom }}{% endblock %}
 {% block crumbs %}<a href="{% url 'formation:ressources' %}">Ressources</a>{% icon "chevron-right" size=14 %}<span>Ajouter des documents</span>{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -37,7 +37,7 @@
       <div class="card">
         <h2 class="section-title">{% icon "info" size=18 %} Exemple pour une séance</h2>
         <ul class="list">
-          <li class="list-item"><span class="ico-tile">{% icon "file-text" size=18 %}</span><span class="grow"><strong>Support PDF</strong><small>Fichier .pdf — « Support de cours, à lire avant la séance ».</small></span></li>
+          <li class="list-item"><span class="ico-tile">{% icon "file-text" size=18 %}</span><span class="grow"><strong>Support PDF</strong><small>Fichier .pdf - « Support de cours, à lire avant la séance ».</small></span></li>
           <li class="list-item"><span class="ico-tile">{% icon "code" size=18 %}</span><span class="grow"><strong>Notebook</strong><small>Fichier .ipynb + lien Colab dans « Lien » : l'apprenant télécharge ou ouvre dans Colab en un clic.</small></span></li>
           <li class="list-item"><span class="ico-tile">{% icon "video" size=18 %}</span><span class="grow"><strong>Classe virtuelle</strong><small>Lien Meet, Zoom ou Teams seul : il s'affiche en tête de la séance avec un bouton « Rejoindre le cours ».</small></span></li>
         </ul>
@@ -45,7 +45,7 @@
       </div>
       <div class="card">
         <h2 class="section-title">{% icon "shield" size=18 %} Formats acceptés</h2>
-        <p class="muted"><small>{{ parametres.extensions|join:", " }} — {{ parametres.taille_max_mo }} Mo maximum par fichier.</small></p>
+        <p class="muted"><small>{{ parametres.extensions|join:", " }} - {{ parametres.taille_max_mo }} Mo maximum par fichier.</small></p>
       </div>
     </div>
   </div>

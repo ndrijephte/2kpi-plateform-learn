@@ -1,4 +1,4 @@
-"""Réglages Django — 2KPI Learn."""
+"""Réglages Django - 2KPI Learn."""
 from pathlib import Path
 from decouple import config, Csv
 
@@ -131,7 +131,7 @@ VITRINE_ORIGINS = config("VITRINE_ORIGINS", default="https://2kpinnov.org,https:
 # E-mail. EMAIL_ENVOI = auto (défaut) | smtp | sendmail | console
 # - auto : SMTP si EMAIL_HOST est renseigné (465 = SSL, 587 = STARTTLS), avec repli automatique sur
 #   le sendmail de l'hébergeur si le SMTP échoue ; sinon e-mails affichés dans la console (local).
-# - sendmail : uniquement l'agent local du serveur (cPanel/Exim) — sans mot de passe ni TLS.
+# - sendmail : uniquement l'agent local du serveur (cPanel/Exim) - sans mot de passe ni TLS.
 EMAIL_ENVOI = config("EMAIL_ENVOI", default="auto").strip().lower()
 EMAIL_SENDMAIL = config("EMAIL_SENDMAIL", default="/usr/sbin/sendmail")
 EMAIL_HOST = config("EMAIL_HOST", default="").strip()
@@ -166,7 +166,7 @@ LOG_DIR.mkdir(exist_ok=True)
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "formatters": {"simple": {"format": "{asctime} {levelname} {name} — {message}", "style": "{"}},
+    "formatters": {"simple": {"format": "{asctime} {levelname} {name} - {message}", "style": "{"}},
     "filters": {"prod": {"()": "django.utils.log.RequireDebugFalse"}},
     "handlers": {
         "console": {"class": "logging.StreamHandler", "formatter": "simple"},

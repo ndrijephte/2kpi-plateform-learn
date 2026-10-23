@@ -1,4 +1,4 @@
-/* 2KPI — Adresse de la plateforme 2KPI Learn (espace apprenant)
+/* 2KPI - Adresse de la plateforme 2KPI Learn (espace apprenant)
    En ligne : learn.2kpinnov.org. Vitrine ouverte en local (localhost / 127.0.0.1) :
    l'app lancée sur le poste (python manage.py runserver). Rien à changer pour déployer. */
 var LEARN_LOCAL = /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);

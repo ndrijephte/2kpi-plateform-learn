@@ -49,7 +49,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"  ✔ {texte}"))
 
     def ko(self, texte, e=None):
-        self.stdout.write(self.style.ERROR(f"  ✘ {texte}" + (f" — {type(e).__name__}: {e}" if e else "")))
+        self.stdout.write(self.style.ERROR(f"  ✘ {texte}" + (f" - {type(e).__name__}: {e}" if e else "")))
         if e is not None:
             self.stdout.write(self.style.WARNING(f"    → {conseil(e)}"))
 
@@ -108,7 +108,7 @@ class Command(BaseCommand):
                 if settings.EMAIL_HOST_USER:
                     s.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
                     self.ok(f"Authentification ({settings.EMAIL_HOST_USER})")
-                m = EmailMessage("Test SMTP — 2KPI Learn", "Si tu lis ce message, le SMTP de la plateforme fonctionne.",
+                m = EmailMessage("Test SMTP - 2KPI Learn", "Si tu lis ce message, le SMTP de la plateforme fonctionne.",
                                  settings.DEFAULT_FROM_EMAIL, [destinataire]).message()
                 refus = s.sendmail(settings.EMAIL_HOST_USER or settings.DEFAULT_FROM_EMAIL, [destinataire],
                                    m.as_bytes())
@@ -129,7 +129,7 @@ class Command(BaseCommand):
             return False
         try:
             SendmailBackend(fail_silently=False).send_messages([EmailMessage(
-                "Test sendmail — 2KPI Learn", "Si tu lis ce message, l'envoi via le serveur (sendmail) fonctionne.",
+                "Test sendmail - 2KPI Learn", "Si tu lis ce message, l'envoi via le serveur (sendmail) fonctionne.",
                 settings.DEFAULT_FROM_EMAIL, [destinataire])])
             self.ok(f"Message remis à sendmail pour {destinataire} (vérifie aussi les spams)")
             return True

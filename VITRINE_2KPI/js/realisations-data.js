@@ -1,9 +1,9 @@
-/* 2KPI — Catalogue des réalisations
+/* 2KPI - Catalogue des réalisations
    ===================================
    C'est ICI que tu ajoutes une nouvelle réalisation : ajoute un objet dans
    le tableau REALISATIONS ci-dessous. La page réalisations.html (liste et
    filtres) et la page de détail générique (realisation-detail.html) lisent
-   automatiquement ce fichier — aucune autre page à modifier.
+   automatiquement ce fichier - aucune autre page à modifier.
 
    Champs :
    - id          : identifiant unique, sans espace (utilisé dans l'URL ?projet=...)
@@ -13,7 +13,7 @@
    - annee       : année ou période affichée
    - resume      : court résumé affiché sur la carte
    - details     : liste de paragraphes affichés sur la vue détail (utilisé
-                   seulement si le projet n'a pas de démo dédiée — voir vueUrl)
+                   seulement si le projet n'a pas de démo dédiée - voir vueUrl)
    - chiffres    : (optionnel) liste de { valeur, label } mise en avant sur la vue détail
    - vueUrl      : (optionnel) si renseigné, le bouton "Voir la réalisation" ouvre
                    directement cette page (ex. une démo interactive dédiée) au lieu
@@ -30,14 +30,14 @@ var REALISATIONS = [
     resume: "Prototype de carte interactive développé avec Leaflet : bascule de fonds de carte, gestionnaire de couches, et découpage administratif par département.",
     details: [
       "Ce projet illustre concrètement ce qu'est le WebSIG appliqué à un territoire réel : une carte interactive de la Côte d'Ivoire, avec plusieurs fonds de carte (OSM, satellite, relief), un gestionnaire de couches et l'affichage des limites administratives et des départements.",
-      "C'est ce type d'outil — de la donnée géospatiale brute à une plateforme cartographique accessible en ligne — que la formation WebSIG & cartographie interactive de 2KPI permet de construire."
+      "C'est ce type d'outil - de la donnée géospatiale brute à une plateforme cartographique accessible en ligne - que la formation WebSIG & cartographie interactive de 2KPI permet de construire."
     ],
     vueUrl: "websig-demo.html",
     vueLabel: "Ouvrir la carte interactive"
   },
   {
     id: "pud-80-chefs-lieux",
-    titre: "Plans d'Urbanisme Directeur (PUD) — 80 chefs-lieux de département",
+    titre: "Plans d'Urbanisme Directeur (PUD) - 80 chefs-lieux de département",
     categorie: "Urbanisme",
     annee: "2024",
     resume: "Élaboration de plans d'urbanisme directeur pour des chefs-lieux de département, incluant cartographie, questionnaires numériques et validation des données spatiales avant traitement SIG.",
@@ -67,7 +67,7 @@ var REALISATIONS = [
     resume: "Traitement d'images satellites (Sentinel-2, Landsat) pour la caractérisation de ressources naturelles et le suivi de dynamiques spatio-temporelles sur plusieurs décennies.",
     details: [
       "Travaux menés notamment sur le site Ramsar d'Azagny (Sud de la Côte d'Ivoire) et le site de N'ganda N'ganda : caractérisation des ressources naturelles végétales en zone humide, évaluation des impacts des pressions agricoles, et étude comparative de capteurs satellites (Sentinel-2 / Landsat-8 OLI).",
-      "Ces travaux ont donné lieu à plusieurs publications scientifiques — voir la section Publications ci-dessous."
+      "Ces travaux ont donné lieu à plusieurs publications scientifiques - voir la section Publications ci-dessous."
     ]
   },
   {

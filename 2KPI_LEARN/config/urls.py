@@ -9,7 +9,7 @@ from apps.core.views import media_publique
 from apps.evaluation.views import verifier_attestation
 from django.contrib.auth import views as auth_views
 
-admin.site.site_header = "2KPI Learn — Administration"
+admin.site.site_header = "2KPI Learn - Administration"
 admin.site.site_title = "2KPI Learn"
 admin.site.index_title = "Gestion de la plateforme"
 admin.site.site_url = "/"

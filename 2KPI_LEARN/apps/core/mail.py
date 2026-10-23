@@ -55,7 +55,7 @@ class SmtpAvecRepliBackend(SmtpBackend):
             return SmtpBackend(fail_silently=False).send_messages(messages)
         except Exception as e:
             logger.error("SMTP %s:%s en échec (%s: %s)%s", settings.EMAIL_HOST, settings.EMAIL_PORT,
-                         type(e).__name__, e, " — repli sur sendmail" if sendmail_disponible() else "")
+                         type(e).__name__, e, " - repli sur sendmail" if sendmail_disponible() else "")
             if sendmail_disponible():
                 return SendmailBackend(fail_silently=self.fail_silently).send_messages(messages)
             if not self.fail_silently:

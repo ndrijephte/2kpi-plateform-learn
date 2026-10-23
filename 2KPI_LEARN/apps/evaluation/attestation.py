@@ -74,7 +74,7 @@ def pdf(inscription, url_verification):
     c = canvas.Canvas(tampon, pagesize=(largeur, hauteur))
     apprenant = inscription.apprenant
     nom = (apprenant.get_full_name() or apprenant.username).strip()
-    c.setTitle(f"Attestation — {nom}")
+    c.setTitle(f"Attestation - {nom}")
     c.setAuthor(p.organisme)
 
     # Cadre

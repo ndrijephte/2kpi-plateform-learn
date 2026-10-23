@@ -44,9 +44,9 @@ Le plus simple : l'**assistant**.
 1. Accueil cPanel → rubrique **Fichiers** → clique **Contrôle de version Git** (Git Version Control).
 2. Clique **Créer**.
 3. **URL du clone** : colle l'adresse du dépôt GitHub `https://github.com/ndrijephte/2kpi-plateform-learn.git`.
-4. **Chemin du dépôt** : `apps/2kpi_plateforme`  (cPanel le crée dans `/home/c2864961c/apps/2kpi_plateforme`).
+4. **Chemin du dépôt** : `repositories/2kpi-plateform-learn`  (cPanel le crée dans `/home/c2864961c/repositories/2kpi-plateform-learn`).
    L'app est dans son sous-dossier `2KPI_LEARN`.
-   **À retenir : CHEMIN_APP = `/home/c2864961c/apps/2kpi_plateforme/2KPI_LEARN`**
+   **À retenir : CHEMIN_APP = `/home/c2864961c/repositories/2kpi-plateform-learn/2KPI_LEARN`**
 5. Clique **Créer**. Le code est cloné.
 
 > **Dépôt privé ?** cPanel doit pouvoir lire GitHub : cPanel → **Accès SSH** → *Gérer les clés SSH*
@@ -55,7 +55,7 @@ Le plus simple : l'**assistant**.
 > URL du clone à utiliser alors : `git@github.com:ndrijephte/2kpi-plateform-learn.git`.
 
 > Pas de dépôt GitHub prêt ? Alternative : **Gestionnaire de fichiers** → envoyer un `.zip` du dossier
-> `2KPI_LEARN` dans `/home/c2864961c/apps/2kpi_plateforme/2KPI_LEARN` puis **Extraire**.
+> `2KPI_LEARN` dans `/home/c2864961c/repositories/2kpi-plateform-learn/2KPI_LEARN` puis **Extraire**.
 
 ---
 
@@ -66,14 +66,14 @@ Le plus simple : l'**assistant**.
 2. Clique **Create Application** / **Créer une application**.
 3. Renseigne :
    - **Python version** : choisis la plus récente proposée (**3.10 minimum**, requis par Django 5.2 ; 3.12+ idéal).
-   - **Application root** (racine) : `apps/2kpi_plateforme/2KPI_LEARN`  ← le CHEMIN_APP de l'étape 3.
+   - **Application root** (racine) : `repositories/2kpi-plateform-learn/2KPI_LEARN`  ← le CHEMIN_APP de l'étape 3.
    - **Application URL** : sélectionne `learn.2kpinnov.org`.
    - **Application startup file** : `passenger_wsgi.py`
    - **Application Entry point** : `application`
 4. Clique **Create**.
 
 En haut de la page de l'app, cPanel affiche une **commande pour entrer dans l'environnement virtuel**
-(du type `source /home/c2864961c/virtualenv/apps/2kpi_plateforme/2KPI_LEARN/3.11/bin/activate && cd /home/c2864961c/apps/2kpi_plateforme/2KPI_LEARN`).
+(du type `source /home/c2864961c/virtualenv/repositories/2kpi-plateform-learn/2KPI_LEARN/3.13/bin/activate && cd /home/c2864961c/repositories/2kpi-plateform-learn/2KPI_LEARN`).
 **Copie cette commande.** ← on l'utilise à l'étape 6.
 
 ---
@@ -85,7 +85,7 @@ En haut de la page de l'app, cPanel affiche une **commande pour entrer dans l'en
    python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
    ```
    Copie la longue chaîne obtenue.
-2. Dans cPanel → **Gestionnaire de fichiers** → va dans `/home/c2864961c/apps/2kpi_plateforme/2KPI_LEARN`.
+2. Dans cPanel → **Gestionnaire de fichiers** → va dans `/home/c2864961c/repositories/2kpi-plateform-learn/2KPI_LEARN`.
 3. Bouton **+ Fichier** → nomme-le `.env` → **Créer**.
 4. Sélectionne `.env` → **Modifier** → colle le contenu de `.env.example` (fourni dans le dépôt)
    et remplace les valeurs par les tiennes : `SECRET_KEY`, mot de passe de la base, et la boîte
@@ -115,7 +115,7 @@ En haut de la page de l'app, cPanel affiche une **commande pour entrer dans l'en
    - `createsuperuser` te demande un identifiant, un e-mail et un mot de passe : ce sera **ton
      compte administrateur** de la plateforme.
    - Les dossiers `media/` (logo, photos — publics) et `prive/` (ressources, livrables — **jamais
-     servis directement**) sont créés dans `/home/c2864961c/apps/2kpi_plateforme/2KPI_LEARN`, donc **hors** du
+     servis directement**) sont créés dans `/home/c2864961c/repositories/2kpi-plateform-learn/2KPI_LEARN`, donc **hors** du
      dossier public du sous-domaine : ne les déplace pas dans `public_html`.
 
 ---
@@ -167,13 +167,44 @@ Ouvre **https://learn.2kpinnov.org** :
 
 ## Étape 10 — Tâches planifiées (cPanel › Tâches cron)
 
-Remplace `ACTIVER` par la commande d'activation de l'étape 4 :
+cPanel → **Avancé › Tâches cron** (*Cron Jobs*).
 
-| Fréquence | Commande |
-|---|---|
-| Tous les jours à 6 h | `ACTIVER && python manage.py workflow_quotidien >> logs/cron.log 2>&1` |
-| Tous les jours à 18 h | `ACTIVER && python manage.py envoyer_rappels >> logs/cron.log 2>&1` |
-| Tous les jours à 2 h | `ACTIVER && python manage.py sauvegarder --garder 14 >> logs/cron.log 2>&1` |
+**1. Adresse e-mail de cron** (encadré « Adresse e-mail de cron » en haut de la page) : indique une boîte
+**que quelqu'un lit**, par exemple `contacts@2kpinnov.org` ou l'adresse de l'administrateur technique.
+cPanel y envoie ce qu'une tâche affiche *hors* du journal : les commandes ci-dessous écrivent tout dans
+`logs/cron.log`, donc **aucun e-mail en temps normal** ; tu n'en reçois un que si la tâche ne peut même pas
+démarrer (chemin erroné, Python introuvable…). C'est l'alarme qui signale une tâche cassée.
+
+**2. Ajouter les trois tâches** (« Ajouter une nouvelle tâche cron » ; laisse « Paramètres courants » sur
+*Paramètres personnalisés* et remplis les cinq champs) :
+
+| Tâche | Minute | Heure | Jour | Mois | Jour de la semaine |
+|---|---|---|---|---|---|
+| Workflow (démarrages, relances de présences) | `0` | `6` | `*` | `*` | `*` |
+| Rappels J-1 aux apprenants | `0` | `18` | `*` | `*` | `*` |
+| Sauvegarde (base + fichiers) | `0` | `2` | `*` | `*` | `*` |
+
+Commande de chaque tâche, **à copier telle quelle** (une ligne chacune) :
+
+```
+cd /home/c2864961c/repositories/2kpi-plateform-learn/2KPI_LEARN && /home/c2864961c/virtualenv/repositories/2kpi-plateform-learn/2KPI_LEARN/3.13/bin/python manage.py workflow_quotidien >> logs/cron.log 2>&1
+```
+```
+cd /home/c2864961c/repositories/2kpi-plateform-learn/2KPI_LEARN && /home/c2864961c/virtualenv/repositories/2kpi-plateform-learn/2KPI_LEARN/3.13/bin/python manage.py envoyer_rappels >> logs/cron.log 2>&1
+```
+```
+cd /home/c2864961c/repositories/2kpi-plateform-learn/2KPI_LEARN && /home/c2864961c/virtualenv/repositories/2kpi-plateform-learn/2KPI_LEARN/3.13/bin/python manage.py sauvegarder --garder 14 >> logs/cron.log 2>&1
+```
+
+> Le Python de l'environnement virtuel est appelé directement : pas besoin de `source …/activate`
+> (le shell des tâches cron ne le connaît pas toujours). `3.13` est la version choisie dans
+> *Setup Python App* : si tu en changes, adapte ce nombre (il figure dans la commande affichée en haut de
+> la page de l'app).
+
+**3. Vérifier** dès le lendemain : Gestionnaire de fichiers →
+`repositories/2kpi-plateform-learn/2KPI_LEARN/logs/cron.log`. On doit y lire, par exemple,
+« 0 promotion(s) démarrée(s), 0 en retard ; présences : … » et « … rappel(s) envoyé(s) ».
+Pour tester tout de suite sans attendre, colle une des commandes dans le **Terminal** cPanel.
 
 Les sauvegardes (base + `media/` + `prive/`) vont dans `sauvegardes/`. Télécharge-en une
 régulièrement hors du serveur (Gestionnaire de fichiers › Télécharger).
@@ -185,7 +216,7 @@ régulièrement hors du serveur (Gestionnaire de fichiers › Télécharger).
 1. **Sauvegarde d'abord l'ancien site** : Gestionnaire de fichiers → `public_html` → tout
    sélectionner → **Compresser** (zip) → télécharge le zip. Le déploiement remplace les fichiers de
    même nom (`index.html`, `pages/`, `css/`, `js/`, `assets/`) ; les autres restent en place.
-2. cPanel → **Contrôle de version Git** → sur le dépôt `apps/2kpi_plateforme` → **Gérer** → onglet
+2. cPanel → **Contrôle de version Git** → sur le dépôt `repositories/2kpi-plateform-learn` → **Gérer** → onglet
    *Pull or Deploy* → **Deploy HEAD Commit**. Le fichier `.cpanel.yml` (racine du dépôt) copie
    `VITRINE_2KPI/` dans `public_html`. Vérifie `https://2kpinnov.org` (vider le cache : Ctrl+F5).
 3. **Le catalogue des sessions se gère dans l'application** : **Promotions** → bouton **Vitrine** de

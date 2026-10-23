@@ -1,4 +1,4 @@
-/* 2KPI — Logique de la vue détail générique (pages/realisation-detail.html)
+/* 2KPI - Logique de la vue détail générique (pages/realisation-detail.html)
    Lit ?projet=<id> et affiche les informations depuis js/realisations-data.js.
    Aucune modification nécessaire ici pour ajouter une réalisation : tout se
    passe dans js/realisations-data.js. */
@@ -24,7 +24,7 @@
     return;
   }
 
-  document.title = r.titre + " — 2KPI";
+  document.title = r.titre + " - 2KPI";
   if (titreEl) titreEl.textContent = r.titre;
   if (catEl) catEl.textContent = r.categorie + (r.annee ? " · " + r.annee : "");
   if (resumeEl) resumeEl.textContent = r.resume;

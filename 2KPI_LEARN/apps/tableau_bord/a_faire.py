@@ -48,7 +48,7 @@ def taches_admin(user):
         admises = promo.inscriptions.filter(statut=Inscription.Statut.ADMISE)
         if admises.exists() and promo.statut in Promotion.STATUTS_ADMISSION:
             payees = admises.exclude(paiement=Inscription.Paiement.EN_ATTENTE).count()
-            taches.append(Tache("user-check", f"{_p(admises.count(), 'inscription')} à confirmer — {promo.nom}",
+            taches.append(Tache("user-check", f"{_p(admises.count(), 'inscription')} à confirmer - {promo.nom}",
                                 f"{payees} avec paiement renseigné" if payees else "Paiement à renseigner avant confirmation",
                                 pilotage, urgent=promo.statut == Promotion.Statut.EN_COURS or promo.date_debut
                                 <= timezone.localdate() + dt.timedelta(days=7)))
@@ -57,7 +57,7 @@ def taches_admin(user):
             if promo.statut != Promotion.Statut.PRETE and jours <= 14:
                 quand = "aujourd'hui" if jours == 0 else (f"dans {_p(jours, 'jour')}" if jours > 0 else f"depuis le {promo.date_debut:%d/%m}")
                 taches.append(Tache("alert", f"{promo.nom} : démarrage {quand}",
-                                    f"Encore « {promo.get_statut_display()} » — voir ce qui manque", pilotage, urgent=True))
+                                    f"Encore « {promo.get_statut_display()} » - voir ce qui manque", pilotage, urgent=True))
         if promo.statut == Promotion.Statut.EN_COURS and all(
                 c.ok for c in workflow.conditions_promotion(promo, Promotion.Statut.CLOTUREE)):
             taches.append(Tache("award", f"{promo.nom} : prête à être clôturée",
@@ -72,7 +72,7 @@ def taches_admin(user):
         par_promo.setdefault(ev.promotion, []).append(ev)
     for promo, evs in par_promo.items():
         taches.append(Tache("clock", f"{promo.nom} : {_p(len(evs), 'feuille')} de présence en retard",
-                            "Séances de plus de 3 jours sans présences — relancer le formateur",
+                            "Séances de plus de 3 jours sans présences - relancer le formateur",
                             reverse("agenda:planning", args=[promo.pk]), urgent=True))
 
     n = (get_user_model().objects.filter(profil__role=Profil.Role.APPRENANT, is_active=True)
@@ -133,7 +133,7 @@ def taches_apprenant(user, inscription):
         return taches
     if attestation.est_valide(inscription):
         taches.append(Tache("award", "Ton attestation de réussite est disponible",
-                            f"{inscription.formation.titre} — n° {inscription.code_attestation}",
+                            f"{inscription.formation.titre} - n° {inscription.code_attestation}",
                             reverse("evaluation:attestation_pdf", args=[inscription.pk])))
     if inscription.statut == Inscription.Statut.ADMISE:
         taches.append(Tache("clock", "Inscription en attente de confirmation",

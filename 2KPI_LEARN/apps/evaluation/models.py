@@ -52,7 +52,7 @@ class Inscription(models.Model):
         unique_together = ("apprenant", "formation")
 
     def __str__(self):
-        return f"{self.apprenant} — {self.formation}"
+        return f"{self.apprenant} - {self.formation}"
 
 
 class Presence(models.Model):
@@ -94,7 +94,7 @@ class Livrable(models.Model):
         unique_together = ("inscription", "seance")
 
     def __str__(self):
-        return f"Livrable {self.seance} — {self.inscription.apprenant}"
+        return f"Livrable {self.seance} - {self.inscription.apprenant}"
 
 
 class Quiz(models.Model):
@@ -167,7 +167,7 @@ class EvaluationCompetence(models.Model):
         unique_together = ("inscription", "competence")
 
     def __str__(self):
-        return f"{self.competence.code} — {self.inscription.apprenant}"
+        return f"{self.competence.code} - {self.inscription.apprenant}"
 
 
 class Soutenance(models.Model):
@@ -181,7 +181,7 @@ class Soutenance(models.Model):
         verbose_name_plural = "Soutenances"
 
     def __str__(self):
-        return f"Soutenance — {self.inscription.apprenant}"
+        return f"Soutenance - {self.inscription.apprenant}"
 
 
 class AutoEvaluation(models.Model):

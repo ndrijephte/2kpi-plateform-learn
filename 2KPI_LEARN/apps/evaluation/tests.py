@@ -325,7 +325,7 @@ class AFaireTests(BaseTest):
         self.assertIn("Inscription en attente de confirmation", titres)
         self.assertIn("6 prérequis à finaliser", titres)
         admin = [t.titre for t in a_faire.taches_admin(self.admin)]
-        self.assertIn("1 inscription à confirmer — Promo B", admin)
+        self.assertIn("1 inscription à confirmer - Promo B", admin)
         # Formateur : feuille de présence oubliée
         self.promo_a.statut = Promotion.Statut.EN_COURS
         self.promo_a.save()

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Présences — {{ evenement.libelle }}{% endblock %}
+{% block title %}Présences - {{ evenement.libelle }}{% endblock %}
 {% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<a href="{% url 'agenda:planning' evenement.promotion_id %}">{{ evenement.promotion.nom }}</a>{% icon "chevron-right" size=14 %}<span>Présences</span>{% endblock %}
 {% block content %}
 <div class="page-head">

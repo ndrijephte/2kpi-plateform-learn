@@ -1,7 +1,7 @@
-"""Autorisation d'accès aux contenus (modules, séances, ressources, quiz) — décidée par l'admin.
+"""Autorisation d'accès aux contenus (modules, séances, ressources, quiz) - décidée par l'admin.
 
 Un apprenant n'accède à un module que si :
-1. il a une inscription confirmée (ou en cours) à la formation, rattachée à une promotion — agenda/workflow.py ;
+1. il a une inscription confirmée (ou en cours) à la formation, rattachée à une promotion - agenda/workflow.py ;
 2. le module est ouvert pour sa promotion, par décision de l'admin :
    - ouvert / fermé explicitement (AccesModule), sinon
    - ouverture automatique (si l'admin l'a activée sur la promotion) le lundi de la semaine

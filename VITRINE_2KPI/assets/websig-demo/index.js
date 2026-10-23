@@ -12,7 +12,7 @@ var osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "&copy; OpenStreetMap contributors",
 });
 
-// 2/ Fond sombre — CartoDB Dark Matter (libre, sans clé API)
+// 2/ Fond sombre - CartoDB Dark Matter (libre, sans clé API)
 var Stadia_AlidadeSmoothDark = L.tileLayer(
   "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
   {
@@ -23,17 +23,17 @@ var Stadia_AlidadeSmoothDark = L.tileLayer(
   },
 );
 
-// 3/ Fond satellite — Esri World Imagery (libre, sans clé API)
+// 3/ Fond satellite - Esri World Imagery (libre, sans clé API)
 var Stadia_AlidadeSatellite = L.tileLayer(
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   {
     maxZoom: 19,
     attribution:
-      "Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+      "Tiles &copy; Esri - Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
   },
 );
 
-// 4/ Fond clair — CartoDB Positron (libre, sans clé API)
+// 4/ Fond clair - CartoDB Positron (libre, sans clé API)
 var Stadia_StamenTonerLite = L.tileLayer(
   "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
   {
@@ -67,7 +67,7 @@ var OpenTopoMap = L.tileLayer(
 //   },
 // );
 
-// 6/ Fond détaillé — CartoDB Voyager (libre, sans clé API) — fond par défaut
+// 6/ Fond détaillé - CartoDB Voyager (libre, sans clé API) - fond par défaut
 var Stadia_AlidadeSmooth = L.tileLayer(
   "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
   {

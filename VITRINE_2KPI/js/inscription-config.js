@@ -1,4 +1,4 @@
-/* 2KPI — Configuration du dispositif d'inscription
+/* 2KPI - Configuration du dispositif d'inscription
    ==================================================
    Par défaut, le formulaire d'inscription fonctionne déjà : il ouvre le
    client mail avec les informations pré-remplies (comme le formulaire de

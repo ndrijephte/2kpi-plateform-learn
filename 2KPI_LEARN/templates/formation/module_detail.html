@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}{{ module.code }} — {{ site_nom }}{% endblock %}
+{% block title %}{{ module.code }} - {{ site_nom }}{% endblock %}
 {% block crumbs %}<a href="{% url 'formation:modules' %}">{% if est_apprenant %}Mon cours{% else %}Contenu des cours{% endif %}</a>{% icon "chevron-right" size=14 %}<span>{{ module.code }}</span>{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -47,7 +47,7 @@
       <h2 class="section-title">{% icon "quiz" size=18 %} {{ quiz.titre }}</h2>
       {% if est_apprenant %}
         {% if score is not None %}<p>Meilleur score : <strong>{{ score|floatformat:1 }}/20</strong></p>
-        {% else %}<p class="muted">Test auto-corrigé — tu peux le repasser autant que nécessaire.</p>{% endif %}
+        {% else %}<p class="muted">Test auto-corrigé - tu peux le repasser autant que nécessaire.</p>{% endif %}
       {% else %}
         <p class="muted">Le test est réservé aux apprenants. Consulte leurs résultats.</p>
         <a class="link" href="{% url 'evaluation:quiz_resultats' quiz.id %}">Voir les résultats {% icon "arrow-right" size=14 %}</a>

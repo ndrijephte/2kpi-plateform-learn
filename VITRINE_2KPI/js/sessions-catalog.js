@@ -1,4 +1,4 @@
-/* 2KPI — Rendu du catalogue de sessions (pages/sessions.html)
+/* 2KPI - Rendu du catalogue de sessions (pages/sessions.html)
    Charge les sessions publiées dans 2KPI Learn (js/sessions-sync.js, repli
    sur js/sessions-data.js) et les affiche en liste ordonnée : dates fixes à venir,
    puis sessions récurrentes, puis dates à confirmer ; les sessions complètes en dernier.

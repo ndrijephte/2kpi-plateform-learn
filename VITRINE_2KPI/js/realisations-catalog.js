@@ -1,4 +1,4 @@
-/* 2KPI — Rendu du catalogue de réalisations (pages/realisations.html)
+/* 2KPI - Rendu du catalogue de réalisations (pages/realisations.html)
    Lit le tableau REALISATIONS (js/realisations-data.js) et affiche les
    cartes, avec filtre par catégorie. Pour ajouter une réalisation, éditer
    uniquement js/realisations-data.js. */

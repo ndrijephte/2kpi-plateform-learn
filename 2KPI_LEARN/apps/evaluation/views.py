@@ -106,7 +106,7 @@ def livrables(request):
             notifier([livrable.inscription.apprenant],
                      titre=f"Livrable corrigé : {livrable.seance.module.code}",
                      message=f"Note : {livrable.note_sur_20}/20"
-                             + (f" — {livrable.observations}" if livrable.observations else ""),
+                             + (f" - {livrable.observations}" if livrable.observations else ""),
                      type=Notification.Type.INFO, expediteur=request.user)
             messages.success(request, f"Note enregistrée pour {livrable.inscription.apprenant}.")
         return redirect(f"{request.path}?{request.GET.urlencode()}")

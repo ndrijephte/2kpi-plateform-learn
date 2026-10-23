@@ -1,4 +1,4 @@
-/* 2KPI — Catalogue des sessions de formation : LISTE DE SECOURS
+/* 2KPI - Catalogue des sessions de formation : LISTE DE SECOURS
    ===============================================================
    Les sessions se gèrent désormais dans la plateforme 2KPI Learn
    (Promotions › bouton « Vitrine ») : le site les lit en direct via
@@ -17,14 +17,14 @@
    - lieu          : lieu (ou "En ligne (visioconférence)")
    - placesTotal   : nombre total de places
    - placesRestantes : nombre de places encore disponibles
-   - prix          : prix affiché (FCFA)
+   - prix          : (optionnel) prix affiché ; vide = non affiché (choix de l'administration)
    - description   : court résumé affiché sur la carte
 */
 
 var SESSIONS = [
   {
     id: "teledetection-sig-initiation",
-    titre: "Télédétection & SIG — Initiation",
+    titre: "Télédétection & SIG - Initiation",
     domaine: "Socle",
     mode: "En ligne",
     dateAffichage: "10 août 2026",
@@ -33,12 +33,12 @@ var SESSIONS = [
     lieu: "En ligne (visioconférence)",
     placesTotal: 20,
     placesRestantes: 14,
-    prix: "150 000 FCFA",
+    prix: "",
     description: "Le socle commun à toutes nos formations : fondamentaux QGIS, traitement d'image satellite, cartographie thématique."
   },
   {
     id: "collecte-donnees-terrain",
-    titre: "Collecte de données terrain — KoboToolbox & QField",
+    titre: "Collecte de données terrain - KoboToolbox & QField",
     domaine: "Socle",
     mode: "Présentiel",
     dateAffichage: "Tous les samedis",
@@ -47,12 +47,12 @@ var SESSIONS = [
     lieu: "Abidjan, Cocody",
     placesTotal: 15,
     placesRestantes: 9,
-    prix: "120 000 FCFA",
+    prix: "",
     description: "Concevoir des questionnaires numériques et fiabiliser la collecte de données sur le terrain."
   },
   {
     id: "urbanisme-numerique",
-    titre: "Urbanisme numérique — SIG appliqué à la planification urbaine",
+    titre: "Urbanisme numérique - SIG appliqué à la planification urbaine",
     domaine: "Urbanisme",
     mode: "Présentiel",
     dateAffichage: "Tous les samedis",
@@ -61,7 +61,7 @@ var SESSIONS = [
     lieu: "Abidjan, Cocody",
     placesTotal: 15,
     placesRestantes: 6,
-    prix: "180 000 FCFA",
+    prix: "",
     description: "Mettre la donnée géospatiale au service de la planification urbaine et de la décision territoriale."
   },
   {
@@ -75,7 +75,7 @@ var SESSIONS = [
     lieu: "En ligne (visioconférence)",
     placesTotal: 20,
     placesRestantes: 20,
-    prix: "150 000 FCFA",
+    prix: "",
     description: "Analyser les dynamiques de population à partir d'enquêtes de terrain et de la donnée spatiale."
   },
   {
@@ -89,7 +89,7 @@ var SESSIONS = [
     lieu: "Abidjan, Cocody",
     placesTotal: 12,
     placesRestantes: 0,
-    prix: "150 000 FCFA",
+    prix: "",
     description: "Intégrer l'analyse spatiale à la conception d'espaces verts et de trames vertes durables."
   },
   {
@@ -103,7 +103,7 @@ var SESSIONS = [
     lieu: "Abidjan / en ligne",
     placesTotal: 15,
     placesRestantes: 3,
-    prix: "160 000 FCFA",
+    prix: "",
     description: "Passer de la carte statique à des plateformes cartographiques interactives avec Leaflet."
   }
 ];

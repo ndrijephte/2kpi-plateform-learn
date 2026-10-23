@@ -68,6 +68,12 @@ class CatalogueVitrineTests(BaseTest):
         sessions = r.json()["sessions"]
         self.assertEqual([s["id"] for s in sessions], ["promo-a"])  # promo_b non publiée
         self.assertEqual((sessions[0]["placesTotal"], sessions[0]["placesRestantes"]), (10, 6))
+        self.promo_a.prix = "150 000 FCFA"
+        self.promo_a.save()
+        self.assertEqual(self.client.get(self.api).json()["sessions"][0]["prix"], "")  # masqué par défaut
+        self.promo_a.afficher_prix = True
+        self.promo_a.save()
+        self.assertEqual(self.client.get(self.api).json()["sessions"][0]["prix"], "150 000 FCFA")
         self.assertTrue(sessions[0]["dateAffichage"])  # date de début formatée
         self.assertFalse(sessions[0]["dateAConfirmer"])
         self.promo_a.date_debut = dt.date(2020, 1, 6)  # date passée : jamais affichée telle quelle

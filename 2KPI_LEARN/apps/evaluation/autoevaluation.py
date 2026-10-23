@@ -74,7 +74,7 @@ def signaler_besoin_aide(inscription, seance, objectifs):
     apprenant = inscription.apprenant.get_full_name() or inscription.apprenant.username
     notifier(intervenants(inscription.promotion, seance.module),
              titre=f"Demande d'aide : {apprenant} ({seance.module.code})",
-             message=f"Séance « {seance.theme or seance} » — objectif(s) : "
+             message=f"Séance « {seance.theme or seance} » - objectif(s) : "
                      + " ; ".join(o.libelle for o in objectifs),
              type=Notification.Type.INFO, expediteur=inscription.apprenant)
 
@@ -104,7 +104,7 @@ def annoncer_objectifs(seance, nouveaux, par):
     destinataires = apprenants_concernes(seance)
     n = len(nouveaux)
     notifier(destinataires, titre=f"{seance.module.code} : {n} objectif{'s' if n > 1 else ''} à auto-évaluer",
-             message=f"Séance « {seance.theme or seance} » — " + " ; ".join(o.libelle for o in nouveaux)
+             message=f"Séance « {seance.theme or seance} » - " + " ; ".join(o.libelle for o in nouveaux)
                      + ". Positionne-toi sur la page de la séance.",
              type=Notification.Type.INFO, envoyer_email=False, expediteur=par)
     return len(destinataires)

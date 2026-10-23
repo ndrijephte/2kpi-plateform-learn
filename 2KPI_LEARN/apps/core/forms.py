@@ -120,7 +120,7 @@ from apps.evaluation.models import Choix, Question, Quiz  # noqa: E402
 
 class _ModuleChoix(forms.ModelChoiceField):
     def label_from_instance(self, m):
-        return f"{m.formation.titre} · {m.code} — {m.titre}"
+        return f"{m.formation.titre} · {m.code} - {m.titre}"
 
 
 class QuizForm(forms.ModelForm):

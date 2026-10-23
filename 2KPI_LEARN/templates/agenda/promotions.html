@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Promotions — {{ site_nom }}{% endblock %}
+{% block title %}Promotions - {{ site_nom }}{% endblock %}
 {% block crumbs %}{% icon "users" size=16 %}<span>{% if peut_gerer %}Promotions{% else %}Mes promotions{% endif %}</span>{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -15,7 +15,7 @@
 <div class="card">
   <h2 class="section-title">{% icon "plus" size=18 %} Nouvelle promotion</h2>
   <form method="post" class="form-inline">{% csrf_token %}
-    <div class="field"><label for="p-nom">Nom</label><input id="p-nom" type="text" name="nom" placeholder="GéoAI Sassandra — Promo 2026" required></div>
+    <div class="field"><label for="p-nom">Nom</label><input id="p-nom" type="text" name="nom" placeholder="GéoAI Sassandra - Promo 2026" required></div>
     <div class="field"><label for="p-formation">Formation</label>
       <select id="p-formation" name="formation" required>
         {% for f in formations %}<option value="{{ f.id }}">{{ f.titre }}</option>{% empty %}<option value="">Aucune formation</option>{% endfor %}

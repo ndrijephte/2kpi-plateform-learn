@@ -70,4 +70,4 @@ class Candidature(models.Model):
         ordering = ["-date_reception"]
 
     def __str__(self):
-        return f"{self.nom_complet} — {self.session_libelle or self.session_code}"
+        return f"{self.nom_complet} - {self.session_libelle or self.session_code}"

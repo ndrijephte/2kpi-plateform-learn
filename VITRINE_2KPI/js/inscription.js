@@ -1,4 +1,4 @@
-/* 2KPI — Logique de la page d'inscription (pages/inscription.html)
+/* 2KPI - Logique de la page d'inscription (pages/inscription.html)
    Pré-remplit la session choisie, affiche son résumé, et envoie
    l'inscription soit vers le Google Sheet (si configuré dans
    js/inscription-config.js), soit par e-mail (repli automatique). */
@@ -22,7 +22,7 @@
     SESSIONS.forEach(function (s) {
       var opt = document.createElement("option");
       opt.value = s.id;
-      opt.textContent = s.titre + " — " + s.dateAffichage + (s.placesRestantes <= 0 ? " (complet)" : "");
+      opt.textContent = s.titre + " - " + s.dateAffichage + (s.placesRestantes <= 0 ? " (complet)" : "");
       select.appendChild(opt);
     });
     var wanted = paramSession();
@@ -51,7 +51,7 @@
       (s.horaire ? '<p style="margin:0 0 4px;"><strong>Horaire :</strong> ' + esc(s.horaire) + "</p>" : "") +
       (s.lieu ? '<p style="margin:0 0 4px;"><strong>Lieu :</strong> ' + esc(s.lieu) + "</p>" : "") +
       '<p style="margin:0; color:' + (full ? "var(--coral-dark)" : "var(--green-dark)") + '; font-weight:600;">' +
-      (full ? "Session complète — votre demande sera placée en liste d'attente." : s.placesRestantes + " place(s) disponible(s) sur " + s.placesTotal) +
+      (full ? "Session complète - votre demande sera placée en liste d'attente." : s.placesRestantes + " place(s) disponible(s) sur " + s.placesTotal) +
       "</p>";
   }
 
@@ -91,7 +91,7 @@
         payload.message;
       var mailto =
         "mailto:contacts@2kpinnov.org" +
-        "?subject=" + encodeURIComponent("Inscription — " + payload.session) +
+        "?subject=" + encodeURIComponent("Inscription - " + payload.session) +
         "&body=" + encodeURIComponent(body);
       window.location.href = mailto;
       if (statusOk) statusOk.classList.add("visible");

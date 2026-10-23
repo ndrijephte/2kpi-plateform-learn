@@ -1,6 +1,6 @@
 """API publique appelée par le site vitrine : dépôt d'une candidature (inscription à une session).
 
-POST /api/candidatures/  (JSON ou formulaire) — CORS limité à settings.VITRINE_ORIGINS,
+POST /api/candidatures/  (JSON ou formulaire) - CORS limité à settings.VITRINE_ORIGINS,
 champ piège anti-robots « site_web », limite de 5 envois par heure et par adresse IP.
 """
 import json

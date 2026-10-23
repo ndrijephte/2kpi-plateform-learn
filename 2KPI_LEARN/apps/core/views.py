@@ -31,7 +31,7 @@ def _fil_formation(f, lien=True):
 
 def _fil_module(m, lien=True):
     return _fil_formation(m.formation) + [
-        (f"{m.code} — {m.titre}", reverse("core:module", args=[m.pk]) if lien else None)]
+        (f"{m.code} - {m.titre}", reverse("core:module", args=[m.pk]) if lien else None)]
 
 
 def _fil_quiz(q=None, lien=True):
@@ -178,13 +178,13 @@ def modifier(request, modele, pk):
         messages.success(request, f"{libelle} enregistrée.")
         return redirect(retour)
     if modele == "seance":
-        fil = _fil(*_fil_module(obj.module), (f"Séance {obj.ordre} — {obj.theme or obj.get_jour_display()}", None))
+        fil = _fil(*_fil_module(obj.module), (f"Séance {obj.ordre} - {obj.theme or obj.get_jour_display()}", None))
     elif modele == "competence":
         fil = _fil(*_fil_module(obj.module), (f"Compétence {obj.code}", None))
     else:
         fil = _fil(("Jours non travaillés", reverse("core:calendrier")), (str(obj.motif or obj.date_debut), None))
     return render(request, "parametres/objet_form.html", {"fil": fil,
-        "form": form, "titre_page": f"{libelle} — {obj}", "libelle": libelle, "retour": retour,
+        "form": form, "titre_page": f"{libelle} - {obj}", "libelle": libelle, "retour": retour,
         "section": "calendrier" if modele == "indisponibilite" else "formations"})
 
 

@@ -24,7 +24,7 @@ class Command(BaseCommand):
                     continue
                 heure = timezone.localtime(ev.date_debut).strftime("%H:%M")
                 notifier([u], titre=f"Rappel : séance demain à {heure}",
-                         message=f"{ev.libelle} — {ev.get_mode_display()}"
+                         message=f"{ev.libelle} - {ev.get_mode_display()}"
                                  + (f" · {ev.lieu}" if ev.lieu else ""),
                          evenement=ev, type=Notification.Type.RAPPEL)
                 envoyes += 1

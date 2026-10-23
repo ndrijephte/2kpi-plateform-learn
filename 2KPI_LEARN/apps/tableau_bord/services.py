@@ -1,4 +1,4 @@
-"""Calculs de synthèse — reproduit l'onglet Tableau_de_bord du classeur de suivi (poids : par formation)."""
+"""Calculs de synthèse - reproduit l'onglet Tableau_de_bord du classeur de suivi (poids : par formation)."""
 from decimal import Decimal
 from apps.formation.models import Seance, Competence
 from apps.evaluation.models import Presence, Livrable, EvaluationCompetence

@@ -171,7 +171,7 @@ def actions_promotion(promo):
 @transaction.atomic
 def changer_statut_promotion(promo, cible, par=None, motif=""):
     """Applique le passage (ou lève TransitionRefusee). Retourne un message de synthèse."""
-    manques = [f"{c.libelle} — {c.detail}" if c.detail else c.libelle
+    manques = [f"{c.libelle} - {c.detail}" if c.detail else c.libelle
                for c in conditions_promotion(promo, cible) if not c.ok]
     if manques:
         raise TransitionRefusee(manques)
@@ -266,7 +266,7 @@ def _cloturer(promo, par):
                                          f"note {insc.note_finale}/20 (min. {f.note_minimale}/20)")
         validees += ok
         notifier([insc.apprenant], titre=f"Résultat de la formation « {promo.nom} »",
-                 message=f"{insc.get_statut_display()} — assiduité {insc.taux_assiduite} %, "
+                 message=f"{insc.get_statut_display()} - assiduité {insc.taux_assiduite} %, "
                          f"note finale {insc.note_finale}/20."
                          + (" Ton attestation de réussite est disponible sur ton tableau de bord." if ok else ""),
                  type=Notification.Type.INFO, expediteur=par)
@@ -328,7 +328,7 @@ def changer_statut_inscription(insc, cible, par=None, motif="", systeme=False):
     if not systeme:
         if (insc.statut, cible) not in _transitions_inscription():
             raise TransitionRefusee([f"Impossible de passer de « {insc.get_statut_display()} » à « {S(cible).label} »."])
-        manques = [f"{c.libelle} — {c.detail}" if c.detail else c.libelle
+        manques = [f"{c.libelle} - {c.detail}" if c.detail else c.libelle
                    for c in conditions_inscription(insc, cible, motif) if not c.ok]
         if manques:
             raise TransitionRefusee(manques)

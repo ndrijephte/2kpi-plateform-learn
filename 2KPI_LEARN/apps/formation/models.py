@@ -19,7 +19,7 @@ class Formation(models.Model):
         help_text="Part des séances réalisées où l'apprenant était présent (ou en retard).")
     note_minimale = models.DecimalField("Note minimale (/20)", max_digits=4, decimal_places=1, default=Decimal("10"),
                                         validators=[MinValueValidator(0), MaxValueValidator(20)])
-    # Composition de la note finale (en %, total 100) — voir tableau_bord/services.py
+    # Composition de la note finale (en %, total 100) - voir tableau_bord/services.py
     poids_continu = models.PositiveSmallIntegerField(
         "Poids du contrôle continu (%)", default=40, validators=[MaxValueValidator(100)],
         help_text="Moyenne des livrables notés.")
@@ -56,7 +56,7 @@ class Module(models.Model):
         unique_together = ("formation", "code")
 
     def __str__(self):
-        return f"{self.code} — {self.titre}"
+        return f"{self.code} - {self.titre}"
 
 
 class Seance(models.Model):
@@ -98,7 +98,7 @@ class Seance(models.Model):
         return self.semaine or self.module.ordre or 1
 
     def __str__(self):
-        return f"{self.module.code} · {self.get_jour_display()} — {self.theme or 'Séance'}"
+        return f"{self.module.code} · {self.get_jour_display()} - {self.theme or 'Séance'}"
 
 
 class ObjectifSeance(models.Model):
@@ -170,7 +170,7 @@ class Competence(models.Model):
         unique_together = ("module", "code")
 
     def __str__(self):
-        return f"{self.code} — {self.libelle}"
+        return f"{self.code} - {self.libelle}"
 
 
 class Ressource(models.Model):

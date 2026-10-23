@@ -308,7 +308,7 @@ class MotDePasseOublieView(auth_views.PasswordResetView):
         for cle in cles:
             cache.set(cle, compteurs[cle] + 1, 3600)
         if any(compteurs[cle] >= limite for cle, limite in cles.items()):
-            logger.warning("Mot de passe oublié : limite horaire atteinte (%s, IP %s) — rien n'est envoyé",
+            logger.warning("Mot de passe oublié : limite horaire atteinte (%s, IP %s) - rien n'est envoyé",
                            email, self.request.META.get("REMOTE_ADDR"))
             return redirect(self.get_success_url())
         return super().form_valid(form)

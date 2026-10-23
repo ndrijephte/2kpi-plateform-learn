@@ -13,7 +13,7 @@
         <li>{% icon "trending-up" size=18 %} Suivi de performance en temps réel</li>
       </ul>
     </div>
-    <p class="auth-foot">© {% now "Y" %} {{ parametres.nom_plateforme }}{% if parametres.slogan %} — {{ parametres.slogan }}{% endif %}</p>
+    <p class="auth-foot">© {% now "Y" %} {{ parametres.nom_plateforme }}{% if parametres.slogan %} - {{ parametres.slogan }}{% endif %}</p>
   </section>
   <main class="auth-main" id="contenu">
     <div class="auth-card{% block auth_card_classe %}{% endblock %}">

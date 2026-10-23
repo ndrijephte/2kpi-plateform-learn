@@ -179,13 +179,44 @@ Une fois le cadenas actif : **retire** `SECURE_SSL_REDIRECT=False` du `.env` →
 
 ## A10. Tâches planifiées (cron)
 
-cPanel → **Tâches cron**. Remplace `ACTIVER` par la commande d'activation (A6) :
+cPanel → **Avancé › Tâches cron** (*Cron Jobs*).
 
-| Fréquence | Commande |
-|---|---|
-| Tous les jours 6 h | `ACTIVER && python manage.py workflow_quotidien >> logs/cron.log 2>&1` |
-| Tous les jours 18 h | `ACTIVER && python manage.py envoyer_rappels >> logs/cron.log 2>&1` |
-| Tous les jours 2 h | `ACTIVER && python manage.py sauvegarder --garder 14 >> logs/cron.log 2>&1` |
+**1. Adresse e-mail de cron** (encadré « Adresse e-mail de cron » en haut de la page) : indique une boîte
+**que quelqu'un lit**, par exemple `contacts@2kpinnov.org` ou l'adresse de l'administrateur technique.
+cPanel y envoie ce qu'une tâche affiche *hors* du journal : les commandes ci-dessous écrivent tout dans
+`logs/cron.log`, donc **aucun e-mail en temps normal** ; tu n'en reçois un que si la tâche ne peut même pas
+démarrer (chemin erroné, Python introuvable…). C'est l'alarme qui signale une tâche cassée.
+
+**2. Ajouter les trois tâches** (« Ajouter une nouvelle tâche cron » ; laisse « Paramètres courants » sur
+*Paramètres personnalisés* et remplis les cinq champs) :
+
+| Tâche | Minute | Heure | Jour | Mois | Jour de la semaine |
+|---|---|---|---|---|---|
+| Workflow (démarrages, relances de présences) | `0` | `6` | `*` | `*` | `*` |
+| Rappels J-1 aux apprenants | `0` | `18` | `*` | `*` | `*` |
+| Sauvegarde (base + fichiers) | `0` | `2` | `*` | `*` | `*` |
+
+Commande de chaque tâche, **à copier telle quelle** (une ligne chacune) :
+
+```
+cd /home/c2864961c/repositories/2kpi-plateform-learn/2KPI_LEARN && /home/c2864961c/virtualenv/repositories/2kpi-plateform-learn/2KPI_LEARN/3.13/bin/python manage.py workflow_quotidien >> logs/cron.log 2>&1
+```
+```
+cd /home/c2864961c/repositories/2kpi-plateform-learn/2KPI_LEARN && /home/c2864961c/virtualenv/repositories/2kpi-plateform-learn/2KPI_LEARN/3.13/bin/python manage.py envoyer_rappels >> logs/cron.log 2>&1
+```
+```
+cd /home/c2864961c/repositories/2kpi-plateform-learn/2KPI_LEARN && /home/c2864961c/virtualenv/repositories/2kpi-plateform-learn/2KPI_LEARN/3.13/bin/python manage.py sauvegarder --garder 14 >> logs/cron.log 2>&1
+```
+
+> Le Python de l'environnement virtuel est appelé directement : pas besoin de `source …/activate`
+> (le shell des tâches cron ne le connaît pas toujours). `3.13` est la version choisie dans
+> *Setup Python App* : si tu en changes, adapte ce nombre (il figure dans la commande affichée en haut de
+> la page de l'app).
+
+**3. Vérifier** dès le lendemain : Gestionnaire de fichiers →
+`repositories/2kpi-plateform-learn/2KPI_LEARN/logs/cron.log`. On doit y lire, par exemple,
+« 0 promotion(s) démarrée(s), 0 en retard ; présences : … » et « … rappel(s) envoyé(s) ».
+Pour tester tout de suite sans attendre, colle une des commandes dans le **Terminal** cPanel.
 
 ---
 

@@ -105,12 +105,12 @@ class ObjectifsForm(ObjectifsMixin, forms.Form):
 
 class _SeanceChoix(forms.ModelChoiceField):
     def label_from_instance(self, s):
-        return f"{s.module.code} · séance {s.ordre} — {s.theme or s.get_jour_display()}"
+        return f"{s.module.code} · séance {s.ordre} - {s.theme or s.get_jour_display()}"
 
 
 class _ModuleChoix(forms.ModelChoiceField):
     def label_from_instance(self, m):
-        return f"{m.code} — {m.titre}"
+        return f"{m.code} - {m.titre}"
 
 
 class _CibleMixin:
