@@ -25,8 +25,7 @@
 
   function renderCard(r) {
     var card = document.createElement("div");
-    card.className = "card project-card";
-    card.setAttribute("data-reveal", "");
+    card.className = "card project-card card-in"; // créée après main.js : pas de data-reveal (resterait invisible)
 
     var href = r.vueUrl ? r.vueUrl : "realisation-detail.html?projet=" + encodeURIComponent(r.id);
     var label = r.vueUrl ? (r.vueLabel || "Ouvrir") : "Voir le détail";

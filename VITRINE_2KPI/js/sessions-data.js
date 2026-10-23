@@ -11,6 +11,7 @@
    - domaine       : "Socle", "Urbanisme", "Démographie", "Paysager" ou "Numérique"
    - mode          : "En ligne", "Présentiel" ou "Hybride"
    - dateAffichage : date lisible affichée sur le site (ex. "Tous les samedis")
+   - dateDebut     : (optionnel) date de début AAAA-MM-JJ ; passée, la session affiche « Date à confirmer »
    - horaire       : (optionnel) plage horaire, ex. "08h – 16h" (présentiel & hybride)
    - duree         : durée de la session
    - lieu          : lieu (ou "En ligne (visioconférence)")
@@ -27,6 +28,7 @@ var SESSIONS = [
     domaine: "Socle",
     mode: "En ligne",
     dateAffichage: "10 août 2026",
+    dateDebut: "2026-08-10",
     duree: "5 jours",
     lieu: "En ligne (visioconférence)",
     placesTotal: 20,
@@ -68,6 +70,7 @@ var SESSIONS = [
     domaine: "Démographie",
     mode: "En ligne",
     dateAffichage: "7 septembre 2026",
+    dateDebut: "2026-09-07",
     duree: "3 jours",
     lieu: "En ligne (visioconférence)",
     placesTotal: 20,

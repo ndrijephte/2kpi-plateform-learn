@@ -57,14 +57,17 @@
     <div class="container">
       <p class="eyebrow">Sessions ouvertes</p>
       <h1>Choisissez votre session, inscrivez-vous en ligne</h1>
-      <p class="lead">Sessions en ligne ou en présentiel, places limitées. Choisissez une formation ci-dessous : le résumé de la session (dates, lieu, places restantes) se remplit automatiquement sur la page d'inscription.</p>
+      <p class="lead">En ligne, en présentiel ou en hybride, à effectif réduit. Choisissez votre session puis inscrivez-vous : nous confirmons votre place par e-mail.</p>
     </div>
   </section>
 
   <section class="section">
     <div class="container">
-      <div class="session-filters" id="session-filters"></div>
-      <div class="grid grid-3" id="sessions-list"></div>
+      <div class="sessions-toolbar">
+        <p class="sessions-count" id="sessions-count" aria-live="polite"></p>
+        <div class="session-filters" id="session-filters" role="group" aria-label="Filtrer par domaine"></div>
+      </div>
+      <div class="session-list" id="sessions-list"></div>
 
       <div class="demo-callout" data-reveal>
         <p>Une formation sur mesure, pour votre institution ou votre équipe&nbsp;?</p>

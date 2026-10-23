@@ -60,12 +60,21 @@ class CatalogueVitrineTests(BaseTest):
     def test_api_publie_seulement_les_promotions_choisies_avec_places_calculees(self):
         self.promo_a.publiee_vitrine, self.promo_a.places_total, self.promo_a.places_hors_plateforme = True, 10, 3
         self.promo_a.save()  # code vitrine déduit du nom ; app_a y est déjà inscrit
+        self.assertEqual(self.client.get(self.api).json()["sessions"], [])  # planifiée : jamais annoncée
+        self.promo_a.statut = Promotion.Statut.INSCRIPTIONS
+        self.promo_a.save()
         r = self.client.get(self.api, HTTP_ORIGIN="https://www.2kpinnov.org")
         self.assertEqual(r["Access-Control-Allow-Origin"], "https://www.2kpinnov.org")
         sessions = r.json()["sessions"]
         self.assertEqual([s["id"] for s in sessions], ["promo-a"])  # promo_b non publiée
         self.assertEqual((sessions[0]["placesTotal"], sessions[0]["placesRestantes"]), (10, 6))
         self.assertTrue(sessions[0]["dateAffichage"])  # date de début formatée
+        self.assertFalse(sessions[0]["dateAConfirmer"])
+        self.promo_a.date_debut = dt.date(2020, 1, 6)  # date passée : jamais affichée telle quelle
+        self.promo_a.save()
+        self.assertEqual(self.client.get(self.api).json()["sessions"][0]["dateAffichage"], "Date à confirmer")
+        self.promo_a.date_debut = dt.date.today() + dt.timedelta(weeks=4)
+        self.promo_a.save()
         self.insc_a.statut = "abandon"
         self.insc_a.save()
         self.assertEqual(self.client.get(self.api).json()["sessions"][0]["placesRestantes"], 7)
