@@ -92,7 +92,7 @@ consultation : formateurs de la promotion). Logique : `apps/agenda/workflow.py`.
 
 | Promotion | Pour y passer | Effets |
 |---|---|---|
-| Planifiée → **Inscriptions ouvertes** | formation active, chaque module a une séance, référent, calendrier généré, places | publication vitrine possible |
+| Planifiée → **Inscriptions ouvertes** | formation active, chaque module a une séance, référent, calendrier généré, places | session publiée sur le site vitrine, personnes intéressées prévenues par e-mail |
 | → **Prête à démarrer** | idem + effectif minimum d'inscriptions confirmées | — |
 | → **En cours** | date de début atteinte (automatique, `workflow_quotidien`) | confirmées → en cours, retrait de la vitrine, notifications |
 | → **Clôturée** | séances réalisées ou annulées, présences saisies, livrables rendus notés | résultat de chaque apprenant, admises restantes → abandon |
@@ -208,12 +208,32 @@ python manage.py test        # 96 tests : rôles, autorisations (apprenants, for
 - Journaux : `logs/2kpi_learn.log` (dont chaque demande « mot de passe oublié » : envoyée, en échec,
   aucun compte, limite atteinte) ; `logs/deploiement.log` ; erreurs 500 envoyées par e-mail aux `ADMINS`
 
-## Site vitrine
+## Site vitrine : catalogue, liste d'intérêt, candidatures
 
-Le formulaire d'inscription de la vitrine envoie les demandes à `POST /api/candidatures/` (CORS limité à
-`VITRINE_ORIGINS`, anti-robots, 5 envois/heure/IP). L'admin les traite dans **Candidatures** : accepter
-crée le compte apprenant, l'inscrit à la promotion (rattachée via son « code session vitrine ») et
-envoie un e-mail d'activation. Voir `docs/DEPLOIEMENT_cPanel.md`, étapes 9 à 11.
+La plateforme est la seule source : le site vitrine lit et écrit par une API publique (CORS limité à
+`VITRINE_ORIGINS`, champ piège anti-robots, 5 envois par heure et par IP pour les envois).
+
+| API | Rôle |
+|---|---|
+| `GET /api/catalogue/` | formations « au catalogue », avec leur état (`ouverte`, `a_venir`, `en_cours`) et leurs sessions ouvertes |
+| `GET /api/sessions/` | sessions ouvertes aux inscriptions (formulaire d'inscription du site) |
+| `POST /api/interet/` | « Être prévenu(e) » : nom, e-mail, téléphone, profil, structure → liste d'intérêt de la formation |
+| `POST /api/candidatures/` | demande d'inscription à une session → **Candidatures** |
+
+- **Catalogue** : Paramètres › Formations › « Afficher au catalogue du site », avec domaine, mode,
+  durée habituelle, résumé et prix indicatif (affiché seulement si « Afficher le prix » est coché).
+  Indépendant de « Active » (formation utilisable sur la plateforme, exigé pour ouvrir une session).
+- **Publication d'une session** : automatique à « Ouvrir les inscriptions » (Pilotage) ; retrait à la
+  fermeture des inscriptions ou au démarrage. La fiche *Vitrine* de la promotion règle dates
+  affichées, lieu, horaire, places et prix.
+- **Liste d'intérêt** (`Interet`) : Candidatures › *Listes d'intérêt* et liste « À faire » ; à
+  l'ouverture d'une session, chaque personne en attente reçoit un e-mail avec le lien d'inscription
+  (`VITRINE_URL/pages/inscription.html?session=<code>`), puis est marquée « prévenue ».
+- **Candidatures** : *Accepter* crée le compte apprenant (ou retrouve celui de l'e-mail), l'admet dans
+  la promotion et envoie l'e-mail d'activation ; l'inscription reste à confirmer dans Pilotage.
+
+Variables : `VITRINE_ORIGINS` (sites autorisés à appeler l'API), `VITRINE_URL` (adresse du site dans les
+e-mails, défaut `https://2kpinnov.org`). Voir `docs/DEPLOIEMENT_cPanel.md`, étapes 9 à 11.
 
 ## Commandes de données
 

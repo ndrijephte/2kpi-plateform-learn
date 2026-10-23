@@ -88,13 +88,9 @@ son téléphone, le nombre de participants et son message.
 
 ## Suivi des places disponibles
 
-Le nombre de places restantes affiché sur le site (`js/sessions-data.js`, champ
-`placesRestantes`) n'est **pas automatique** : le site est statique (sans base de données),
-donc c'est toi qui mets à jour ce chiffre à la main, en t'appuyant sur ton Google Sheet,
-chaque fois qu'une inscription est confirmée. C'est le compromis le plus simple pour rester
-sans back-office ni hébergement complexe. Si tu veux plus tard un comptage 100% automatique,
-il faudra une petite API (étape supplémentaire, à envisager quand le volume d'inscriptions
-le justifiera).
+Les places restantes sont **décomptées automatiquement** par la plateforme 2KPI Learn (places de la
+session − inscrits − places attribuées hors plateforme) et affichées en direct sur le site : il n'y a
+plus rien à mettre à jour à la main.
 
 ## Test rapide
 

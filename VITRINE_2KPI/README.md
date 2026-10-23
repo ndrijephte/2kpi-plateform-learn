@@ -1,7 +1,3 @@
-> **Catalogue** : formations et sessions se gèrent uniquement dans 2KPI Learn (Paramètres › Formations ›
-> « Afficher au catalogue du site » ; Promotions › Pilotage › « Ouvrir les inscriptions »). Les passages
-> ci-dessous sur `sessions-data.js` sont historiques.
-
 # Site 2KPI — version 2 (légère et autonome)
 
 ## Ce que c'est
@@ -32,10 +28,11 @@ VITRINE_2KPI/
 ├── css/style.css           (feuille de style unique)
 ├── js/
 │   ├── main.js                 (menu mobile, animations, formulaire de contact)
-│   ├── sessions-data.js        (plus aucune session en dur : tout vient de 2KPI Learn, /api/catalogue/)
+│   ├── sessions-data.js        (vide : aucune session en dur, tout vient de 2KPI Learn)
+│   ├── sessions-sync.js        (lecture de /api/catalogue/ et /api/sessions/ sur 2KPI Learn)
 │   ├── sessions-catalog.js     (affichage + filtre du catalogue de sessions)
 │   ├── inscription.js          (logique de la page d'inscription)
-│   ├── inscription-config.js   (URL du Google Sheet — à configurer, voir INSCRIPTIONS-SETUP.md)
+│   ├── inscription-config.js   (adresse de l'API des candidatures de 2KPI Learn)
 │   ├── realisations-data.js    (catalogue des réalisations — à éditer pour en ajouter)
 │   ├── realisations-catalog.js (affichage + filtre du catalogue de réalisations)
 │   └── realisation-detail.js   (logique de la vue détail générique)
@@ -69,20 +66,26 @@ serveur, mais dépend d'un client mail installé). Pour un envoi silencieux dire
 site (recommandé à terme), brancher un service gratuit comme **Formspree** ou **Web3Forms** :
 il suffit d'ajouter une clé dans `js/main.js`, sans changer le design. À faire savoir si utile.
 
-## Sessions de formation & inscription en ligne
+## Catalogue des formations & inscription en ligne
 
-- Le catalogue (`pages/sessions.html`) affiche les sessions ouvertes (mode, dates, lieu, places
-  restantes, prix) à partir de `js/sessions-data.js` — **c'est le seul fichier à modifier** pour
-  ajouter, retirer ou mettre à jour une session (y compris le nombre de places restantes).
-- Chaque session renvoie vers `pages/inscription.html?session=...`, qui pré-remplit
-  automatiquement le résumé de la session choisie.
-- Par défaut, une inscription envoyée ouvre le client mail avec les informations pré-remplies
-  (fonctionne tout de suite, sans configuration). Pour que chaque inscription s'ajoute
-  automatiquement à un Google Sheet consultable (recommandé), suis les 5 étapes du fichier
-  **`INSCRIPTIONS-SETUP.md`** à la racine du site, puis renseigne l'URL obtenue dans
-  `js/inscription-config.js`.
-- Les places restantes ne se décomptent pas automatiquement (site statique, sans base de
-  données) : à mettre à jour toi-même dans `js/sessions-data.js` au fil des inscriptions reçues.
+**Rien ne se règle dans le site** : formations et sessions se gèrent dans la plateforme 2KPI Learn,
+que le site lit en direct (`js/sessions-sync.js`, adresse dans `js/learn-config.js`).
+
+- **Catalogue** (`pages/sessions.html`, menu *Catalogue & sessions*) : toutes les formations cochées
+  « Afficher au catalogue du site » (Learn › Paramètres › Formations), lues sur `/api/catalogue/`.
+  - Formation dont une session est **ouverte aux inscriptions** : dates, lieu, horaire, places
+    restantes (décomptées automatiquement) et bouton **S'inscrire**.
+  - Sinon : « Prochaine session bientôt annoncée » et bouton **Être prévenu(e)**, qui déplie un court
+    formulaire (nom, e-mail, téléphone, profil étudiant/professionnel, structure) envoyé à
+    `/api/interet/`. La personne est prévenue par e-mail, avec le lien d'inscription, dès l'ouverture.
+  - Le prix n'apparaît que si l'administration coche « Afficher le prix ».
+- **Ouvrir une session** se fait dans Learn : Promotions › *Pilotage* › « Ouvrir les inscriptions ».
+  Elle apparaît alors sur le site ; elle en disparaît à la fermeture des inscriptions ou au démarrage.
+- **Inscription** (`pages/inscription.html?session=…`) : seules les sessions ouvertes sont proposées ;
+  la demande part vers `/api/candidatures/` (traitée dans Learn › *Candidatures*), avec repli sur
+  l'e-mail si la plateforme ne répond pas. Sans session ouverte, la page renvoie vers le catalogue.
+- Si la plateforme ne répond pas, le catalogue affiche « momentanément indisponible » : le site
+  n'affiche jamais de session fictive.
 
 ## Réalisations
 
@@ -117,18 +120,15 @@ il suffit d'ajouter une clé dans `js/main.js`, sans changer le design. À faire
   (KOFFI N'Dri Jephté, fondateur géomaticien ; KOPRE Henri Michel, co-fondateur technicien en
   urbanisme et aménagement paysager), avec mention du réseau d'experts mobilisés par domaine
   (démographe, développeurs, formateurs spécialisés).
-- **Sessions & inscription** : catalogue filtrable + formulaire d'inscription relié à un Google
-  Sheet configurable (voir ci-dessus).
+- **Catalogue & inscription** : catalogue filtrable lu en direct sur 2KPI Learn, liste d'intérêt
+  « Être prévenu(e) », inscription reliée aux candidatures de la plateforme (voir ci-dessus).
 - **Réalisations paramétrables** : catalogue filtrable + vue détail générique, avec la
   cartographie interactive de la Côte d'Ivoire comme première réalisation (voir ci-dessus).
 
 ## Ce qui reste à faire
 
-- **Configurer le Google Sheet** : suivre `INSCRIPTIONS-SETUP.md` pour recevoir les inscriptions
-  dans un tableur (5 minutes, sans code).
-- **Vérifier/ajuster les sessions d'exemple** : dates, lieux, places et prix dans
-  `js/sessions-data.js` sont des exemples réalistes à valider ou remplacer par les vraies
-  sessions.
+- **Ouvrir les premières vraies sessions** dans 2KPI Learn (Promotions › Pilotage) : tant qu'aucune
+  n'est ouverte, le catalogue propose « Être prévenu(e) » pour chaque formation.
 - **Ajouter d'autres réalisations** : au fur et à mesure, dans `js/realisations-data.js`.
 - **Réseaux sociaux** : les liens WhatsApp/LinkedIn/YouTube/Facebook pointent toujours vers `#`
   en attendant les URLs réelles des comptes 2KPI — à transmettre pour activation en une ligne

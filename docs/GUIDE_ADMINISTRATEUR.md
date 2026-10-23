@@ -129,8 +129,10 @@ suivante (✔ / ✘ avec ce qu'il manque), les inscriptions et le journal de tou
 Le bouton d'une étape n'apparaît que lorsque toutes ses conditions sont remplies.
 
 1. **Planifiée** : crée la promotion, choisis le référent, génère le calendrier.
-2. **Ouvrir les inscriptions** : la session peut alors être publiée sur la vitrine (bouton Vitrine)
-   et recevoir des candidatures.
+2. **Ouvrir les inscriptions** : la session apparaît **aussitôt** sur le site vitrine, avec ses dates
+   et le bouton « S'inscrire » (renseigne d'abord sa fiche **Vitrine** : dates affichées, lieu,
+   horaire, places). Les personnes inscrites sur la liste d'intérêt de la formation reçoivent un
+   e-mail avec le lien d'inscription. « Fermer les inscriptions » la retire du site.
 3. Pour chaque apprenant **admis** : indique le **paiement** (Reçu ou Exonéré), puis **Confirmer**.
    Seule une inscription confirmée donne accès aux cours.
 4. **Déclarer prête à démarrer** dès que l'effectif minimum est confirmé.
@@ -185,9 +187,26 @@ structure, et peut choisir une **session**.
 
 Protections : piège anti-robots, 5 créations de compte par heure et par connexion, e-mail unique.
 
-### b) La demande d'inscription depuis la vitrine
+### b) Le catalogue du site vitrine
 
-Page **Sessions → S'inscrire** de la vitrine : la demande arrive dans **Candidatures**.
+Le site (menu **Catalogue & sessions**) affiche toutes les formations que 2KPI propose, et rien
+d'autre : il n'y a plus aucune session écrite dans le site.
+
+- **Mettre une formation au catalogue** : Paramètres › Formations › la formation › *Informations de la
+  formation* → cocher « Afficher au catalogue du site », puis renseigner domaine, mode, durée
+  habituelle, résumé (deux lignes) et, si tu le souhaites, un prix indicatif avec « Afficher le prix ».
+  « Active » est un autre réglage : il faut qu'elle soit active pour ouvrir une session.
+- **Tant qu'aucune session n'est ouverte**, la formation affiche « Prochaine session bientôt annoncée »
+  et un bouton **Être prévenu(e)** : la personne laisse nom, e-mail, téléphone, profil (étudiant ou
+  professionnel) et structure. Tu retrouves ces demandes dans **Candidatures → Listes d'intérêt**
+  (et le nombre de personnes en attente dans ta liste « À faire ») : pratique pour décider quelle
+  session ouvrir.
+- **Quand tu ouvres une session** (§ 2 quater), elle s'affiche avec ses dates et « S'inscrire », et
+  chaque personne en attente reçoit automatiquement un e-mail avec le lien d'inscription.
+
+### c) La demande d'inscription depuis la vitrine
+
+Bouton **S'inscrire** d'une session ouverte : la demande arrive dans **Candidatures**.
 **Accepter** (en choisissant une promotion aux inscriptions ouvertes, prête ou en cours) crée le
 compte s'il n'existe pas, l'admet dans la promotion et envoie
 un e-mail avec un lien pour **choisir son mot de passe** (valable 3 jours ; ensuite : « Mot de

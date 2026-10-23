@@ -109,7 +109,6 @@ En haut de la page de l'app, cPanel affiche une **commande pour entrer dans l'en
    python manage.py collectstatic --noinput
    python manage.py seed_geoai        # première installation uniquement
    python manage.py import_gift       # première installation uniquement
-   python manage.py importer_sessions_vitrine   # première installation : reprend les sessions du site
    python manage.py createsuperuser
    ```
    - `createsuperuser` te demande un identifiant, un e-mail et un mot de passe : ce sera **ton
@@ -219,12 +218,15 @@ régulièrement hors du serveur (Gestionnaire de fichiers › Télécharger).
 2. cPanel → **Contrôle de version Git** → sur le dépôt `repositories/2kpi-plateform-learn` → **Gérer** → onglet
    *Pull or Deploy* → **Deploy HEAD Commit**. Le fichier `.cpanel.yml` (racine du dépôt) copie
    `VITRINE_2KPI/` dans `public_html`. Vérifie `https://2kpinnov.org` (vider le cache : Ctrl+F5).
-3. **Le catalogue des sessions se gère dans l'application** : **Promotions** → bouton **Vitrine** de
-   la promotion → coche *Publiée sur le site vitrine*, renseigne dates, lieu, prix, places →
-   **Enregistrer**. La vitrine lit `https://learn.2kpinnov.org/api/sessions/` : la session apparaît
-   aussitôt, et les **places restantes** baissent seules à chaque candidature acceptée.
-   (`importer_sessions_vitrine`, étape 6, a déjà repris les 6 sessions historiques du site.)
-   Si l'app est injoignable, la vitrine affiche la liste de secours `VITRINE_2KPI/js/sessions-data.js`.
+3. **Le catalogue se gère dans l'application**, jamais dans le site :
+   - **Formations affichées** : Paramètres › Formations › « Afficher au catalogue du site » (les 6
+     formations historiques y ont été mises par la migration). Sans session ouverte, le site propose
+     « Être prévenu(e) » (Candidatures › *Listes d'intérêt*).
+   - **Session réservable** : Promotions › fiche **Vitrine** (dates affichées, lieu, horaire, places),
+     puis *Pilotage* › « Ouvrir les inscriptions » : elle apparaît aussitôt sur le site, les personnes
+     intéressées sont prévenues, et les **places restantes** baissent seules.
+   La vitrine lit `https://learn.2kpinnov.org/api/catalogue/` ; si l'app est injoignable, elle affiche
+   « catalogue momentanément indisponible » (aucune session fictive).
 4. Le site vitrine envoie les inscriptions à `https://learn.2kpinnov.org/api/candidatures/`
    (`js/inscription-config.js` › `LEARN_API_URL`). Elles arrivent dans **Candidatures** (badge dans
    le menu admin). **Accepter** crée le compte, l'inscrit à la promotion et envoie l'e-mail
