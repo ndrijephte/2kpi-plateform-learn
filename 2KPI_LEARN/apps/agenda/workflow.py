@@ -178,14 +178,21 @@ def changer_statut_promotion(promo, cible, par=None, motif=""):
     de = promo.statut
     promo.statut = cible
     champs = ["statut"]
-    if cible not in Promotion.STATUTS_PUBLIABLES and promo.publiee_vitrine:
-        promo.publiee_vitrine = False  # la vitrine n'annonce que les sessions ouvertes aux inscriptions
+    # Le site vitrine annonce exactement les sessions ouvertes aux inscriptions (ou prêtes) : l'ouverture
+    # par l'administration vaut publication, la fermeture ou le démarrage la retirent.
+    publiee = cible in Promotion.STATUTS_PUBLIABLES
+    if promo.publiee_vitrine != publiee:
+        promo.publiee_vitrine = publiee
         champs.append("publiee_vitrine")
     promo.save(update_fields=champs)
     _journaliser(par, motif, de, cible, promotion=promo)
     message = f"« {promo.nom} » : {promo.get_statut_display()}."
     if "publiee_vitrine" in champs:
-        message += " Retirée du site vitrine."
+        message += " Annoncée sur le site vitrine." if publiee else " Retirée du site vitrine."
+    if cible == P.INSCRIPTIONS:
+        from apps.comptes.services import prevenir_interesses
+        n = prevenir_interesses(promo)
+        message += f" {_pluriel(n, 'personne intéressée')} prévenue(s) par e-mail." if n else ""
     if cible == P.EN_COURS:
         message += _demarrer(promo, par)
     elif cible == P.CLOTUREE:

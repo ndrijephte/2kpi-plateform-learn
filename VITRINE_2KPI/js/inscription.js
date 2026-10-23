@@ -55,10 +55,34 @@
       "</p>";
   }
 
+  /* Seules les sessions ouvertes par l'administration sont réservables : sans session ouverte (ou si
+     la plateforme ne répond pas), la page renvoie vers le catalogue au lieu d'un formulaire vide. */
+  function fermer(texte) {
+    var bloc = document.getElementById("inscription-fermee");
+    var ouverte = document.getElementById("inscription-ouverte");
+    if (texte) document.getElementById("inscription-fermee-texte").textContent = texte;
+    if (bloc) bloc.hidden = false;
+    if (ouverte) ouverte.hidden = true;
+  }
+
   select.disabled = true;
-  chargerSessions(function () {
+  chargerSessions(function (ok) {
+    if (!ok) {
+      fermer("Les inscriptions en ligne sont momentanément indisponibles. Réessayez dans un instant ou contactez-nous.");
+      return;
+    }
+    if (!SESSIONS.length) {
+      fermer();
+      return;
+    }
     select.disabled = false;
     fillSelect();
+    var wanted = paramSession();
+    if (wanted && !getSessionById(wanted) && summary) {
+      summary.insertAdjacentHTML("beforebegin", '<p class="form-note" style="color:var(--coral-dark)">La session demandée ' +
+        "n'est pas (ou plus) ouverte aux inscriptions. Choisissez une session ouverte ci-dessous, ou consultez le " +
+        '<a href="sessions.html">catalogue</a>.</p>');
+    }
     renderSummary();
   });
   select.addEventListener("change", renderSummary);

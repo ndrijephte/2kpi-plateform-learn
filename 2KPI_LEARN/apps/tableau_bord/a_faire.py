@@ -75,6 +75,15 @@ def taches_admin(user):
                             "Séances de plus de 3 jours sans présences - relancer le formateur",
                             reverse("agenda:planning", args=[promo.pk]), urgent=True))
 
+    from django.db.models import Count
+    from apps.comptes.models import Interet
+    attentes = (Interet.objects.filter(prevenu_le__isnull=True).values("formation__titre")
+                .annotate(n=Count("id")).order_by("-n"))
+    for a in attentes:
+        taches.append(Tache("bell", f"{_p(a['n'], 'personne')} attend{'ent' if a['n'] > 1 else ''} une session : {a['formation__titre']}",
+                            "Liste d'intérêt du catalogue - prévenues automatiquement à l'ouverture des inscriptions",
+                            reverse("comptes:candidatures") + "?statut=interets"))
+
     n = (get_user_model().objects.filter(profil__role=Profil.Role.APPRENANT, is_active=True)
          .exclude(inscriptions__promotion__isnull=False).count())
     if n:

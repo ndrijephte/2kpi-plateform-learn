@@ -24,7 +24,8 @@
   <div>
     <div class="card">
       <h2 class="section-title">{% icon "info" size=18 %} État actuel</h2>
-      <p>{% if promo.publiee_vitrine %}<span class="pill">{% icon "globe" size=12 %} Publiée</span>{% else %}<span class="pill">Non publiée</span>{% endif %}
+      <p>{% if promo.publiee_vitrine %}<span class="pill pill-ok">{% icon "globe" size=12 %} En ligne : inscriptions ouvertes</span>{% else %}<span class="pill">Pas encore en ligne</span><br>
+        <small class="muted">La session apparaît sur le site, avec ses dates et le bouton « S'inscrire », dès que tu ouvres ses inscriptions dans <a class="link" href="{% url 'agenda:pilotage' promo.pk %}">Pilotage</a>. Avant, le site montre la formation avec « Être prévenu(e) ».</small>{% endif %}
         {% if promo.code_vitrine %}<br><small class="muted">{% icon "link" size=12 %} …/inscription.html?session={{ promo.code_vitrine }}</small>{% endif %}</p>
       <p><strong>{{ promo.places_restantes }}</strong> place(s) disponible(s) sur {{ promo.places_total }}<br>
         <small class="muted">= {{ promo.places_total }} − {{ promo.nb_inscrits_actifs }} inscrit(s) sur la plateforme − {{ promo.places_hors_plateforme }} attribuée(s) hors plateforme</small></p>

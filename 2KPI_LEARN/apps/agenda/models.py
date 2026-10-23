@@ -38,17 +38,8 @@ class Promotion(models.Model):
                   "les candidatures reçues pour cette session sont rattachées à cette promotion.")
 
     # --- Fiche publique sur le site vitrine (API /api/sessions/) ---
-    class Domaine(models.TextChoices):
-        SOCLE = "Socle", "Socle"
-        URBANISME = "Urbanisme", "Urbanisme"
-        DEMOGRAPHIE = "Démographie", "Démographie"
-        PAYSAGER = "Paysager", "Paysager"
-        NUMERIQUE = "Numérique", "Numérique"
-
-    class Mode(models.TextChoices):
-        EN_LIGNE = "En ligne", "En ligne"
-        PRESENTIEL = "Présentiel", "Présentiel"
-        HYBRIDE = "Hybride", "Hybride"
+    Domaine = Formation.Domaine  # mêmes valeurs que le catalogue
+    Mode = Formation.Mode
 
     publiee_vitrine = models.BooleanField(
         "Publiée sur le site vitrine", default=False,

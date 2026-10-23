@@ -1,4 +1,6 @@
-"""API publique lue par le site vitrine : catalogue des sessions ouvertes.
+"""API publique lue par le site vitrine : catalogue des formations et sessions ouvertes.
+
+GET /api/catalogue/ - formations « au catalogue », avec leur état et leurs sessions ouvertes.
 
 GET /api/sessions/ - promotions publiées sur la vitrine (inscriptions ouvertes ou prêtes), au format attendu par
 VITRINE_2KPI/js/sessions-data.js. Lecture seule, données publiques ; CORS limité à
@@ -47,4 +49,44 @@ def sessions(request):
     reponse = JsonResponse({"sessions": [fiche(p, p.nb_inscrits) for p in promos]},
                            json_dumps_params={"ensure_ascii": False})
     reponse["Cache-Control"] = "no-cache"  # places restantes exactes à chaque affichage
+    return _cors(request, reponse)
+
+
+def _fiche_formation(f, sessions, en_cours):
+    """Une formation du catalogue et son état : « ouverte » (sessions réservables), « en_cours »
+    (une session se déroule, la prochaine reste à annoncer) ou « a_venir »."""
+    return {
+        "id": f.slug,
+        "titre": f.titre,
+        "domaine": f.domaine,
+        "mode": f.mode,
+        "duree": f.duree_type,
+        "resume": f.resume or f.description[:300],
+        "prix": f.prix_indicatif if f.afficher_prix else "",
+        "etat": "ouverte" if sessions else ("en_cours" if en_cours else "a_venir"),
+        "sessions": sessions,
+    }
+
+
+@require_http_methods(["GET", "HEAD", "OPTIONS"])
+def catalogue(request):
+    """GET /api/catalogue/ - formations affichées au catalogue, chacune avec ses sessions ouvertes."""
+    from apps.formation.models import Formation
+    if request.method == "OPTIONS":
+        return _cors(request, JsonResponse({}, status=204))
+    ouvertes = (Promotion.objects.filter(statut__in=Promotion.STATUTS_PUBLIABLES, publiee_vitrine=True)
+                .exclude(code_vitrine="").select_related("formation")
+                .annotate(nb_inscrits=Count("inscriptions", filter=~Q(inscriptions__statut="abandon")))
+                .order_by("date_debut", "nom"))
+    par_formation = {}
+    for p in ouvertes:
+        par_formation.setdefault(p.formation_id, []).append(fiche(p, p.nb_inscrits))
+    en_cours = set(Promotion.objects.filter(statut=Promotion.Statut.EN_COURS).values_list("formation_id", flat=True))
+    # « Au catalogue » est une décision distincte de « active » (utilisable sur la plateforme) : une formation
+    # peut être annoncée, avec « Être prévenu(e) », avant d'être montée dans 2KPI Learn.
+    formations = Formation.objects.filter(catalogue=True).order_by("titre")
+    fiches = [_fiche_formation(f, par_formation.get(f.pk, []), f.pk in en_cours) for f in formations]
+    fiches.sort(key=lambda x: x["etat"] != "ouverte")  # tri stable : les formations ouvertes d'abord
+    reponse = JsonResponse({"formations": fiches}, json_dumps_params={"ensure_ascii": False})
+    reponse["Cache-Control"] = "no-cache"
     return _cors(request, reponse)

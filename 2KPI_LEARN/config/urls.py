@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.conf import settings
 from django.urls import include, path, re_path
-from apps.agenda.api import sessions as sessions_api
-from apps.comptes.api import candidature as candidature_api
+from apps.agenda.api import catalogue as catalogue_api, sessions as sessions_api
+from apps.comptes.api import candidature as candidature_api, interet as interet_api
 from apps.comptes.forms import ConnexionForm
 from apps.comptes.views import MotDePasseOublieView, creer_compte
 from apps.core.views import media_publique
@@ -34,6 +34,8 @@ urlpatterns = [
     path("parametres/", include("apps.core.urls")),
     path("api/candidatures/", candidature_api, name="api_candidatures"),
     path("api/sessions/", sessions_api, name="api_sessions"),
+    path("api/catalogue/", catalogue_api, name="api_catalogue"),
+    path("api/interet/", interet_api, name="api_interet"),
     path("attestation/<str:code>/", verifier_attestation, name="verifier_attestation"),  # public (QR code)
     path("", include("apps.tableau_bord.urls")),
 ]

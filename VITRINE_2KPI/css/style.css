@@ -36,6 +36,7 @@
 }
 
 /* ---------- Reset ---------- */
+[hidden] { display: none !important; } /* l'attribut hidden prime sur display: grid / flex */
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
@@ -110,7 +111,7 @@ strong { color: var(--navy); }
   transition: transform var(--dur) ease, box-shadow var(--dur) ease, background var(--dur) ease, color var(--dur) ease;
   white-space: nowrap;
 }
-.btn svg { width: 16px; height: 16px; }
+.btn svg { width: 16px; height: 16px; flex-shrink: 0; }
 .btn-primary { background: var(--coral); color: #fff; box-shadow: 0 10px 24px rgba(239, 106, 82, 0.32); }
 .btn-primary:hover { background: var(--coral-dark); transform: translateY(-2px); }
 .btn-outline { background: transparent; border-color: rgba(255,255,255,0.5); color: inherit; }
@@ -527,6 +528,24 @@ strong { color: var(--navy); }
 .seats-bar-fill.low { background: var(--coral); }
 .session-aside .btn { margin-top: 6px; justify-content: center; }
 .session-row.is-full .session-body, .session-row.is-full .session-date { opacity: 0.6; }
+
+/* Catalogue : état de la formation, formation à venir, liste d'intérêt */
+.session-etat { margin: 0; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-soft); }
+.session-etat--ouverte { color: var(--green-dark); }
+.session-row.is-avenir { background: var(--bg-soft); }
+.session-row.is-avenir .session-aside .btn { display: inline-flex; align-items: center; gap: 8px; }
+.session-row.is-avenir .session-aside .btn svg { width: 16px; height: 16px; }
+.sessions-separateur { font-size: 1.05rem; color: var(--text-soft); margin: 18px 0 2px; font-weight: 700; }
+.interet-form { grid-column: 1 / -1; border-top: 1px solid var(--border); padding-top: 18px; display: flex; flex-direction: column; gap: 12px; }
+.interet-form .form-row { margin: 0; }
+.interet-form .field { margin: 0; }
+.interet-intro { margin: 0; color: var(--text-soft); font-size: 0.92rem; }
+.interet-profil { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; }
+.interet-profil legend { float: left; margin-right: 12px; font-family: var(--ff-heading); font-weight: 600; font-size: 0.88rem; color: var(--navy); }
+.interet-profil label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.92rem; cursor: pointer; }
+.interet-erreur { margin: 0; color: var(--coral-dark); font-size: 0.9rem; }
+.interet-merci { margin: 0; padding: 14px 16px; border-radius: var(--radius-sm); background: rgba(92,122,58,0.12); color: var(--green-dark); }
+.interet-form > .btn { align-self: flex-start; }
 
 .session-filters { display: flex; gap: 8px; flex-wrap: wrap; }
 .session-filters button {

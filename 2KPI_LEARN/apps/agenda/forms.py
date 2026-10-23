@@ -76,7 +76,7 @@ class FicheVitrineForm(forms.ModelForm):
     class Meta:
         from .models import Promotion
         model = Promotion
-        fields = ["publiee_vitrine", "code_vitrine", "domaine", "mode", "date_affichage", "horaire",
+        fields = ["code_vitrine", "domaine", "mode", "date_affichage", "horaire",
                   "duree", "lieu", "places_total", "places_hors_plateforme", "prix", "afficher_prix", "description_vitrine"]
         widgets = {"description_vitrine": forms.Textarea(attrs={"rows": 3, "maxlength": 400})}
 
@@ -93,7 +93,4 @@ class FicheVitrineForm(forms.ModelForm):
         total, ailleurs = d.get("places_total"), d.get("places_hors_plateforme")
         if total is not None and ailleurs is not None and ailleurs > total:
             self.add_error("places_hors_plateforme", "Ne peut pas dépasser le nombre total de places.")
-        if d.get("publiee_vitrine") and self.instance.statut not in self.instance.STATUTS_PUBLIABLES:
-            self.add_error("publiee_vitrine", f"La promotion est « {self.instance.get_statut_display()} » : ouvre "
-                                              "d'abord les inscriptions (Pilotage) pour la publier.")
         return d

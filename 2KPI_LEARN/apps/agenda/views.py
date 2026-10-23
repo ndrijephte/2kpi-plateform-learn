@@ -210,11 +210,9 @@ def fiche_vitrine(request, promo_id):
     form = FicheVitrineForm(request.POST or None, instance=promo)
     if request.method == "POST" and form.is_valid():
         promo = form.save()
-        if promo.publiee_vitrine:
-            messages.success(request, f"« {promo.nom} » est publiée sur le site vitrine "
-                                      f"({promo.places_restantes} place(s) disponible(s)).")
-        else:
-            messages.success(request, f"Fiche vitrine de « {promo.nom} » enregistrée (non publiée).")
+        messages.success(request, f"Fiche vitrine de « {promo.nom} » enregistrée."
+                         + (f" Elle est en ligne ({promo.places_restantes} place(s) disponible(s))." if promo.publiee_vitrine
+                            else " Elle apparaîtra sur le site à l'ouverture des inscriptions (Pilotage)."))
         return redirect("agenda:promotions")
     return render(request, "agenda/fiche_vitrine.html", {"promo": promo, "form": form})
 

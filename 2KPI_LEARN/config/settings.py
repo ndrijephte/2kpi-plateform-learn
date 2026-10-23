@@ -128,6 +128,8 @@ if not DEBUG:
 
 # Site vitrine autorisé à appeler l'API publique (candidatures)
 VITRINE_ORIGINS = config("VITRINE_ORIGINS", default="https://2kpinnov.org,https://www.2kpinnov.org", cast=Csv())
+# Adresse du site vitrine dans les e-mails (lien d'inscription envoyé aux personnes intéressées)
+VITRINE_URL = config("VITRINE_URL", default="https://2kpinnov.org").rstrip("/")
 
 # E-mail. EMAIL_ENVOI = auto (défaut) | smtp | sendmail | console
 # - auto : SMTP si EMAIL_HOST est renseigné (465 = SSL, 587 = STARTTLS), avec repli automatique sur

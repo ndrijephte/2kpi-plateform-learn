@@ -25,7 +25,7 @@
         <div class="nav-dropdown">
           <a href="formations.html" data-page="formations.html">Nos formations</a>
           <a href="academy.html" data-page="academy.html">2KPI Academy</a>
-          <a href="sessions.html" data-page="sessions.html">Sessions</a>
+          <a href="sessions.html" data-page="sessions.html">Catalogue &amp; sessions</a>
         </div>
       </div>
       <div class="nav-item has-dropdown">
@@ -62,7 +62,14 @@
   </section>
 
   <section class="section">
-    <div class="container contact-grid">
+    <div class="container" id="inscription-fermee" hidden>
+      <div class="demo-callout">
+        <p id="inscription-fermee-texte">Aucune session n'est ouverte aux inscriptions pour le moment. Consultez le catalogue : vous pouvez y demander à être prévenu(e) de l'ouverture.</p>
+        <a href="sessions.html" class="btn btn-primary">Voir le catalogue
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </div>
+    <div class="container contact-grid" id="inscription-ouverte">
 
       <div>
         <div class="field">
@@ -70,7 +77,7 @@
           <select id="session" name="session-picker"></select>
         </div>
         <div class="session-summary" id="session-summary"></div>
-        <p class="form-note">Une question avant de vous inscrire&nbsp;? <a href="contact.html">Contactez-nous</a> ou consultez le <a href="sessions.html">catalogue des sessions</a>.</p>
+        <p class="form-note">Une question avant de vous inscrire&nbsp;? <a href="contact.html">Contactez-nous</a> ou consultez le <a href="sessions.html">catalogue des formations</a>.</p>
         <div class="compte-cta">
           <h3>Étudiant ou apprenant&nbsp;? Créez votre compte</h3>
           <p>En une minute, ouvrez votre espace 2KPI Learn&nbsp;: votre demande pour cette session est transmise en même temps, et vous suivez sa validation, puis vos cours, votre agenda et votre progression.</p>
@@ -143,7 +150,7 @@
           <li><a href="cabinet.html">Cabinet</a></li>
           <li><a href="formations.html">Formations</a></li>
           <li><a href="academy.html">2KPI Academy</a></li>
-          <li><a href="sessions.html">Sessions</a></li>
+          <li><a href="sessions.html">Catalogue &amp; sessions</a></li>
           <li><a href="realisations.html">Réalisations</a></li>
         </ul>
       </div>

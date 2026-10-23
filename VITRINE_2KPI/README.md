@@ -1,3 +1,7 @@
+> **Catalogue** : formations et sessions se gèrent uniquement dans 2KPI Learn (Paramètres › Formations ›
+> « Afficher au catalogue du site » ; Promotions › Pilotage › « Ouvrir les inscriptions »). Les passages
+> ci-dessous sur `sessions-data.js` sont historiques.
+
 # Site 2KPI — version 2 (légère et autonome)
 
 ## Ce que c'est
@@ -28,7 +32,7 @@ VITRINE_2KPI/
 ├── css/style.css           (feuille de style unique)
 ├── js/
 │   ├── main.js                 (menu mobile, animations, formulaire de contact)
-│   ├── sessions-data.js        (catalogue des sessions — à éditer pour les mettre à jour)
+│   ├── sessions-data.js        (plus aucune session en dur : tout vient de 2KPI Learn, /api/catalogue/)
 │   ├── sessions-catalog.js     (affichage + filtre du catalogue de sessions)
 │   ├── inscription.js          (logique de la page d'inscription)
 │   ├── inscription-config.js   (URL du Google Sheet — à configurer, voir INSCRIPTIONS-SETUP.md)

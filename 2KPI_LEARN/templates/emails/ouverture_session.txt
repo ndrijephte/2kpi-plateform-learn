@@ -1,0 +1,14 @@
+{% autoescape off %}
+Bonjour {{ i.nom_complet }},
+
+Vous nous aviez demandé d'être prévenu(e) : les inscriptions à la formation « {{ promotion.formation.titre }} » sont ouvertes.
+
+Session : {{ promotion.nom }}
+Début : {% if promotion.date_affichage %}{{ promotion.date_affichage }}{% else %}{{ promotion.date_debut|date:"j F Y" }}{% endif %}{% if promotion.duree %} ({{ promotion.duree }}){% endif %}
+{% if promotion.lieu %}Lieu : {{ promotion.lieu }}
+{% endif %}Places : {{ promotion.places_total }}, dans la limite des places disponibles
+
+Pour vous inscrire : {{ lien }}
+
+L'équipe 2KPI
+{% endautoescape %}

@@ -1,0 +1,9 @@
+{% autoescape off %}
+Bonjour {{ i.nom_complet }},
+
+Merci de votre intérêt pour la formation « {{ i.formation.titre }} ».
+Aucune session n'est ouverte pour le moment : nous vous écrirons dès que les inscriptions ouvriront,
+avec les dates, le lieu et le lien pour vous inscrire.
+
+L'équipe 2KPI
+{% endautoescape %}

@@ -187,3 +187,42 @@ def definir_promotions_formateur(user, promotions, par):
     if hasattr(user, "_interventions"):
         del user._interventions
     return ajoutees, retirees
+
+
+# ---------- Listes d'intérêt (« Être prévenu(e) de l'ouverture ») ----------
+
+def enregistrer_interet(formation, d, ip=None):
+    """Inscrit (ou met à jour) une personne sur la liste d'intérêt d'une formation. Une même adresse
+    n'apparaît qu'une fois par formation tant qu'elle n'a pas été prévenue."""
+    from .models import Interet
+    email = d["email"].strip().lower()
+    interet = Interet.objects.filter(formation=formation, email=email, prevenu_le__isnull=True).first() \
+        or Interet(formation=formation, email=email, ip=ip)
+    nouveau = interet.pk is None
+    interet.nom_complet = d["nom"].strip()[:200]
+    interet.telephone = d["telephone"].strip()[:40]
+    interet.categorie = d["categorie"]
+    interet.structure = (d.get("structure") or "").strip()[:200]
+    interet.save()
+    if nouveau:
+        notifier_admins(f"Intérêt pour « {formation.titre} »",
+                        f"{interet.nom_complet} ({interet.get_categorie_display()}"
+                        f"{', ' + interet.structure if interet.structure else ''}) · {email} · {interet.telephone}")
+        _envoyer(f"Nous vous préviendrons de la prochaine session : {formation.titre}", "emails/interet_recu.txt",
+                 email, {"i": interet})
+    return interet, nouveau
+
+
+def prevenir_interesses(promotion):
+    """À l'ouverture des inscriptions : e-mail à chaque personne intéressée par la formation, avec le
+    lien d'inscription à cette session. Retourne le nombre de personnes prévenues."""
+    from .models import Interet
+    lien = f"{settings.VITRINE_URL}/pages/inscription.html?session={promotion.code_vitrine}"
+    n = 0
+    for interet in Interet.objects.filter(formation=promotion.formation_id, prevenu_le__isnull=True):
+        if _envoyer(f"Inscriptions ouvertes : {promotion.formation.titre}", "emails/ouverture_session.txt",
+                    interet.email, {"i": interet, "promotion": promotion, "lien": lien}):
+            interet.prevenu_le, interet.promotion_annoncee = timezone.now(), promotion
+            interet.save(update_fields=["prevenu_le", "promotion_annoncee"])
+            n += 1
+    return n

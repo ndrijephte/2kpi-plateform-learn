@@ -16,7 +16,32 @@
     {% if val == "nouvelle" and compte.nouvelle %}<span class="badge">{{ compte.nouvelle }}</span>{% elif val == "acceptee" %}<small>({{ compte.acceptee }})</small>{% elif val == "refusee" %}<small>({{ compte.refusee }})</small>{% endif %}</a>
   {% endfor %}
   <a href="?statut=toutes" {% if filtre == "toutes" %}class="on"{% endif %}>Toutes</a>
+  <a href="?statut=interets" {% if filtre == "interets" %}class="on"{% endif %}>{% icon "bell" size=14 %} Listes d'intérêt {% if nb_interets %}<small>({{ nb_interets }})</small>{% endif %}</a>
 </nav>
+
+{% if filtre == "interets" %}
+<p class="muted">Personnes qui ont demandé à être prévenues de l'ouverture d'une formation du catalogue. Elles reçoivent automatiquement un e-mail avec le lien d'inscription quand tu ouvres les inscriptions d'une session de cette formation (Promotions › Pilotage).</p>
+{% for g in interets_par_formation %}
+<div class="card">
+  <div class="card-head"><h2 class="section-title">{% icon "layers" size=18 %} {{ g.formation.titre }}</h2>
+    <span class="pill {% if g.en_attente %}pill-warn{% endif %}">{{ g.en_attente|length }} en attente</span></div>
+  <div class="table-wrap">
+  <table class="tbl">
+    <thead><tr><th>Personne</th><th>Profil</th><th>Contact</th><th>Inscrite le</th><th>Statut</th></tr></thead>
+    <tbody>{% for i in g.liste %}
+      <tr><td><strong>{{ i.nom_complet }}</strong></td>
+        <td>{{ i.get_categorie_display }}{% if i.structure %}<br><small class="muted">{{ i.structure }}</small>{% endif %}</td>
+        <td><a href="mailto:{{ i.email }}">{{ i.email }}</a><br><small class="muted">{{ i.telephone }}</small></td>
+        <td>{{ i.date|date:"d/m/Y" }}</td>
+        <td>{% if i.prevenu_le %}<span class="pill pill-ok">Prévenue le {{ i.prevenu_le|date:"d/m" }}</span>{% else %}<span class="pill">En attente</span>{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table>
+  </div>
+</div>
+{% empty %}
+<div class="card empty"><span class="ico-tile">{% icon "bell" %}</span><strong>Aucune personne en attente</strong>Les demandes « Être prévenu(e) » du catalogue apparaîtront ici.</div>
+{% endfor %}
+{% else %}
 
 {% for c in candidatures %}
 <div class="card cand">
@@ -70,4 +95,5 @@
 {% empty %}
 <div class="card empty"><span class="ico-tile done">{% icon "check-check" %}</span><strong>Aucune candidature {% if filtre == "nouvelle" %}à traiter{% endif %}</strong>Les demandes envoyées depuis le site vitrine apparaîtront ici.</div>
 {% endfor %}
+{% endif %}
 {% endblock %}

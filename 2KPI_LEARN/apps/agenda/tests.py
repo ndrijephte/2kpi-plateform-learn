@@ -1,7 +1,5 @@
 import datetime as dt
-import io
 from decimal import Decimal
-from django.core.management import call_command
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -90,24 +88,83 @@ class CatalogueVitrineTests(BaseTest):
         url = reverse("agenda:fiche_vitrine", args=[self.promo_a.pk])
         self.assertEqual(self.client_de(self.form_a).get(url).status_code, 403)
         c = self.client_de(self.admin)
-        base = {"publiee_vitrine": "on", "code_vitrine": "GeoAI Sassandra", "domaine": "Socle", "mode": "Hybride",
+        base = {"code_vitrine": "GeoAI Sassandra", "domaine": "Socle", "mode": "Hybride",
                 "places_total": 5, "places_hors_plateforme": 9}
-        self.assertEqual(c.post(url, {**base, "places_hors_plateforme": 1}).status_code, 200)  # promotion planifiée : refusé
-        self.promo_a.statut = Promotion.Statut.INSCRIPTIONS
-        self.promo_a.save()
         self.assertEqual(c.post(url, base).status_code, 200)  # 9 > 5 : refusé
         self.assertRedirects(c.post(url, {**base, "places_hors_plateforme": 1}), reverse("agenda:promotions"))
         self.promo_a.refresh_from_db()
         self.assertEqual((self.promo_a.code_vitrine, self.promo_a.places_restantes), ("geoai-sassandra", 3))
 
-    def test_import_des_sessions_du_site_idempotent(self):
-        sortie = io.StringIO()
-        call_command("importer_sessions_vitrine", stdout=sortie)
-        call_command("importer_sessions_vitrine", stdout=sortie)
-        p = Promotion.objects.get(code_vitrine="teledetection-sig-initiation")
-        self.assertEqual((p.date_debut, p.places_restantes, p.publiee_vitrine), (dt.date(2026, 8, 10), 14, True))
-        self.assertEqual(Promotion.objects.get(code_vitrine="collecte-donnees-terrain").date_affichage, "Tous les samedis")
-        self.assertEqual(Promotion.objects.filter(publiee_vitrine=True).count(), 6)
+    def test_catalogue_etats_et_ouverture_officielle_par_le_workflow(self):
+        from apps.agenda import workflow
+        f = self.formation
+        f.catalogue, f.resume, f.prix_indicatif = True, "Douze semaines de GéoAI.", "300 000 FCFA"
+        f.save()
+        def geoai():
+            return next(x for x in self.client.get("/api/catalogue/").json()["formations"] if x["id"] == "geoai-sassandra")
+        fiches = self.client.get("/api/catalogue/").json()["formations"]
+        self.assertEqual(len(fiches), 7)  # les 6 formations reprises du site + GéoAI
+        self.assertEqual((geoai()["etat"], geoai()["sessions"], geoai()["prix"]), ("a_venir", [], ""))
+        # L'admin ouvre les inscriptions : la session est publiée sans autre geste
+        workflow.changer_statut_promotion(self.promo_a, Promotion.Statut.INSCRIPTIONS, self.admin)
+        self.promo_a.refresh_from_db()
+        self.assertTrue(self.promo_a.publiee_vitrine)
+        fiches = self.client.get("/api/catalogue/").json()["formations"]
+        self.assertEqual(fiches[0]["id"], "geoai-sassandra")  # les formations ouvertes en tête
+        self.assertEqual((fiches[0]["etat"], [s["id"] for s in fiches[0]["sessions"]]), ("ouverte", [self.promo_a.code_vitrine]))
+        # Fermeture : retirée du site, la formation reste au catalogue
+        workflow.changer_statut_promotion(self.promo_a, Promotion.Statut.PLANIFIEE, self.admin)
+        self.assertEqual(geoai()["etat"], "a_venir")
+        f.catalogue = False
+        f.save()
+        self.assertNotIn("geoai-sassandra", [x["id"] for x in self.client.get("/api/catalogue/").json()["formations"]])
+
+    def test_liste_d_interet_puis_annonce_a_l_ouverture(self):
+        from django.core import mail
+        from apps.agenda import workflow
+        from apps.comptes.models import Interet
+        self.formation.catalogue = True
+        self.formation.save()
+        donnees = {"formation": "geoai-sassandra", "nom": "Awa KONÉ", "email": "Awa@Exemple.org", "telephone": "07",
+                   "categorie": "etudiant", "structure": "Université FHB"}
+        r = self.client.post("/api/interet/", donnees, content_type="application/json", HTTP_ORIGIN="https://www.2kpinnov.org")
+        self.assertEqual((r.status_code, r["Access-Control-Allow-Origin"]), (201, "https://www.2kpinnov.org"))
+        self.client.post("/api/interet/", {**donnees, "categorie": "professionnel"}, content_type="application/json")
+        i = Interet.objects.get()  # même adresse : mise à jour, pas de doublon
+        self.assertEqual((i.email, i.categorie, i.structure), ("awa@exemple.org", "professionnel", "Université FHB"))
+        self.assertIn("Nous vous préviendrons", mail.outbox[-1].subject)
+        self.assertEqual(self.client.post("/api/interet/", {**donnees, "categorie": "?"},
+                                          content_type="application/json").status_code, 400)
+        self.assertEqual(self.client.post("/api/interet/", {**donnees, "formation": "inconnue"},
+                                          content_type="application/json").status_code, 404)
+        self.assertIn("1 personne attend une session : Formation GéoAI - Sassandra",
+                      [t.titre for t in __import__("apps.tableau_bord.a_faire", fromlist=["x"]).taches_admin(self.admin)])
+        message = workflow.changer_statut_promotion(self.promo_a, Promotion.Statut.INSCRIPTIONS, self.admin)
+        self.assertIn("1 personne intéressée prévenue", message)
+        i.refresh_from_db()
+        self.assertEqual(i.promotion_annoncee, self.promo_a)
+        self.assertIn(f"inscription.html?session={self.promo_a.code_vitrine}", mail.outbox[-1].body)
+        page = self.client_de(self.admin).get(reverse("comptes:candidatures") + "?statut=interets")
+        self.assertContains(page, "Awa KONÉ")
+
+    def test_migration_retire_les_sessions_indicatives(self):
+        import importlib
+        from django.apps import apps as registre
+        from apps.formation.models import Formation
+        nettoyage = importlib.import_module("apps.agenda.migrations.0012_nettoyage_sessions_indicatives")
+        web = Formation.objects.get(slug="websig-cartographie-interactive")  # créée par la migration
+        Formation.objects.filter(pk=web.pk).update(catalogue=False, prix_indicatif="")
+        indicative = Promotion.objects.create(formation=web, nom="WebSIG", date_debut=dt.date(2026, 10, 8),
+                                              statut=Promotion.Statut.INSCRIPTIONS, publiee_vitrine=True,
+                                              domaine="Numérique", prix="160 000 FCFA")
+        self.promo_a.statut = Promotion.Statut.INSCRIPTIONS  # vraie session (calendrier, apprenant) : conservée
+        self.promo_a.save()
+        nettoyage.nettoyer(registre, None)
+        self.assertFalse(Promotion.objects.filter(pk=indicative.pk).exists())
+        self.assertTrue(Promotion.objects.filter(pk=self.promo_a.pk).exists())
+        web.refresh_from_db()
+        self.assertEqual((web.catalogue, web.domaine, web.prix_indicatif, web.afficher_prix), (True, "Numérique", "160 000 FCFA", False))
+        self.assertEqual(Formation.objects.filter(catalogue=True).count(), 6)  # idempotent : pas de doublon
 
 
 class WorkflowTests(BaseTest):

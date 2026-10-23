@@ -9,10 +9,36 @@ from django.db import models
 from django.utils.text import slugify
 
 class Formation(models.Model):
+    """Ce que 2KPI sait enseigner. Affichée au catalogue du site vitrine si l'administration le décide ;
+    ses sessions (promotions) n'y deviennent réservables qu'une fois les inscriptions ouvertes."""
+    class Domaine(models.TextChoices):
+        SOCLE = "Socle", "Socle"
+        URBANISME = "Urbanisme", "Urbanisme"
+        DEMOGRAPHIE = "Démographie", "Démographie"
+        PAYSAGER = "Paysager", "Paysager"
+        NUMERIQUE = "Numérique", "Numérique"
+
+    class Mode(models.TextChoices):
+        EN_LIGNE = "En ligne", "En ligne"
+        PRESENTIEL = "Présentiel", "Présentiel"
+        HYBRIDE = "Hybride", "Hybride"
+
     titre = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True, blank=True)
     description = models.TextField(blank=True)
     active = models.BooleanField(default=True)
+    # Catalogue du site vitrine (API /api/catalogue/)
+    catalogue = models.BooleanField("Afficher au catalogue du site", default=False,
+                                    help_text="La formation apparaît sur 2kpinnov.org, avec « Être prévenu(e) » tant "
+                                              "qu'aucune session n'est ouverte aux inscriptions.")
+    domaine = models.CharField(max_length=20, choices=Domaine.choices, default=Domaine.SOCLE,
+                               help_text="Sert au filtre du catalogue.")
+    mode = models.CharField("Mode habituel", max_length=12, choices=Mode.choices, default=Mode.EN_LIGNE)
+    duree_type = models.CharField("Durée habituelle", max_length=60, blank=True, help_text="Ex. « 5 jours », « 4 samedis ».")
+    resume = models.CharField("Résumé (catalogue)", max_length=400, blank=True,
+                              help_text="Deux lignes affichées sur le site. Vide = début de la description.")
+    prix_indicatif = models.CharField("Prix indicatif", max_length=60, blank=True, help_text="Ex. « 150 000 FCFA ».")
+    afficher_prix = models.BooleanField("Afficher le prix indicatif sur le site", default=False)
     # Règles de validation appliquées à la clôture d'une promotion (agenda/workflow.py)
     seuil_assiduite = models.PositiveSmallIntegerField(
         "Assiduité minimale (%)", default=80, validators=[MaxValueValidator(100)],

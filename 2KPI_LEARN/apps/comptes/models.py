@@ -71,3 +71,27 @@ class Candidature(models.Model):
 
     def __str__(self):
         return f"{self.nom_complet} - {self.session_libelle or self.session_code}"
+
+
+class Interet(models.Model):
+    """« Être prévenu(e) de l'ouverture » : personne intéressée par une formation du catalogue qui n'a
+    pas encore de session ouverte. Prévenue par e-mail dès que l'administration ouvre une session."""
+    formation = models.ForeignKey("formation.Formation", on_delete=models.CASCADE, related_name="interets")
+    nom_complet = models.CharField("Nom complet", max_length=200)
+    email = models.EmailField()
+    telephone = models.CharField("Téléphone", max_length=40)
+    categorie = models.CharField("Profil", max_length=20, choices=Profil.Categorie.choices)
+    structure = models.CharField("Structure / Université", max_length=200, blank=True)
+    date = models.DateTimeField(auto_now_add=True)
+    prevenu_le = models.DateTimeField("Prévenu(e) de l'ouverture le", null=True, blank=True)
+    promotion_annoncee = models.ForeignKey("agenda.Promotion", on_delete=models.SET_NULL, null=True, blank=True,
+                                           related_name="+")
+    ip = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Personne intéressée"
+        verbose_name_plural = "Listes d'intérêt"
+        ordering = ["-date"]
+
+    def __str__(self):
+        return f"{self.nom_complet} · {self.formation}"

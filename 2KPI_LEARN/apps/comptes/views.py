@@ -253,13 +253,23 @@ def candidatures(request):
                 messages.error(request, "Échec de l'envoi de l'e-mail (configuration SMTP ?).")
         return redirect(f"{reverse('comptes:candidatures')}?statut={request.GET.get('statut', 'nouvelle')}")
 
+    from .models import Interet
     filtre = request.GET.get("statut", "nouvelle")
+    interets_par_formation = []
+    if filtre == "interets":
+        groupes = {}
+        for i in Interet.objects.select_related("formation").order_by("formation__titre", "prevenu_le", "-date"):
+            groupes.setdefault(i.formation, []).append(i)
+        interets_par_formation = [{"formation": f, "liste": l, "en_attente": [i for i in l if not i.prevenu_le]}
+                                  for f, l in groupes.items()]
     qs = Candidature.objects.select_related("promotion", "utilisateur", "traitee_par")
     if filtre in Candidature.Statut.values:
         qs = qs.filter(statut=filtre)
     compte = {s: Candidature.objects.filter(statut=s).count() for s in Candidature.Statut.values}
     return render(request, "comptes/candidatures.html", {
         "candidatures": qs[:200], "filtre": filtre, "compte": compte, "statuts": Candidature.Statut.choices,
+        "interets_par_formation": interets_par_formation,
+        "nb_interets": Interet.objects.filter(prevenu_le__isnull=True).count(),
         "promotions": Promotion.objects.filter(statut__in=Promotion.STATUTS_ADMISSION)
                                .select_related("formation").order_by("-date_debut")})
 
