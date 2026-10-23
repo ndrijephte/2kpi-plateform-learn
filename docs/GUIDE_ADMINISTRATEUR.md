@@ -143,6 +143,13 @@ Le bouton d'une étape n'apparaît que lorsque toutes ses conditions sont rempli
 
 Abandon d'un apprenant et dérogation à un résultat : **motif obligatoire**, conservé au journal.
 
+**Prérequis et évaluation** : chaque formation a ses prérequis et sa grille du projet (Paramètres ›
+Formations › la formation : panneaux *Prérequis* et *Grille d'évaluation du projet*, plus les poids de la
+note finale dans *Informations de la formation*). Cochez « Obligatoire » pour qu'un prérequis bloque la
+confirmation tant qu'il n'est pas « OK ». Les notes (critères, soutenance) se saisissent dans
+**Promotions → Évaluation** par le formateur référent ou l'administration ; la clôture exige une
+évaluation complète.
+
 **Présences** : le formateur enregistre la feuille de présence (Planning › *Présences*) dès le début
 de la séance ; c'est ce qui la marque « réalisée ». Une feuille oubliée est rappelée au formateur le
 lendemain, puis signalée aux administrateurs au bout de 3 jours.

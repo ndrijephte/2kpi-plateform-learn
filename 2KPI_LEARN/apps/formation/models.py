@@ -19,6 +19,16 @@ class Formation(models.Model):
         help_text="Part des séances réalisées où l'apprenant était présent (ou en retard).")
     note_minimale = models.DecimalField("Note minimale (/20)", max_digits=4, decimal_places=1, default=Decimal("10"),
                                         validators=[MinValueValidator(0), MaxValueValidator(20)])
+    # Composition de la note finale (en %, total 100) — voir tableau_bord/services.py
+    poids_continu = models.PositiveSmallIntegerField(
+        "Poids du contrôle continu (%)", default=40, validators=[MaxValueValidator(100)],
+        help_text="Moyenne des livrables notés.")
+    poids_projet = models.PositiveSmallIntegerField(
+        "Poids du projet (%)", default=40, validators=[MaxValueValidator(100)],
+        help_text="Grille d'évaluation de la formation (critères pondérés).")
+    poids_soutenance = models.PositiveSmallIntegerField(
+        "Poids de la soutenance (%)", default=20, validators=[MaxValueValidator(100)],
+        help_text="0 = pas de soutenance.")
 
     class Meta:
         verbose_name = "Formation"
@@ -227,3 +237,36 @@ class Ressource(models.Model):
 
     def __str__(self):
         return self.titre
+
+
+class PrerequisFormation(models.Model):
+    """Prérequis à remplir par l'apprenant avant ou pendant la formation (logiciel, compte, matériel…).
+    Un prérequis obligatoire doit être « OK » pour que l'inscription soit confirmée."""
+    formation = models.ForeignKey(Formation, on_delete=models.CASCADE, related_name="prerequis")
+    libelle = models.CharField("Prérequis", max_length=200)
+    obligatoire = models.BooleanField("Obligatoire avant confirmation", default=False)
+    ordre = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Prérequis de formation"
+        verbose_name_plural = "Prérequis de formation"
+        ordering = ["ordre", "id"]
+
+    def __str__(self):
+        return self.libelle
+
+
+class CritereEvaluation(models.Model):
+    """Critère de la grille d'évaluation du projet d'une formation, noté sur 20 et pondéré (%)."""
+    formation = models.ForeignKey(Formation, on_delete=models.CASCADE, related_name="criteres")
+    libelle = models.CharField("Critère", max_length=200)
+    poids = models.PositiveSmallIntegerField("Poids (%)", validators=[MinValueValidator(1), MaxValueValidator(100)])
+    ordre = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Critère d'évaluation"
+        verbose_name_plural = "Grille d'évaluation"
+        ordering = ["ordre", "id"]
+
+    def __str__(self):
+        return f"{self.libelle} ({self.poids} %)"

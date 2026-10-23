@@ -104,6 +104,13 @@ formation (80 % par défaut, présent ou en retard sur les séances réalisées)
 (10/20 par défaut, note globale 40/40/20). Seuils : Paramètres › Formations. Abandon et dérogation au
 résultat : motif obligatoire.
 
+**Prérequis et évaluation, par formation** (Paramètres › Formations) : liste de prérequis (un obligatoire
+doit être « OK » pour confirmer l'inscription), grille du projet (critères notés sur 20, poids totalisant
+100 %) et poids de la note finale (contrôle continu, projet, soutenance ; 40/40/20 par défaut, soutenance
+à 0 = aucune). Saisie par promotion : **Promotions › Évaluation** (formateur référent et admin) ; l'apprenant
+tient ses prérequis à jour depuis son profil. Une promotion ne se clôture qu'avec une évaluation complète.
+Logique : `apps/evaluation/grille.py`.
+
 **Présences** : une séance ne devient « réalisée » qu'à l'enregistrement de sa feuille de présence complète
 (apprenants confirmés ou en cours), ouverte dès le début de la séance. Les séances passées sans feuille
 apparaissent dans le planning et le tableau de bord ; `workflow_quotidien` relance les formateurs de la
@@ -154,17 +161,17 @@ Mises à jour : **automatiques à chaque `git push` sur main** (`../docs/DEPLOIE
 
 - `config/` — réglages, URLs, WSGI
 - `apps/core` — transversal : rôles & permissions (`permissions.py`), icônes SVG (`{% icon %}`), navigation
-- `apps/comptes` — profils, rôles, prérequis
+- `apps/comptes` — profils, rôles, candidatures
 - `apps/formation` — formation, modules, séances, compétences, ressources (+ `seed_geoai`)
-- `apps/evaluation` — présence, livrables, quiz, compétences, projet, soutenance (+ `import_gift`)
+- `apps/evaluation` — présence, livrables, quiz, compétences, prérequis et grille d'évaluation (`grille.py`), soutenance (+ `import_gift`)
 - `apps/agenda` — promotions et leur workflow (`workflow.py`), calendrier, planning formateur, présences, notifications
-- `apps/tableau_bord` — synthèse (note globale 40/40/20) + vue formateur
+- `apps/tableau_bord` — synthèse (note globale selon les poids de la formation) + vue formateur
 - `docs/ARCHITECTURE.md` — architecture détaillée
 
 ## Tests
 
 ```bash
-python manage.py test        # 83 tests : rôles, autorisations (apprenants, formateurs par module),
+python manage.py test        # 88 tests : rôles, autorisations (apprenants, formateurs par module),
                              # promotions des formateurs, auto-évaluation, fichiers, quiz, candidatures,
                              # création de compte, mot de passe oublié, e-mails, workflow des promotions
 ```

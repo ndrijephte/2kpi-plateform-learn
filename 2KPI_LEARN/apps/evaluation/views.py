@@ -196,3 +196,96 @@ def autoevaluations(request, promo_id):
     return render(request, "evaluation/autoevaluations.html", {
         "promotion": promo, "synthese": synthese, "modules": modules, "module_id": module_id,
         "filtre": request.GET.get("filtre", ""), "niveaux": autoevaluation.echelle()})
+
+
+def _note(brut):
+    """Note saisie (virgule acceptée) → Decimal ; '' → None ; ValueError hors de [0, 20]."""
+    brut = (brut or "").strip().replace(",", ".")
+    if not brut:
+        return None
+    try:
+        note = Decimal(brut).quantize(Decimal("0.1"))
+    except InvalidOperation:
+        raise ValueError(brut)
+    if not Decimal(0) <= note <= Decimal(20):
+        raise ValueError(brut)
+    return note
+
+
+@formateur_requis
+def evaluation_promotion(request, promo_id):
+    """Prérequis des apprenants et évaluation finale (grille du projet, soutenance) d'une promotion.
+    Saisie : administration et formateur référent ; les autres formateurs de la promotion consultent."""
+    from django.db import transaction
+    from apps.core.permissions import pilote_promotion
+    from apps.tableau_bord.services import synthese
+    from . import grille
+    from .models import PrerequisInscription, Soutenance
+    promo = get_object_or_404(promotions_visibles(request.user).select_related("formation"), pk=promo_id)
+    formation = promo.formation
+    peut_saisir = pilote_promotion(request.user, promo)
+    S = Inscription.Statut
+    ordre = ("apprenant__last_name", "apprenant__first_name", "apprenant__username")
+    a_preparer = list(promo.inscriptions.filter(statut__in=[S.ADMISE, S.CONFIRMEE, S.EN_COURS])
+                      .select_related("apprenant", "formation").order_by(*ordre))
+    evaluees = list(promo.inscriptions.filter(statut__in=[S.EN_COURS, S.VALIDEE, S.NON_VALIDEE])
+                    .select_related("apprenant", "formation", "soutenance").order_by(*ordre))
+    prerequis = list(formation.prerequis.all())
+    criteres = list(formation.criteres.all())
+
+    if request.method == "POST":
+        if not peut_saisir:
+            raise PermissionDenied
+        if request.POST.get("quoi") == "prerequis":
+            for insc in a_preparer:
+                grille.definir_prerequis(insc, {p.pk: request.POST.get(f"p_{insc.pk}_{p.pk}") for p in prerequis})
+            messages.success(request, "Prérequis enregistrés.")
+        else:
+            saisies, erreurs = {}, []
+            for insc in (i for i in evaluees if i.statut == S.EN_COURS):  # résultats figés après la clôture
+                nom = insc.apprenant.get_full_name() or insc.apprenant.username
+                try:
+                    saisies[insc] = ({c.pk: _note(request.POST.get(f"n_{insc.pk}_{c.pk}")) for c in criteres},
+                                     _note(request.POST.get(f"s_{insc.pk}")))
+                except ValueError as e:
+                    erreurs.append(f"{nom} : « {e} » n'est pas une note entre 0 et 20")
+            if erreurs:
+                messages.error(request, "Rien n'a été enregistré. " + " ; ".join(erreurs) + ".")
+            else:
+                with transaction.atomic():
+                    for insc, (notes, soutenance) in saisies.items():
+                        grille.enregistrer_notes(insc, notes)
+                        if soutenance is None:
+                            Soutenance.objects.filter(inscription=insc).update(note_sur_20=None)
+                        else:
+                            Soutenance.objects.update_or_create(inscription=insc, defaults={"note_sur_20": soutenance})
+                messages.success(request, "Évaluation enregistrée.")
+        return redirect(f"{request.path}#{request.POST.get('quoi', 'notes')}")
+
+    etats = {}
+    for e in PrerequisInscription.objects.filter(inscription__in=a_preparer).values_list("inscription_id", "prerequis_id", "statut"):
+        etats[(e[0], e[1])] = e[2]
+    lignes_prerequis = [{"inscription": i, "faits": sum(1 for p in prerequis if etats.get((i.pk, p.pk)) == grille.OK),
+                         "cases": [{"prerequis": p, "statut": etats.get((i.pk, p.pk), grille.A_FAIRE)} for p in prerequis]}
+                        for i in a_preparer]
+    libelles = dict(PrerequisInscription.Statut.choices)
+    for ligne in lignes_prerequis:
+        for case in ligne["cases"]:
+            case["libelle"] = libelles[case["statut"]]
+    lignes_notes = []
+    for i in evaluees:
+        notes = grille.notes_criteres(i)
+        s = synthese(i)
+        soutenance = getattr(i, "soutenance", None)
+        lignes_notes.append({
+            "inscription": i, "modifiable": peut_saisir and i.statut == S.EN_COURS,
+            "notes": [{"critere": c, "note": notes.get(c.pk)} for c in criteres],
+            "soutenance": soutenance.note_sur_20 if soutenance else None,
+            "continu": s["moyenne_seances"], "projet": grille.note_projet(i, criteres, notes),
+            "finale": s["note_globale"], "manques": grille.evaluation_incomplete(i, criteres)})
+    return render(request, "evaluation/evaluation_promotion.html", {
+        "promotion": promo, "formation": formation, "peut_saisir": peut_saisir,
+        "prerequis": prerequis, "criteres": criteres, "statuts_prerequis": PrerequisInscription.Statut.choices,
+        "lignes_prerequis": lignes_prerequis, "lignes_notes": lignes_notes,
+        "composantes": grille.composantes(formation, bool(criteres)),
+    })

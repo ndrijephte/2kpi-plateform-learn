@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from apps.agenda.models import Promotion
-from .models import Prerequis, Profil
+from .models import Profil
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -155,22 +155,22 @@ class ProfilForm(forms.ModelForm):
         return photo
 
 
-class PrerequisForm(forms.ModelForm):
-    class Meta:
-        model = Prerequis
-        exclude = ["profil"]
+class PrerequisForm(forms.Form):
+    """Prérequis de la formation de l'inscription : un statut par prérequis (champ non soumis = inchangé)."""
 
-    def __init__(self, *a, **kw):
+    def __init__(self, *a, inscription, **kw):
+        from apps.evaluation.grille import etats_prerequis
+        from apps.evaluation.models import PrerequisInscription
         super().__init__(*a, **kw)
-        for f in self.fields.values():
-            f.required = False
+        self.inscription = inscription
+        for p, statut in etats_prerequis(inscription):
+            self.fields[f"p{p.pk}"] = forms.ChoiceField(
+                label=p.libelle + (" (obligatoire)" if p.obligatoire else ""), required=False,
+                choices=PrerequisInscription.Statut.choices, initial=statut)
 
-    def clean(self):
-        d = super().clean()
-        for nom in self.fields:  # champ non soumis = valeur actuelle conservée
-            if not d.get(nom):
-                d[nom] = getattr(self.instance, nom)
-        return d
+    def save(self):
+        from apps.evaluation.grille import definir_prerequis
+        definir_prerequis(self.inscription, {int(nom[1:]): v for nom, v in self.cleaned_data.items() if v})
 
 
 class CreationCompteForm(forms.Form):

@@ -38,6 +38,44 @@
         <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
       </form>
     </details>
+
+  </div>
+</div>
+<div class="panneaux-larges">
+  <div>
+    <details class="card panel" {% if prerequis_formset.is_bound %}open{% endif %}>
+      <summary class="card-head" style="margin:0"><h2 class="section-title">{% icon "list-checks" size=18 %} Prérequis <small class="muted">({{ formation.prerequis.count }})</small></h2><span class="chev">{% icon "chevron-right" size=18 %}</span></summary>
+      <p class="muted"><small>Ce que l'apprenant doit avoir avant ou pendant la formation (compte, logiciel, matériel). Un prérequis <strong>obligatoire</strong> doit être « OK » pour confirmer l'inscription.</small></p>
+      <form method="post">{% csrf_token %}<input type="hidden" name="quoi" value="prerequis">
+        {{ prerequis_formset.management_form }}{{ prerequis_formset.non_form_errors }}
+        <table class="tbl choix-tbl">
+          <thead><tr><th>Prérequis</th><th class="col-correct">Obligatoire</th><th class="num col-ordre">Ordre</th><th class="num col-ordre">Retirer</th></tr></thead>
+          <tbody>{% for f in prerequis_formset %}<tr>{{ f.id }}
+            <td>{{ f.libelle }}{{ f.libelle.errors }}</td><td class="col-correct">{{ f.obligatoire }}</td>
+            <td class="num col-ordre">{{ f.ordre }}</td><td class="num">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+        <p class="muted"><small>Lignes vides ignorées ; enregistre pour obtenir de nouvelles lignes.</small></p>
+        <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer les prérequis</button>
+      </form>
+    </details>
+  </div>
+  <div>
+    <details class="card panel" {% if criteres_formset.is_bound %}open{% endif %}>
+      <summary class="card-head" style="margin:0"><h2 class="section-title">{% icon "gauge" size=18 %} Grille d'évaluation du projet <small class="muted">({{ formation.criteres.count }} critères)</small></h2><span class="chev">{% icon "chevron-right" size=18 %}</span></summary>
+      <p class="muted"><small>Chaque critère est noté sur 20 ; les poids totalisent 100 %. La note de projet compte pour {{ formation.poids_projet }} % de la note finale (contrôle continu {{ formation.poids_continu }} %, soutenance {{ formation.poids_soutenance }} % — réglables dans « Informations de la formation »). Sans critère, la note finale se calcule sans projet.</small></p>
+      <form method="post">{% csrf_token %}<input type="hidden" name="quoi" value="criteres">
+        {{ criteres_formset.management_form }}{{ criteres_formset.non_form_errors }}
+        <table class="tbl choix-tbl">
+          <thead><tr><th>Critère</th><th class="num col-ordre">Poids&nbsp;(%)</th><th class="num col-ordre">Ordre</th><th class="num col-ordre">Retirer</th></tr></thead>
+          <tbody>{% for f in criteres_formset %}<tr>{{ f.id }}
+            <td>{{ f.libelle }}{{ f.libelle.errors }}</td><td class="num col-ordre">{{ f.poids }}{{ f.poids.errors }}</td>
+            <td class="num col-ordre">{{ f.ordre }}</td><td class="num">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+        <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer la grille</button>
+      </form>
+    </details>
   </div>
 </div>
 {% endblock %}

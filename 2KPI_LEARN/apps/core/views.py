@@ -11,8 +11,8 @@ from apps.agenda.models import Indisponibilite
 from apps.formation.models import Competence, Formation, Module, Seance
 from apps.evaluation.gift import importer_gift
 from apps.evaluation.models import Question, Quiz
-from .forms import (AIDE_TYPES, SECTIONS, ChoixFormSet, CompetenceForm, FormationForm, GiftForm,
-                    IndisponibiliteForm, ModuleForm, QuestionForm, QuizForm, SeanceForm,
+from .forms import (AIDE_TYPES, SECTIONS, ChoixFormSet, CompetenceForm, CriteresFormSet, FormationForm, GiftForm,
+                    IndisponibiliteForm, ModuleForm, PrerequisFormSet, QuestionForm, QuizForm, SeanceForm,
                     parametres_form, verifier_question)
 from .models import Parametres
 from .permissions import admin_requis
@@ -80,14 +80,22 @@ def formations(request):
 @admin_requis
 def formation(request, pk):
     f = get_object_or_404(Formation, pk=pk)
-    form = FormationForm(request.POST if request.POST.get("quoi") == "formation" else None, instance=f)
-    module_form = ModuleForm(request.POST if request.POST.get("quoi") == "module" else None,
+    quoi = request.POST.get("quoi")
+    form = FormationForm(request.POST if quoi == "formation" else None, instance=f)
+    module_form = ModuleForm(request.POST if quoi == "module" else None,
                              instance=Module(formation=f, ordre=f.modules.count() + 1))
+    prerequis = PrerequisFormSet(request.POST if quoi == "prerequis" else None, instance=f, prefix="pr")
+    criteres = CriteresFormSet(request.POST if quoi == "criteres" else None, instance=f, prefix="cr")
     if request.method == "POST":
         if form.is_bound and form.is_valid():
             form.save()
             messages.success(request, "Formation mise à jour.")
             return redirect("core:formation", pk=f.pk)
+        for jeu, libelle in ((prerequis, "Prérequis"), (criteres, "Grille d'évaluation")):
+            if jeu.is_bound and jeu.is_valid():
+                jeu.save()
+                messages.success(request, f"{libelle} enregistré(e).")
+                return redirect("core:formation", pk=f.pk)
         if module_form.is_bound and module_form.is_valid():
             m = module_form.save()
             messages.success(request, f"Module {m.code} ajouté.")
@@ -96,6 +104,7 @@ def formation(request, pk):
                                  nb_competences=Count("competences", distinct=True)).order_by("ordre")
     return render(request, "parametres/formation.html", {
         "formation": f, "form": form, "module_form": module_form, "modules": modules,
+        "prerequis_formset": prerequis, "criteres_formset": criteres,
         "section": "formations", "fil": _fil(*_fil_formation(f, lien=False))})
 
 

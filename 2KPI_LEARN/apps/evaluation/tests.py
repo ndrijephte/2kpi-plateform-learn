@@ -2,7 +2,7 @@ from django.core.files.base import ContentFile
 from django.urls import reverse
 from apps.agenda.models import AccesModule
 from apps.core.test_utils import BaseTest
-from apps.evaluation.models import Livrable, Quiz, TentativeQuiz
+from apps.evaluation.models import Inscription, Livrable, Quiz, TentativeQuiz
 
 
 class QuizTests(BaseTest):
@@ -176,3 +176,96 @@ class AutoEvaluationTests(BaseTest):
         r = self.client_de(self.form_a).post(url, {"objectifs_liste": "\n".join(f"O{i}" for i in range(13))})
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "12 objectifs au maximum")
+
+
+class GrilleEtPrerequisTests(BaseTest):
+    """Prérequis et grille d'évaluation définis par formation, saisis par promotion."""
+
+    def setUp(self):
+        super().setUp()
+        from apps.agenda.models import Promotion
+        self.promo_a.statut = Promotion.Statut.EN_COURS
+        self.promo_a.save()
+        self.url = reverse("evaluation:evaluation_promotion", args=[self.promo_a.pk])
+
+    def test_seed_geoai_et_note_identique_a_l_ancienne_formule(self):
+        from decimal import Decimal
+        from apps.evaluation import grille
+        from apps.evaluation.models import Soutenance
+        self.assertEqual(self.formation.prerequis.count(), 6)
+        self.assertEqual(sum(c.poids for c in self.formation.criteres.all()), 100)
+        # Projet : 20 % × 20 + 80 % × 10 = 12 ; finale = 0,4 × 0 + 0,4 × 12 + 0,2 × 15 = 7,8
+        criteres = list(self.formation.criteres.all())
+        acquisition = next(c for c in criteres if c.libelle.startswith("Acquisition"))
+        grille.enregistrer_notes(self.insc_a, {c.pk: Decimal(20 if c == acquisition else 10) for c in criteres})
+        Soutenance.objects.create(inscription=self.insc_a, note_sur_20=15)
+        self.assertEqual(grille.note_projet(self.insc_a), Decimal("12.00"))
+        from apps.tableau_bord.services import synthese
+        self.assertEqual(synthese(self.insc_a)["note_globale"], 7.8)
+
+    def test_formation_sans_grille_ni_soutenance(self):
+        from decimal import Decimal
+        from apps.evaluation import grille
+        from apps.formation.models import Formation
+        f = Formation.objects.create(titre="Kobo", poids_continu=100, poids_projet=0, poids_soutenance=0)
+        self.assertEqual(grille.note_finale(f, 14.5, None, None), Decimal("14.50"))
+        f2 = Formation.objects.create(titre="WebSIG")  # 40/40/20 mais sans critère : continu 2/3, soutenance 1/3
+        self.assertEqual(grille.note_finale(f2, 12, None, 15), Decimal("13.00"))
+
+    def test_saisie_par_le_referent_et_consultation_des_autres(self):
+        criteres = list(self.formation.criteres.all())
+        donnees = {"quoi": "notes", f"s_{self.insc_a.pk}": "14,5",
+                   **{f"n_{self.insc_a.pk}_{c.pk}": "12" for c in criteres}}
+        r = self.client_de(self.form_a).post(self.url, {**donnees, f"n_{self.insc_a.pk}_{criteres[0].pk}": "25"}, follow=True)
+        self.assertContains(r, "Rien n&#x27;a été enregistré")
+        self.assertFalse(self.insc_a.notes_criteres.exists())
+        self.client_de(self.form_a).post(self.url, donnees)
+        self.assertEqual(self.insc_a.notes_criteres.count(), len(criteres))
+        self.assertEqual(str(self.insc_a.soutenance.note_sur_20), "14.5")
+        page = self.client_de(self.form_a).get(self.url)
+        self.assertEqual(page.context["lignes_notes"][0]["manques"], [])
+        # Formateur affecté (non référent) : consultation seulement
+        from apps.agenda.models import Affectation
+        Affectation.objects.create(promotion=self.promo_a, formateur=self.form_b, tous_les_modules=True)
+        self.assertFalse(self.client_de(self.form_b).get(self.url).context["peut_saisir"])
+        self.assertEqual(self.client_de(self.form_b).post(self.url, donnees).status_code, 403)
+        self.assertEqual(self.client_de(self.app_a).get(self.url).status_code, 403)
+
+    def test_prerequis_obligatoire_bloque_la_confirmation(self):
+        from apps.agenda import workflow
+        from apps.agenda.models import Promotion
+        from apps.evaluation import grille
+        p = self.formation.prerequis.first()
+        p.obligatoire = True
+        p.save()
+        self.promo_b.statut = Promotion.Statut.INSCRIPTIONS
+        self.promo_b.save()
+        insc = Inscription.objects.create(apprenant=self.compte("app_y", "apprenant"), formation=self.formation,
+                                          promotion=self.promo_b, paiement=Inscription.Paiement.RECU)
+        with self.assertRaises(workflow.TransitionRefusee) as refus:
+            workflow.changer_statut_inscription(insc, Inscription.Statut.CONFIRMEE, self.admin)
+        self.assertIn(p.libelle, refus.exception.manques[0])
+        # L'apprenant le coche depuis son profil, puis la confirmation passe
+        c = self.client_de(insc.apprenant)
+        c.post(reverse("comptes:profil_modifier"), {"c-first_name": "Y", "c-last_name": "Z", "c-email": "app_y@exemple.org",
+                                                     f"r-p{p.pk}": grille.OK})
+        self.assertEqual(grille.obligatoires_manquants(insc), [])
+        workflow.changer_statut_inscription(insc, Inscription.Statut.CONFIRMEE, self.admin)
+
+    def test_parametres_poids_et_grille_totalisent_100(self):
+        url = reverse("core:formation", args=[self.formation.pk])
+        c = self.client_de(self.admin)
+        r = c.post(url, {"quoi": "formation", "titre": self.formation.titre, "slug": self.formation.slug, "active": "on",
+                         "seuil_assiduite": 80, "note_minimale": 10, "poids_continu": 50, "poids_projet": 40,
+                         "poids_soutenance": 20})
+        self.assertContains(r, "totaliser 100 %")
+        criteres = list(self.formation.criteres.all())
+        base = {"quoi": "criteres", "cr-TOTAL_FORMS": len(criteres) + 3, "cr-INITIAL_FORMS": len(criteres),
+                "cr-MIN_NUM_FORMS": 0, "cr-MAX_NUM_FORMS": 1000}
+        for n, cr in enumerate(criteres):
+            base.update({f"cr-{n}-id": cr.pk, f"cr-{n}-libelle": cr.libelle, f"cr-{n}-poids": cr.poids, f"cr-{n}-ordre": cr.ordre})
+        base.update({f"cr-{n}-ordre": 0 for n in range(len(criteres), len(criteres) + 3)})  # lignes vides du navigateur
+        self.assertContains(c.post(url, {**base, "cr-0-poids": 30}), "totaliser 100 %")
+        r = c.post(url, {**base, "cr-0-poids": 10, f"cr-{len(criteres)}-libelle": "Oral", f"cr-{len(criteres)}-poids": 10})
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(self.formation.criteres.count(), len(criteres) + 1)

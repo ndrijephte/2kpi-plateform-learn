@@ -17,9 +17,9 @@
 </div>
 
 <div class="grid-2">
-  {% if est_apprenant %}
+  {% if est_apprenant and prerequis %}
   <div class="card">
-    <h2 class="section-title">{% icon "list-checks" size=18 %} Prérequis techniques</h2>
+    <h2 class="section-title">{% icon "list-checks" size=18 %} Prérequis de la formation</h2>
     <div class="progress-label"><span>{{ prerequis_ok }}/{{ prerequis|length }} prêts</span></div>
     <ul class="list">
       {% for libelle, valeur, affichage in prerequis %}
@@ -30,7 +30,7 @@
       </li>
       {% endfor %}
     </ul>
-    <p class="muted"><small>Ton formateur met à jour ces statuts lors de la vérification de ton poste.</small></p>
+    <p class="muted"><small>Mets-les à jour depuis « Modifier mon profil » ; ton formateur les vérifie avec toi.</small></p>
   </div>
   {% endif %}
   <div class="card">

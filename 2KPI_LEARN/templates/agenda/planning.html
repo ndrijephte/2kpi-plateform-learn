@@ -12,6 +12,7 @@
   </div>
   <div class="actions">
   <a class="btn btn-navy" href="{% url 'agenda:acces' promotion.pk %}">{% icon "lock" size=16 %} Accès aux contenus</a>
+  <a class="btn btn-secondary" href="{% url 'evaluation:evaluation_promotion' promotion.pk %}">{% icon "clipboard-check" size=16 %} Évaluation</a>
   <a class="btn btn-secondary" href="{% url 'evaluation:autoevaluations' promotion.pk %}">{% icon "gauge" size=16 %} Auto-évaluations</a>
   {% if pilote %}<form method="post" action="{% url 'agenda:synchroniser' promotion.pk %}" onsubmit="return confirm('Recaler les séances encore « planifiées » sur le paramétrage actuel des séances ?')">{% csrf_token %}
     <button class="btn btn-secondary" type="submit" title="Applique les créneaux définis dans Paramètres > Formations">{% icon "rotate-ccw" size=16 %} Appliquer le paramétrage</button>

@@ -1,8 +1,9 @@
-from decimal import Decimal
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from apps.core.stockage import stockage_prive
-from apps.formation.models import Formation, Module, ObjectifSeance, Seance, Competence
+from apps.formation.models import (Competence, CritereEvaluation, Formation, Module, ObjectifSeance,
+                                   PrerequisFormation, Seance)
 
 
 class Inscription(models.Model):
@@ -165,48 +166,6 @@ class EvaluationCompetence(models.Model):
         return f"{self.competence.code} — {self.inscription.apprenant}"
 
 
-class EvaluationProjet(models.Model):
-    # Poids officiels de la grille (somme = 1.0)
-    POIDS = {
-        "acquisition": Decimal("0.20"),
-        "modelisation": Decimal("0.25"),
-        "stats_spatiales": Decimal("0.15"),
-        "alerte": Decimal("0.20"),
-        "cartographie": Decimal("0.10"),
-        "reproductibilite": Decimal("0.10"),
-    }
-    inscription = models.OneToOneField(Inscription, on_delete=models.CASCADE,
-                                       related_name="projet")
-    acquisition = models.DecimalField("Acquisition & prétraitement", max_digits=4,
-                                      decimal_places=1, null=True, blank=True)
-    modelisation = models.DecimalField("Modélisation ML", max_digits=4,
-                                       decimal_places=1, null=True, blank=True)
-    stats_spatiales = models.DecimalField("Statistiques spatiales", max_digits=4,
-                                          decimal_places=1, null=True, blank=True)
-    alerte = models.DecimalField("Système d'alerte", max_digits=4,
-                                 decimal_places=1, null=True, blank=True)
-    cartographie = models.DecimalField("Cartographie & restitution", max_digits=4,
-                                       decimal_places=1, null=True, blank=True)
-    reproductibilite = models.DecimalField("Reproductibilité & documentation", max_digits=4,
-                                           decimal_places=1, null=True, blank=True)
-
-    class Meta:
-        verbose_name = "Évaluation du projet"
-        verbose_name_plural = "Évaluations de projet"
-
-    @property
-    def note_sur_20(self):
-        total = Decimal("0")
-        for critere, poids in self.POIDS.items():
-            val = getattr(self, critere)
-            if val is not None:
-                total += Decimal(val) * poids
-        return round(total, 2)
-
-    def __str__(self):
-        return f"Projet — {self.inscription.apprenant}"
-
-
 class Soutenance(models.Model):
     inscription = models.OneToOneField(Inscription, on_delete=models.CASCADE,
                                        related_name="soutenance")
@@ -280,3 +239,40 @@ class JournalStatut(models.Model):
 
     def __str__(self):
         return f"{self.inscription or self.promotion} : {self.de or '—'} → {self.vers}"
+
+
+class PrerequisInscription(models.Model):
+    """Où en est l'apprenant sur un prérequis de sa formation (absence de ligne = à faire)."""
+    class Statut(models.TextChoices):
+        OK = "ok", "OK"
+        EN_COURS = "en_cours", "En cours"
+        A_FAIRE = "a_faire", "À faire"
+
+    inscription = models.ForeignKey(Inscription, on_delete=models.CASCADE, related_name="prerequis")
+    prerequis = models.ForeignKey(PrerequisFormation, on_delete=models.CASCADE, related_name="etats")
+    statut = models.CharField(max_length=10, choices=Statut.choices, default=Statut.A_FAIRE)
+    modifie_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Prérequis d'un apprenant"
+        verbose_name_plural = "Prérequis des apprenants"
+        unique_together = ("inscription", "prerequis")
+
+    def __str__(self):
+        return f"{self.inscription.apprenant} · {self.prerequis} : {self.get_statut_display()}"
+
+
+class NoteCritere(models.Model):
+    """Note sur 20 d'un apprenant pour un critère de la grille d'évaluation de sa formation."""
+    inscription = models.ForeignKey(Inscription, on_delete=models.CASCADE, related_name="notes_criteres")
+    critere = models.ForeignKey(CritereEvaluation, on_delete=models.CASCADE, related_name="notes")
+    note_sur_20 = models.DecimalField(max_digits=4, decimal_places=1,
+                                      validators=[MinValueValidator(0), MaxValueValidator(20)])
+
+    class Meta:
+        verbose_name = "Note de critère"
+        verbose_name_plural = "Notes de la grille d'évaluation"
+        unique_together = ("inscription", "critere")
+
+    def __str__(self):
+        return f"{self.inscription.apprenant} · {self.critere.libelle} : {self.note_sur_20}"

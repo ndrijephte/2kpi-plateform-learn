@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Évaluation — {{ promotion.nom }}{% endblock %}
+{% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<span>{{ promotion.nom }}</span>{% icon "chevron-right" size=14 %}<span>Évaluation</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "gauge" size=14 %} {{ formation.titre }}</span>
+    <h1>Évaluation — {{ promotion.nom }}</h1>
+    <p class="muted">Note finale = {% for cle, libelle, poids in composantes %}{{ libelle|lower }} {{ poids }} %{% if not forloop.last %} · {% endif %}{% empty %}aucune composante{% endfor %}. Validation : assiduité ≥ {{ formation.seuil_assiduite }} % et note ≥ {{ formation.note_minimale }}/20.{% if not peut_saisir %} Consultation : la saisie revient au formateur référent et à l'administration.{% endif %}</p>
+  </div>
+  <a class="btn btn-secondary" href="{% url 'agenda:planning' promotion.pk %}">{% icon "calendar-days" size=16 %} Planning</a>
+</div>
+
+<div class="card" id="notes">
+  <div class="card-head"><h2 class="section-title">{% icon "clipboard-check" size=18 %} Évaluation finale</h2>
+    {% if peut_saisir %}<a class="link" href="{% url 'core:formation' formation.pk %}">Grille de la formation {% icon "arrow-right" size=16 %}</a>{% endif %}</div>
+  {% if lignes_notes %}
+  <form method="post">{% csrf_token %}<input type="hidden" name="quoi" value="notes">
+    <div class="table-wrap">
+    <table class="tbl grille-notes">
+      <thead><tr><th>Apprenant</th><th class="num">Note finale</th><th class="num">Continu</th>{% if criteres %}<th class="num">Projet</th>{% endif %}
+        {% if formation.poids_soutenance %}<th class="num col-saisie">Soutenance</th>{% endif %}
+        {% for c in criteres %}<th class="num col-saisie">{{ c.libelle }}<br><small class="muted">{{ c.poids }} %</small></th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for l in lignes_notes %}{% with i=l.inscription %}
+        <tr>
+          <td><strong>{{ i.apprenant.get_full_name|default:i.apprenant.username }}</strong>
+            {% if i.statut != "en_cours" %}<br><span class="pill pill-insc-{{ i.statut }}">{{ i.get_statut_display }}</span>
+            {% elif l.manques %}<br><small class="result-ko">À compléter : {{ l.manques|join:", " }}</small>{% endif %}</td>
+          <td class="num note-finale"><strong>{% if i.note_finale is not None %}{{ i.note_finale|floatformat:2 }}{% else %}{{ l.finale|floatformat:2 }}{% endif %}</strong></td>
+          <td class="num muted">{{ l.continu|floatformat:2 }}</td>
+          {% if criteres %}<td class="num muted">{{ l.projet|floatformat:2 }}</td>{% endif %}
+          {% if formation.poids_soutenance %}<td class="num col-saisie">{% if l.modifiable %}<input class="note-input" type="text" inputmode="decimal" name="s_{{ i.pk }}" value="{{ l.soutenance|default_if_none:'' }}" aria-label="Soutenance — {{ i.apprenant.get_full_name|default:i.apprenant.username }}">{% else %}{{ l.soutenance|default_if_none:"—" }}{% endif %}</td>{% endif %}
+          {% for n in l.notes %}<td class="num col-saisie">{% if l.modifiable %}<input class="note-input" type="text" inputmode="decimal" name="n_{{ i.pk }}_{{ n.critere.pk }}" value="{{ n.note|default_if_none:'' }}" aria-label="{{ n.critere.libelle }} — {{ i.apprenant.get_full_name|default:i.apprenant.username }}">{% else %}{{ n.note|default_if_none:"—" }}{% endif %}</td>{% endfor %}
+        </tr>
+      {% endwith %}{% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if peut_saisir %}<div class="btn-row"><button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer l'évaluation</button>
+      <small class="muted">Notes sur 20 (virgule acceptée) ; case vide = pas encore noté. Continu : moyenne des livrables notés.</small></div>{% endif %}
+  </form>
+  {% else %}<div class="empty"><span class="ico-tile">{% icon "users" %}</span><strong>Aucun apprenant en formation</strong>L'évaluation s'ouvre au démarrage de la promotion.</div>{% endif %}
+</div>
+
+<div class="card" id="prerequis">
+  <div class="card-head"><h2 class="section-title">{% icon "list-checks" size=18 %} Prérequis des apprenants</h2></div>
+  {% if not prerequis %}<p class="muted">Cette formation n'a pas de prérequis.{% if peut_saisir %} <a class="link" href="{% url 'core:formation' formation.pk %}">Les définir</a>{% endif %}</p>
+  {% elif lignes_prerequis %}
+  <form method="post">{% csrf_token %}<input type="hidden" name="quoi" value="prerequis">
+    <div class="table-wrap">
+    <table class="tbl grille-prerequis">
+      <thead><tr><th>Apprenant</th>{% for p in prerequis %}<th>{{ p.libelle }}{% if p.obligatoire %} <small class="result-ko">*</small>{% endif %}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for l in lignes_prerequis %}{% with i=l.inscription %}
+        <tr><td><strong>{{ i.apprenant.get_full_name|default:i.apprenant.username }}</strong><br><small class="muted">{{ l.faits }}/{{ prerequis|length }} · {{ i.get_statut_display }}</small></td>
+          {% for c in l.cases %}<td>{% if peut_saisir %}<select name="p_{{ i.pk }}_{{ c.prerequis.pk }}" aria-label="{{ c.prerequis.libelle }} — {{ i.apprenant.get_full_name|default:i.apprenant.username }}">
+              {% for v, lib in statuts_prerequis %}<option value="{{ v }}" {% if c.statut == v %}selected{% endif %}>{{ lib }}</option>{% endfor %}</select>
+            {% else %}<span class="pill pill-{{ c.statut }}">{{ c.libelle }}</span>{% endif %}</td>{% endfor %}</tr>
+      {% endwith %}{% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if peut_saisir %}<div class="btn-row"><button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer les prérequis</button>
+      <small class="muted"><span class="result-ko">*</span> obligatoire avant la confirmation de l'inscription. L'apprenant peut aussi mettre à jour les siens depuis son profil.</small></div>{% endif %}
+  </form>
+  {% else %}<p class="muted">Aucun apprenant admis ou en formation.</p>{% endif %}
+</div>
+{% endblock %}

@@ -15,7 +15,7 @@ from apps.evaluation.models import Inscription
 from apps.evaluation.utils import inscription_courante
 from .forms import (CompteAdminForm, CompteForm, CreationCompteForm, MotDePasseOublieForm, NouvelUtilisateurForm,
                     PrerequisForm, ProfilForm)
-from .models import Profil, Prerequis
+from .models import Profil
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -24,34 +24,45 @@ logger = logging.getLogger(__name__)
 @login_required
 def profil(request):
     # Les comptes créés avant le signal (ex. createsuperuser initial) n'ont pas toujours de profil.
-    profil, prerequis = _profil_complet(request.user)
-    items = [(f.verbose_name, getattr(prerequis, f.name), getattr(prerequis, f"get_{f.name}_display")())
-             for f in Prerequis._meta.fields if f.choices]
-    faits = sum(1 for _, v, _ in items if v == Prerequis.Statut.OK)
+    from apps.evaluation.grille import OK, etats_prerequis
+    from apps.evaluation.models import PrerequisInscription
+    profil = _profil_complet(request.user)
+    inscription = inscription_courante(request.user) if role_de(request.user) == "apprenant" else None
+    libelles = dict(PrerequisInscription.Statut.choices)
+    items = [(p.libelle + (" (obligatoire)" if p.obligatoire else ""), statut, libelles[statut])
+             for p, statut in etats_prerequis(inscription)]
     from .services import promotions_du_formateur
     formateur = role_de(request.user) == FORMATEUR
     return render(request, "comptes/profil.html", {
-        "profil": profil, "prerequis": items, "prerequis_ok": faits,
-        "inscription": inscription_courante(request.user) if role_de(request.user) == "apprenant" else None,
+        "profil": profil, "prerequis": items, "prerequis_ok": sum(1 for _, v, _ in items if v == OK),
+        "inscription": inscription,
         "promotions_encadrees": promotions_du_formateur(request.user) if formateur else None,
     })
 
 
 def _profil_complet(user):
-    profil, _ = Profil.objects.get_or_create(utilisateur=user)
-    prerequis, _ = Prerequis.objects.get_or_create(profil=profil)
-    return profil, prerequis
+    return Profil.objects.get_or_create(utilisateur=user)[0]
+
+
+def _prerequis_form(data, user):
+    """Formulaire des prérequis de l'inscription courante d'un apprenant (None s'il n'y en a pas)."""
+    if role_de(user) != "apprenant":
+        return None
+    insc = inscription_courante(user)
+    if insc is None or not insc.formation.prerequis.exists():
+        return None
+    return PrerequisForm(data, inscription=insc, prefix="r")
 
 
 @login_required
 def profil_modifier(request):
     """Chaque utilisateur (admin compris) modifie ses propres informations."""
     user = request.user
-    profil, prerequis = _profil_complet(user)
+    profil = _profil_complet(user)
     data, files = (request.POST, request.FILES) if request.method == "POST" else (None, None)
     compte_form = CompteForm(data, instance=user, prefix="c")
     profil_form = ProfilForm(data, files, instance=profil, prefix="p", role=role_de(user))
-    prerequis_form = PrerequisForm(data, instance=prerequis, prefix="r") if role_de(user) == "apprenant" else None
+    prerequis_form = _prerequis_form(data, user)
     forms_ = [f for f in (compte_form, profil_form, prerequis_form) if f]
     if request.method == "POST" and all(f.is_valid() for f in forms_):
         for f in forms_:
@@ -69,7 +80,7 @@ def utilisateur_editer(request, pk):
     du rôle : promotion pour un apprenant, promotions encadrées pour un formateur."""
     from .services import definir_promotions_formateur, promotions_du_formateur
     cible = get_object_or_404(User, pk=pk)
-    profil, prerequis = _profil_complet(cible)
+    profil = _profil_complet(cible)
     insc = inscription_courante(cible)
     data, files = (request.POST, request.FILES) if request.method == "POST" else (None, None)
     compte_form = CompteAdminForm(data, instance=cible, prefix="c",
@@ -78,7 +89,7 @@ def utilisateur_editer(request, pk):
                                            if role_de(cible) == FORMATEUR else []})
     profil_form = ProfilForm(data, files, instance=profil, prefix="p")
     profil_form.masquer_hors_role(compte_form.data.get("c-role") if data else role_de(cible))
-    prerequis_form = PrerequisForm(data, instance=prerequis, prefix="r") if role_de(cible) == "apprenant" else None
+    prerequis_form = _prerequis_form(data, cible)
     forms_ = [f for f in (compte_form, profil_form, prerequis_form) if f]
     if request.method == "POST" and all(f.is_valid() for f in forms_):
         role = compte_form.cleaned_data["role"]

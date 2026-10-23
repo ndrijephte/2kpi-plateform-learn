@@ -1,7 +1,7 @@
 from django import forms
 from apps.agenda.models import Indisponibilite
 from apps.formation.forms import ObjectifsMixin
-from apps.formation.models import Competence, Formation, Module, Seance
+from apps.formation.models import Competence, CritereEvaluation, Formation, Module, PrerequisFormation, Seance
 from .models import Parametres
 
 SECTIONS = {
@@ -26,13 +26,21 @@ def parametres_form(section):
 class FormationForm(forms.ModelForm):
     class Meta:
         model = Formation
-        fields = ["titre", "slug", "description", "active", "seuil_assiduite", "note_minimale"]
+        fields = ["titre", "slug", "description", "active", "seuil_assiduite", "note_minimale",
+                  "poids_continu", "poids_projet", "poids_soutenance"]
         widgets = {"description": forms.Textarea(attrs={"rows": 3})}
         help_texts = {"slug": "Identifiant d'URL ; laissé vide, il est déduit du titre."}
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         self.fields["slug"].required = False
+
+    def clean(self):
+        d = super().clean()
+        poids = [d.get(c) for c in ("poids_continu", "poids_projet", "poids_soutenance")]
+        if None not in poids and sum(poids) != 100:
+            raise forms.ValidationError(f"Les poids de la note finale doivent totaliser 100 % (ici {sum(poids)} %).")
+        return d
 
 
 class ModuleForm(forms.ModelForm):
@@ -191,3 +199,32 @@ class GiftForm(forms.Form):
         except UnicodeDecodeError:
             raise forms.ValidationError("Le fichier doit être encodé en UTF-8.")
         return f
+
+
+class _LignesFormSet(forms.BaseInlineFormSet):
+    def lignes(self):
+        """Formulaires conservés (remplis et non supprimés)."""
+        return [f for f in self.forms if f.has_changed() or f.instance.pk
+                if not (self.can_delete and self._should_delete_form(f))]
+
+
+class _CriteresFormSet(_LignesFormSet):
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+        for f in self.forms:
+            if self._should_delete_form(f) and f.instance.pk and f.instance.notes.exists():
+                raise forms.ValidationError(f"« {f.instance.libelle} » a déjà des notes : renomme-le plutôt que de le retirer.")
+        lignes = self.lignes()
+        total = sum(f.cleaned_data.get("poids") or 0 for f in lignes)
+        if lignes and total != 100:
+            raise forms.ValidationError(f"Les poids des critères doivent totaliser 100 % (ici {total} %).")
+
+
+PrerequisFormSet = inlineformset_factory(
+    Formation, PrerequisFormation, formset=_LignesFormSet, fields=["libelle", "obligatoire", "ordre"],
+    extra=3, can_delete=True, labels={"libelle": "Prérequis", "obligatoire": "Obligatoire"})
+CriteresFormSet = inlineformset_factory(
+    Formation, CritereEvaluation, formset=_CriteresFormSet, fields=["libelle", "poids", "ordre"],
+    extra=3, can_delete=True, labels={"libelle": "Critère", "poids": "Poids (%)"})

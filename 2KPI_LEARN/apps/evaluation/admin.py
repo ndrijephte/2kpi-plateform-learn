@@ -1,6 +1,6 @@
 from django.contrib import admin
-from .models import (AutoEvaluation, Inscription, JournalStatut, Presence, Livrable, Quiz, Question, Choix,
-                     TentativeQuiz, EvaluationCompetence, EvaluationProjet, Soutenance)
+from .models import (AutoEvaluation, Inscription, JournalStatut, NoteCritere, Presence, PrerequisInscription,
+                     Livrable, Quiz, Question, Choix, TentativeQuiz, EvaluationCompetence, Soutenance)
 
 class ChoixInline(admin.TabularInline):
     model = Choix
@@ -38,9 +38,16 @@ class EvaluationCompetenceAdmin(admin.ModelAdmin):
     list_display = ("competence", "inscription", "auto_eval", "eval_formateur", "valide")
     list_filter = ("valide", "competence__module")
 
-@admin.register(EvaluationProjet)
-class EvaluationProjetAdmin(admin.ModelAdmin):
-    list_display = ("inscription", "note_sur_20")
+@admin.register(NoteCritere)
+class NoteCritereAdmin(admin.ModelAdmin):
+    list_display = ("inscription", "critere", "note_sur_20")
+    list_filter = ("critere__formation",)
+
+
+@admin.register(PrerequisInscription)
+class PrerequisInscriptionAdmin(admin.ModelAdmin):
+    list_display = ("inscription", "prerequis", "statut", "modifie_le")
+    list_filter = ("statut", "prerequis__formation")
 
 @admin.register(Soutenance)
 class SoutenanceAdmin(admin.ModelAdmin):

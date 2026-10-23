@@ -1,12 +1,17 @@
 """Crée/actualise la formation GéoAI : 12 modules, 24 compétences (depuis le CSV),
-48 séances (Lun/Mer/Ven/Sam). Idempotent."""
+48 séances (Lun/Mer/Ven/Sam), ses prérequis et la grille d'évaluation du projet. Idempotent."""
 import csv
 import datetime as dt
 import re
 from pathlib import Path
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from apps.formation.models import Formation, Module, Seance, Competence
+from apps.formation.models import Competence, CritereEvaluation, Formation, Module, PrerequisFormation, Seance
+
+PREREQUIS = ["Compte Google Earth Engine validé", "Compte GitHub / GitLab créé", "Miniconda + JupyterLab installés",
+             "QGIS (version LTR) installé", "Git installé", "Machine ≥ 8 Go RAM, connexion internet"]
+CRITERES = [("Acquisition & prétraitement", 20), ("Modélisation ML", 25), ("Statistiques spatiales", 15),
+            ("Système d'alerte", 20), ("Cartographie & restitution", 10), ("Reproductibilité & documentation", 10)]
 
 MODULE_TITRES = {
     "M1": "Comprendre la GéoAI & sa chaîne de valeur",
@@ -98,5 +103,14 @@ class Command(BaseCommand):
                 )
                 nb_seances += 1
 
+        # Prérequis et grille : créés une seule fois (ensuite, Paramètres › Formations fait foi)
+        if not formation.prerequis.exists():
+            PrerequisFormation.objects.bulk_create(
+                PrerequisFormation(formation=formation, libelle=l, ordre=n) for n, l in enumerate(PREREQUIS, 1))
+        if not formation.criteres.exists():
+            CritereEvaluation.objects.bulk_create(
+                CritereEvaluation(formation=formation, libelle=l, poids=p, ordre=n) for n, (l, p) in enumerate(CRITERES, 1))
+
         self.stdout.write(self.style.SUCCESS(
-            f"OK — {len(modules)} modules, {nb_comp} compétences, {nb_seances} séances."))
+            f"OK — {len(modules)} modules, {nb_comp} compétences, {nb_seances} séances, "
+            f"{formation.prerequis.count()} prérequis, {formation.criteres.count()} critères d'évaluation."))

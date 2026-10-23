@@ -108,7 +108,16 @@ def _conditions_cloture(promo):
     from apps.evaluation.models import Livrable
     a_corriger = Livrable.objects.filter(inscription__promotion=promo, inscription__statut=Inscription.Statut.EN_COURS,
                                          rendu=True, note_sur_20__isnull=True).count()
+    from apps.evaluation.grille import evaluation_incomplete
+    criteres = list(promo.formation.criteres.all())
+    incompletes = [i for i in promo.inscriptions.filter(statut=Inscription.Statut.EN_COURS)
+                   .select_related("apprenant", "formation", "soutenance")
+                   if evaluation_incomplete(i, criteres)]
     return [
+        Condition(not incompletes, "Évaluation finale complète (grille du projet, soutenance)",
+                  f"À compléter pour {_pluriel(len(incompletes), 'apprenant')} : "
+                  + ", ".join(i.apprenant.get_full_name() or i.apprenant.username for i in incompletes[:5])
+                  + ("…" if len(incompletes) > 5 else "") + " (Promotions › Évaluation)." if incompletes else ""),
         Condition(not a_venir.exists(), "Toutes les séances sont réalisées ou annulées",
                   f"{_pluriel(a_venir.count(), 'séance')} encore planifiée(s), confirmée(s) ou reportée(s) (Planning)."
                   if a_venir.exists() else ""),
@@ -297,8 +306,12 @@ def conditions_inscription(insc, cible, motif=""):
                                     "Aucune promotion rattachée." if promo is None else
                                     f"« {promo.nom} » est « {promo.get_statut_display()} »."))
     if cible == S.CONFIRMEE:
+        from apps.evaluation.grille import obligatoires_manquants
         conditions.append(Condition(insc.paiement != insc.Paiement.EN_ATTENTE, "Paiement reçu ou exonération",
                                     "Indique le paiement avant de confirmer."))
+        manquants = obligatoires_manquants(insc)
+        conditions.append(Condition(not manquants, "Prérequis obligatoires remplis",
+                                    f"Pas encore « OK » : {', '.join(manquants)}." if manquants else ""))
     if cible in (S.ABANDON, S.VALIDEE, S.NON_VALIDEE):
         conditions.append(Condition(bool(motif.strip()), "Motif renseigné", "Le motif est obligatoire."))
     return conditions

@@ -177,7 +177,8 @@ class WorkflowTests(BaseTest):
             self.wf.changer_statut_inscription(self.insc_b, self.S.VALIDEE, self.admin, motif="x")
 
     def test_cloture_calcule_les_resultats_80_pourcent_et_10_sur_20(self):
-        from apps.evaluation.models import EvaluationProjet, Livrable, Presence, Soutenance
+        from apps.evaluation import grille
+        from apps.evaluation.models import Livrable, Presence, Soutenance
         promo = self.promo_a
         promo.statut = self.P.EN_COURS
         promo.save()
@@ -194,14 +195,18 @@ class WorkflowTests(BaseTest):
             Presence.objects.create(inscription=insc_c, evenement=ev,
                                     statut=Presence.Statut.PRESENT if n < 3 else Presence.Statut.ABSENT)
         livrable = Livrable.objects.create(inscription=self.insc_a, seance=evenements[0].seance, rendu=True)
-        self.assertEqual(self.manques(promo, self.P.CLOTUREE), ["Tous les livrables rendus sont notés"])
+        self.assertEqual(self.manques(promo, self.P.CLOTUREE), ["Évaluation finale complète (grille du projet, soutenance)",
+                                                                 "Tous les livrables rendus sont notés"])
         livrable.note_sur_20 = 12
         livrable.save()
         # Note A = 0,4 × 12 + 0,4 × 10 + 0,2 × 11 = 11 ; C : bonnes notes mais assiduité insuffisante
-        EvaluationProjet.objects.create(inscription=self.insc_a, **{c: 10 for c in EvaluationProjet.POIDS})
+        criteres = list(self.formation.criteres.all())
+        grille.enregistrer_notes(self.insc_a, {c.pk: Decimal(10) for c in criteres})
+        grille.enregistrer_notes(insc_c, {c.pk: Decimal(18) for c in criteres[:-1]})
         Soutenance.objects.create(inscription=self.insc_a, note_sur_20=11)
-        EvaluationProjet.objects.create(inscription=insc_c, **{c: 18 for c in EvaluationProjet.POIDS})
         Soutenance.objects.create(inscription=insc_c, note_sur_20=18)
+        self.assertEqual(self.manques(promo, self.P.CLOTUREE), ["Évaluation finale complète (grille du projet, soutenance)"])
+        grille.enregistrer_notes(insc_c, {criteres[-1].pk: Decimal(18)})
         admise = Inscription.objects.create(apprenant=self.compte("app_d", "apprenant"), formation=self.formation,
                                             promotion=promo)
         self.wf.changer_statut_promotion(promo, self.P.CLOTUREE, self.admin)

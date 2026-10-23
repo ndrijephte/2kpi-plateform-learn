@@ -573,3 +573,17 @@ dt.niveau-3,i.niveau-3{color:var(--niv3)} dt.niveau-4,i.niveau-4{color:var(--niv
 /* Présences à saisir (planning) */
 .alert-inline{display:inline-flex;align-items:center;gap:6px;margin:6px 0 0;padding:6px 12px;border-radius:999px;background:var(--red-50);color:var(--red);font-size:.84rem;font-weight:600}
 .tbl tr.a-pointer td:first-child{box-shadow:inset 3px 0 0 var(--coral)}
+.choix-tbl .col-ordre{width:1%}
+.choix-tbl .col-ordre input{width:64px}
+.choix-tbl td:first-child{width:100%}
+/* Évaluation d'une promotion : grilles compactes, en-têtes complets sur plusieurs lignes */
+.grille-notes th,.grille-prerequis th{white-space:normal;vertical-align:bottom;font-size:.68rem;line-height:1.35;min-width:70px;max-width:120px}
+.grille-notes th,.grille-notes td{padding:10px 8px}
+.grille-notes th:first-child,.grille-notes td:first-child,.grille-prerequis th:first-child,.grille-prerequis td:first-child{min-width:150px;max-width:none;padding-left:14px}
+.grille-notes input.note-input{width:58px;min-width:0;padding:6px 7px;text-align:right}
+.grille-prerequis select{width:auto;min-width:108px;padding:6px 8px;font-size:.84rem}
+.grille-notes .note-finale{font-size:1.05rem;color:var(--navy)}
+.grille-notes th.col-saisie,.grille-notes td.col-saisie{background:var(--navy-50)}
+.grille-notes th.col-saisie:first-of-type{border-left:2px solid var(--border)}
+.panneaux-larges{margin-top:18px}
+.choix-tbl input[type=text]{min-width:0}

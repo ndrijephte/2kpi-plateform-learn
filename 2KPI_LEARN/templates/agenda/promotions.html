@@ -65,6 +65,7 @@
         </form>{% endif %}
         <a class="btn btn-sm btn-secondary" href="{% url 'agenda:planning' p.id %}">{% icon "calendar-days" size=14 %} Planning</a>
         <a class="btn btn-sm btn-secondary" href="{% url 'agenda:acces' p.id %}" title="Ouverture des modules aux apprenants">{% icon "lock" size=14 %} Accès</a>
+        <a class="btn btn-sm btn-secondary" href="{% url 'evaluation:evaluation_promotion' p.id %}" title="Prérequis des apprenants, grille du projet, soutenance, note finale">{% icon "clipboard-check" size=14 %} Évaluation</a>
         <a class="btn btn-sm btn-secondary" href="{% url 'evaluation:autoevaluations' p.id %}" title="Auto-évaluations des apprenants sur les objectifs des séances">{% icon "gauge" size=14 %} Auto-éval.</a>
         {% if peut_gerer %}<a class="btn btn-sm btn-secondary" href="{% url 'agenda:affectations' p.id %}" title="Autoriser des formateurs, module par module">{% icon "user-check" size=14 %} Formateurs</a>{% endif %}
         {% if peut_gerer %}<a class="btn btn-sm btn-secondary" href="{% url 'agenda:fiche_vitrine' p.id %}" title="Publication sur le site vitrine : dates, lieu, prix, places">{% icon "globe" size=14 %} Vitrine</a>{% endif %}
