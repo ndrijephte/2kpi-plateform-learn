@@ -35,16 +35,16 @@ var REALISATIONS = [
     vueLabel: "Ouvrir la carte interactive"
   },
   {
-    id: "pud-80-chefs-lieux",
-    titre: "Plans d'Urbanisme Directeur (PUD) - 80 chefs-lieux de département",
+    id: "pud-16-villes",
+    titre: "Plans d'Urbanisme Directeur (PUD) - 16 villes",
     categorie: "Urbanisme",
     annee: "2024",
-    resume: "Élaboration de plans d'urbanisme directeur pour des chefs-lieux de département, incluant cartographie, questionnaires numériques et validation des données spatiales avant traitement SIG.",
+    resume: "Contribution au vaste programme de Plans d'Urbanisme Directeur lancé par l'État de Côte d'Ivoire, pour le compte d'un groupement chargé de 16 villes : cartographie, questionnaires numériques et validation des données spatiales avant traitement SIG.",
     details: [
-      "Projet mené pour le Ministère de la Construction, du Logement et de l'Urbanisme (MCLU) : conception et implémentation de questionnaires numériques (XLSForm, KoboToolbox) adaptés aux enquêtes de terrain, paramétrage de tablettes pour la collecte, et mise à jour des plans d'état des lieux.",
-      "Contribution à la planification et au suivi des missions de terrain sur l'ensemble des 80 chefs-lieux de département couverts par le programme."
+      "Programme national piloté par le Ministère de la Construction, du Logement et de l'Urbanisme (MCLU). Pour le groupement chargé de 16 villes : conception et implémentation de questionnaires numériques (XLSForm, KoboToolbox) adaptés aux enquêtes de terrain, paramétrage de tablettes pour la collecte, et mise à jour des plans d'état des lieux.",
+      "Contribution à la planification et au suivi des missions de terrain dans les 16 villes confiées au groupement."
     ],
-    chiffres: [{ valeur: "80+", label: "chefs-lieux couverts" }]
+    chiffres: [{ valeur: "16", label: "villes couvertes pour le groupement" }]
   },
   {
     id: "pidacc-bn",
