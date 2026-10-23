@@ -92,3 +92,38 @@ def notifier(destinataires, titre, message, evenement=None, type="info", envoyer
             except Exception:  # l'e-mail est un plus : la notification in-app est déjà créée
                 logger.warning("Échec d'envoi de l'e-mail « %s » à %s", titre, u.email, exc_info=True)
     return crees
+
+
+# ---------- Présences ----------
+
+STATUTS_A_POINTER = ("planifie", "confirme", "reporte")  # séances passées sans feuille validée
+
+
+def inscriptions_a_pointer(promotion):
+    """Inscriptions dont la présence se relève : confirmées ou en cours (ni admises, ni sorties)."""
+    from apps.evaluation.models import Inscription
+    return promotion.inscriptions.filter(statut__in=Inscription.STATUTS_ACTIFS)
+
+
+def presences_manquantes(evenement):
+    """Nombre d'apprenants à pointer qui n'ont pas encore de présence pour cette séance."""
+    return inscriptions_a_pointer(evenement.promotion).exclude(presences__evenement=evenement).count()
+
+
+def seances_a_pointer(queryset, maintenant=None):
+    """Séances commencées mais pas encore réalisées (feuille de présence non validée) d'une promotion en cours."""
+    from .models import Promotion
+    return queryset.filter(date_debut__lte=maintenant or timezone.now(), statut__in=STATUTS_A_POINTER,
+                           promotion__statut=Promotion.Statut.EN_COURS)
+
+
+def formateurs_de(evenement):
+    """Formateurs qui animent la séance : référent de la promotion et affectés au module."""
+    from django.db.models import Q
+    promo = evenement.promotion
+    formateurs = {promo.formateur} if promo.formateur_id else set()
+    affectations = promo.affectations.select_related("formateur")
+    if evenement.seance_id:
+        affectations = affectations.filter(Q(tous_les_modules=True) | Q(modules=evenement.seance.module_id))
+    formateurs.update(a.formateur for a in affectations)
+    return list(formateurs)

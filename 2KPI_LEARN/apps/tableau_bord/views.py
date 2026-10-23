@@ -12,6 +12,7 @@ from apps.evaluation.models import AutoEvaluation, Inscription, Livrable
 from apps.evaluation.utils import inscription_courante
 from apps.formation.acces import etats_modules
 from apps.formation.models import Seance
+from apps.agenda.services import seances_a_pointer
 from . import services
 
 
@@ -70,6 +71,8 @@ def _pilotage(request, admin):
         "nb_semaine": a_animer.filter(date_debut__lte=semaine).count(),
         "nb_apprenants": Inscription.objects.filter(promotion__in=promos).count(),
         "nb_a_corriger": livrables.count(),
+        "a_pointer": list(seances_a_pointer(Evenement.objects.filter(q_interventions(user), promotion__in=promos))
+                          .select_related("promotion", "seance", "seance__module").order_by("date_debut")[:5]),
         "a_corriger": livrables.select_related("inscription__apprenant", "seance__module")
                                .order_by("seance__module__ordre", "seance__ordre")[:5],
         "notifications": user.notifications.filter(lu=False)[:3],

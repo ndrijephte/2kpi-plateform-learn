@@ -28,6 +28,19 @@
     </div>
   </div>
   <div>
+    {% if a_pointer %}
+    <div class="card highlight">
+      <h2 class="section-title">{% icon "user-check" size=18 %} Présences à saisir</h2>
+      <ul class="list">
+        {% for ev in a_pointer %}
+        <li><a class="list-item" href="{% url 'agenda:presences' ev.id %}">
+          <span class="ico-tile">{% icon "user-check" size=18 %}</span>
+          <span class="grow"><strong>{{ ev.libelle }}</strong><small>{{ ev.promotion.nom }} · {{ ev.date_debut|date:"D d/m H:i" }}</small></span>
+          <span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
     {% if aides %}
     <div class="card highlight">
       <h2 class="section-title">{% icon "target" size=18 %} Demandes d'aide (auto-évaluation)</h2>

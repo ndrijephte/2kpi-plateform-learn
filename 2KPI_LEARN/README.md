@@ -104,6 +104,11 @@ formation (80 % par défaut, présent ou en retard sur les séances réalisées)
 (10/20 par défaut, note globale 40/40/20). Seuils : Paramètres › Formations. Abandon et dérogation au
 résultat : motif obligatoire.
 
+**Présences** : une séance ne devient « réalisée » qu'à l'enregistrement de sa feuille de présence complète
+(apprenants confirmés ou en cours), ouverte dès le début de la séance. Les séances passées sans feuille
+apparaissent dans le planning et le tableau de bord ; `workflow_quotidien` relance les formateurs de la
+séance à J+1 et les administrateurs à J+3 (une fois chacun).
+
 ### Auto-évaluation sur les objectifs des séances
 
 - Chaque séance porte des **objectifs** formulés pour l'apprenant (« À la fin de la séance, je suis
@@ -159,7 +164,7 @@ Mises à jour : **automatiques à chaque `git push` sur main** (`../docs/DEPLOIE
 ## Tests
 
 ```bash
-python manage.py test        # 80 tests : rôles, autorisations (apprenants, formateurs par module),
+python manage.py test        # 83 tests : rôles, autorisations (apprenants, formateurs par module),
                              # promotions des formateurs, auto-évaluation, fichiers, quiz, candidatures,
                              # création de compte, mot de passe oublié, e-mails, workflow des promotions
 ```
@@ -171,7 +176,7 @@ python manage.py test        # 80 tests : rôles, autorisations (apprenants, for
 - E-mails : SMTP du `.env` avec **repli automatique sur sendmail** (cPanel) ; `EMAIL_ENVOI=sendmail` pour l'imposer
 - `python manage.py envoyer_rappels` — rappels J-1 (cron quotidien)
 - `python manage.py workflow_quotidien` — démarre les promotions prêtes à leur date, alerte les admins
-  de celles qui ne le sont pas (cron quotidien, tôt le matin)
+  de celles qui ne le sont pas, relance les présences non saisies (cron quotidien, tôt le matin)
 - `python manage.py sauvegarder [--garder 14]` — base + `media/` + `prive/` dans `sauvegardes/` (cron nocturne)
 - Journaux : `logs/2kpi_learn.log` (dont chaque demande « mot de passe oublié » : envoyée, en échec,
   aucun compte, limite atteinte) ; `logs/deploiement.log` ; erreurs 500 envoyées par e-mail aux `ADMINS`

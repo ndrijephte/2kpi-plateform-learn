@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.text import slugify
@@ -14,7 +14,8 @@ from apps.evaluation.models import Presence
 from apps.evaluation.utils import inscription_courante
 from .forms import AnnonceForm, FicheVitrineForm
 from .models import AccesModule, Affectation, Annonce, Promotion, Evenement, Notification
-from .services import apprenants_de, notifier, generer_agenda, synchroniser_agenda
+from .services import (STATUTS_A_POINTER, apprenants_de, generer_agenda, inscriptions_a_pointer, notifier,
+                       presences_manquantes, synchroniser_agenda)
 
 
 def _grouper_par_semaine(evenements):
@@ -79,13 +80,21 @@ def envoyer(request):
 
 @formateur_requis
 def planning(request, promo_id):
+    from apps.evaluation.models import Inscription
     promo = get_object_or_404(promotions_visibles(request.user), pk=promo_id)
-    evenements = (promo.evenements.filter(q_interventions(request.user))  # séances de SES modules
-                  .select_related("seance", "seance__module")
-                  .annotate(nb_presences=Count("presences")).order_by("date_debut"))
+    evenements = list(promo.evenements.filter(q_interventions(request.user))  # séances de SES modules
+                      .select_related("seance", "seance__module")
+                      .annotate(nb_presences=Count("presences", filter=Q(
+                          presences__inscription__statut__in=Inscription.STATUTS_ACTIFS)))
+                      .order_by("date_debut"))
+    maintenant = timezone.now()
+    for ev in evenements:  # séance commencée dont la feuille de présence n'est pas validée
+        ev.commencee = ev.date_debut <= maintenant
+        ev.a_pointer = ev.commencee and ev.statut in STATUTS_A_POINTER
     return render(request, "agenda/planning.html",
                   {"promotion": promo, "evenements": evenements, "pilote": pilote_promotion(request.user, promo),
-                   "nb_apprenants": promo.inscriptions.count(),
+                   "nb_apprenants": inscriptions_a_pointer(promo).count(),
+                   "nb_a_pointer": sum(1 for ev in evenements if ev.a_pointer),
                    "statuts": Evenement.Statut.choices})
 
 
@@ -95,6 +104,16 @@ def evenement_action(request, ev_id):
     if request.method != "POST":
         return redirect("agenda:planning", promo_id=ev.promotion_id)
     action = request.POST.get("action")
+
+    if action == "realiser":  # une séance n'est réalisée qu'avec sa feuille de présence complète
+        if ev.date_debut > timezone.now():
+            messages.error(request, "La séance n'a pas encore commencé.")
+            return redirect("agenda:planning", promo_id=ev.promotion_id)
+        manquantes = presences_manquantes(ev)
+        if manquantes:
+            messages.error(request, f"Saisis d'abord les présences ({manquantes} apprenant{'s' if manquantes > 1 else ''} "
+                                    "sans statut) : la séance passe « réalisée » à l'enregistrement de la feuille.")
+            return redirect("agenda:presences", ev_id=ev.pk)
 
     if action in ("confirmer", "realiser", "annuler"):
         ev.statut = {"confirmer": Evenement.Statut.CONFIRME,
@@ -216,11 +235,18 @@ def generer_promo(request, promo_id):
 
 @formateur_requis
 def presences(request, ev_id):
-    """Feuille de présence d'une séance datée : un statut par apprenant de la promotion."""
+    """Feuille de présence d'une séance datée, ouverte dès son début : un statut par apprenant
+    confirmé ou en cours (et ceux déjà pointés, pour l'historique). L'enregistrer réalise la séance."""
     ev = get_object_or_404(Evenement.objects.filter(q_interventions(request.user))
                            .select_related("promotion", "seance", "seance__module"), pk=ev_id)
-    inscriptions = ev.promotion.inscriptions.select_related("apprenant").order_by(
-        "apprenant__last_name", "apprenant__first_name", "apprenant__username")
+    if ev.statut == Evenement.Statut.ANNULE or ev.date_debut > timezone.now():
+        messages.info(request, "Séance annulée : pas de présences." if ev.statut == Evenement.Statut.ANNULE
+                      else "La feuille de présence s'ouvre au début de la séance.")
+        return redirect("agenda:planning", promo_id=ev.promotion_id)
+    inscriptions = (ev.promotion.inscriptions
+                    .filter(Q(pk__in=inscriptions_a_pointer(ev.promotion)) | Q(presences__evenement=ev))
+                    .distinct().select_related("apprenant")
+                    .order_by("apprenant__last_name", "apprenant__first_name", "apprenant__username"))
     existantes = {p.inscription_id: p for p in ev.presences.all()}
 
     if request.method == "POST":
@@ -233,10 +259,10 @@ def presences(request, ev_id):
                 inscription=insc, evenement=ev,
                 defaults={"seance": ev.seance, "statut": statut,
                           "duree_realisee_h": ev.duree_h if present else Decimal("0")})
-        if ev.statut in (Evenement.Statut.PLANIFIE, Evenement.Statut.CONFIRME):
+        if ev.statut in STATUTS_A_POINTER and not presences_manquantes(ev):
             ev.statut = Evenement.Statut.REALISE
             ev.save(update_fields=["statut"])
-        messages.success(request, "Présences enregistrées.")
+        messages.success(request, "Présences enregistrées." + (" Séance réalisée." if ev.statut == Evenement.Statut.REALISE else ""))
         return redirect("agenda:planning", promo_id=ev.promotion_id)
 
     lignes = [{"inscription": i,

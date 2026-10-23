@@ -8,6 +8,7 @@
     <span class="eyebrow">{% icon "user-check" size=14 %} Feuille de présence</span>
     <h1>{{ evenement.libelle }}</h1>
     <p class="muted">{{ evenement.date_debut|date:"l d F Y, H:i" }} · {{ evenement.duree_h }} h · {{ evenement.get_mode_display }}</p>
+    {% if evenement.statut != "realise" %}<p class="muted"><small>{% icon "info" size=12 %} L'enregistrement de la feuille marque la séance « réalisée ».</small></p>{% endif %}
   </div>
 </div>
 <form method="post">{% csrf_token %}
@@ -27,7 +28,7 @@
         </div></td>
       </tr>
     {% endwith %}{% empty %}
-      <tr><td colspan="2"><div class="empty"><span class="ico-tile">{% icon "users" %}</span><strong>Aucun apprenant inscrit à cette promotion</strong></div></td></tr>
+      <tr><td colspan="2"><div class="empty"><span class="ico-tile">{% icon "users" %}</span><strong>Aucun apprenant confirmé dans cette promotion</strong>Les inscriptions se confirment dans Promotions › Pilotage.</div></td></tr>
     {% endfor %}
     </tbody>
   </table>

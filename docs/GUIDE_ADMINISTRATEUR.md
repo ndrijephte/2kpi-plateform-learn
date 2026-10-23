@@ -143,6 +143,10 @@ Le bouton d'une étape n'apparaît que lorsque toutes ses conditions sont rempli
 
 Abandon d'un apprenant et dérogation à un résultat : **motif obligatoire**, conservé au journal.
 
+**Présences** : le formateur enregistre la feuille de présence (Planning › *Présences*) dès le début
+de la séance ; c'est ce qui la marque « réalisée ». Une feuille oubliée est rappelée au formateur le
+lendemain, puis signalée aux administrateurs au bout de 3 jours.
+
 ---
 
 ## 3. Les autres façons d'arriver sur la plateforme

@@ -239,3 +239,48 @@ class WorkflowTests(BaseTest):
         self.assertEqual(f.post(url, {"action": "promotion", "cible": self.P.PLANIFIEE}).status_code, 403)
         self.assertEqual(f.get(reverse("agenda:pilotage", args=[self.promo_b.pk])).status_code, 404)
         self.assertEqual(self.client_de(self.app_a).get(url).status_code, 403)
+
+
+class PresencesObligatoiresTests(BaseTest):
+    """Une séance n'est réalisée qu'avec sa feuille de présence ; les oublis sont relancés."""
+
+    def setUp(self):
+        super().setUp()
+        self.promo_a.statut = Promotion.Statut.EN_COURS
+        self.promo_a.save()
+        self.ev = self.promo_a.evenements.filter(seance__module=self.m1).order_by("date_debut").first()
+        self.ev.date_debut = timezone.now() - dt.timedelta(days=2)
+        self.ev.save()
+        self.admise = Inscription.objects.create(apprenant=self.compte("app_x", "apprenant"),
+                                                 formation=self.formation, promotion=self.promo_a)
+        self.c = self.client_de(self.form_a)
+
+    def test_realisee_refusee_sans_presences_puis_feuille_realise(self):
+        action = reverse("agenda:evenement_action", args=[self.ev.pk])
+        self.assertRedirects(self.c.post(action, {"action": "realiser"}), reverse("agenda:presences", args=[self.ev.pk]))
+        self.ev.refresh_from_db()
+        self.assertEqual(self.ev.statut, Evenement.Statut.PLANIFIE)
+        page = self.c.get(reverse("agenda:presences", args=[self.ev.pk]))
+        self.assertEqual([l["inscription"] for l in page.context["lignes"]], [self.insc_a])  # admise : pas pointée
+        self.c.post(reverse("agenda:presences", args=[self.ev.pk]), {f"statut_{self.insc_a.pk}": "present"})
+        self.ev.refresh_from_db()
+        self.assertEqual(self.ev.statut, Evenement.Statut.REALISE)
+
+    def test_seance_future_ni_realisee_ni_pointee(self):
+        futur = self.promo_a.evenements.filter(date_debut__gt=timezone.now()).first()
+        self.c.post(reverse("agenda:evenement_action", args=[futur.pk]), {"action": "realiser"})
+        futur.refresh_from_db()
+        self.assertEqual(futur.statut, Evenement.Statut.PLANIFIE)
+        self.assertEqual(self.c.get(reverse("agenda:presences", args=[futur.pk])).status_code, 302)
+
+    def test_relances_formateur_puis_admin_une_seule_fois(self):
+        from apps.agenda.workflow import relances_presences
+        self.assertEqual(relances_presences(), (1, 0))  # J+2 : formateur seulement
+        self.assertTrue(self.form_a.notifications.filter(evenement=self.ev, titre__startswith="Présences à saisir").exists())
+        self.assertFalse(self.form_b.notifications.filter(titre__startswith="Présences").exists())
+        self.assertEqual(relances_presences(), (0, 0))  # pas de doublon
+        self.assertEqual(relances_presences(timezone.now() + dt.timedelta(days=2)), (0, 1))  # J+4 : admins
+        self.assertTrue(self.admin.notifications.filter(titre__startswith="Présences non saisies").exists())
+        tableau = self.c.get(reverse("tableau_bord:accueil"))
+        self.assertEqual(tableau.context["a_pointer"], [self.ev])
+        self.assertContains(self.c.get(reverse("agenda:planning", args=[self.promo_a.pk])), "Présences à saisir")

@@ -356,3 +356,29 @@ def demarrages_du_jour(aujourd_hui=None):
             notifier_admins(titre, f"La session devait démarrer le {promo.date_debut:%d/%m/%Y} mais elle est "
                                    f"« {promo.get_statut_display()} ». Ouvre son pilotage pour voir ce qui manque.")
     return demarrees, en_retard
+
+
+def relances_presences(maintenant=None):
+    """Feuilles de présence non validées : rappel aux formateurs de la séance le lendemain,
+    alerte aux administrateurs après 3 jours. Une seule relance de chaque sorte par séance.
+    Retourne (rappels formateurs, alertes admins)."""
+    from apps.comptes.services import notifier_admins
+    from .services import formateurs_de, notifier, seances_a_pointer
+    maintenant = maintenant or timezone.now()
+    rappels = alertes = 0
+    retard = (seances_a_pointer(Evenement.objects.all(), maintenant - dt.timedelta(days=1))
+              .select_related("promotion__formateur", "seance__module"))
+    for ev in retard:
+        jour = timezone.localtime(ev.date_debut).strftime("%d/%m")
+        titre = f"Présences à saisir : {ev.libelle} ({jour})"
+        if not Notification.objects.filter(evenement=ev, titre=titre).exists():
+            notifier(formateurs_de(ev), titre=titre, type=Notification.Type.RAPPEL, evenement=ev,
+                     message=f"« {ev.promotion.nom} » : la feuille de présence de cette séance n'est pas enregistrée. "
+                             "Elle conditionne l'assiduité des apprenants et la clôture de la promotion.")
+            rappels += 1
+        titre_admin = f"Présences non saisies depuis 3 jours : {ev.libelle} ({jour})"
+        if ev.date_debut <= maintenant - dt.timedelta(days=3) and not Notification.objects.filter(titre=titre_admin).exists():
+            noms = ", ".join(f.get_full_name() or f.username for f in formateurs_de(ev)) or "aucun formateur"
+            notifier_admins(titre_admin, f"« {ev.promotion.nom} » · formateur(s) : {noms}.")
+            alertes += 1
+    return rappels, alertes

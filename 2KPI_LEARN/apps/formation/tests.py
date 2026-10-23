@@ -86,7 +86,7 @@ class AutorisationsFormateurTests(BaseTest):
         # séances, présences : uniquement celles de M1, dans la seule promotion A
         evs = c.get(reverse("agenda:planning", args=[self.promo_a.pk])).context["evenements"]
         self.assertEqual({e.seance.module_id for e in evs}, {self.m1.pk})
-        self.assertEqual(c.get(reverse("agenda:presences", args=[self.ev_m1.pk])).status_code, 200)
+        self.assertEqual(c.get(reverse("agenda:presences", args=[self.ev_m1.pk])).status_code, 302)  # autorisé, séance à venir
         self.assertEqual(c.get(reverse("agenda:presences", args=[self.ev_m2.pk])).status_code, 404)
         self.assertEqual(c.get(reverse("agenda:planning", args=[self.promo_b.pk])).status_code, 404)
         # ressources : seules les cibles de M1 sont proposées
