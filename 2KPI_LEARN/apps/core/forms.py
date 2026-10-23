@@ -8,6 +8,7 @@ SECTIONS = {
     "identite": ("Identité & logo", ["nom_plateforme", "suffixe", "logo", "slogan", "email_contact"]),
     "connexion": ("Page de connexion", ["image_connexion", "titre_connexion", "texte_connexion"]),
     "fichiers": ("Fichiers déposés", ["extensions_autorisees", "taille_max_mo"]),
+    "attestations": ("Attestations", ["organisme", "signataire_nom", "signataire_fonction", "lieu_signature"]),
 }
 
 

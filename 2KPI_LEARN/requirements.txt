@@ -2,6 +2,7 @@ Django>=5.1,<5.2   # TEMPORAIRE : hébergement en PostgreSQL 13 (Django 5.2 exig
 psycopg[binary]>=3.2.10
 whitenoise>=6.7
 python-decouple>=3.8
+reportlab>=4.2,<5   # attestations de réussite en PDF (QR code de vérification)
 
 # Optionnel — rendu des notebooks (Phase B). Décommenter si besoin :
 # nbconvert>=7.16

@@ -111,6 +111,17 @@ doit être « OK » pour confirmer l'inscription), grille du projet (critères n
 tient ses prérequis à jour depuis son profil. Une promotion ne se clôture qu'avec une évaluation complète.
 Logique : `apps/evaluation/grille.py`.
 
+**Attestation de réussite** : à la validation (clôture ou dérogation), l'inscription reçoit un numéro
+(`2KPI-XXXX-XXXX`) ; le PDF (A4 paysage, ReportLab) se télécharge depuis le tableau de bord de l'apprenant
+ou le Pilotage, et son QR code mène à la page publique `/attestation/<numéro>/` qui en atteste
+l'authenticité (« retirée » si le résultat est ensuite invalidé). Signataire : Paramètres › Attestations.
+Logique : `apps/evaluation/attestation.py`.
+
+**À faire** : chaque tableau de bord commence par la liste de ce que le workflow attend de la personne
+(urgences d'abord) — candidatures, inscriptions à confirmer, démarrages bloqués, clôtures possibles,
+présences en retard (admin) ; feuilles de présence, corrections, demandes d'aide, évaluation finale
+(formateur) ; confirmation en attente, prérequis, attestation (apprenant). `apps/tableau_bord/a_faire.py`.
+
 **Présences** : une séance ne devient « réalisée » qu'à l'enregistrement de sa feuille de présence complète
 (apprenants confirmés ou en cours), ouverte dès le début de la séance. Les séances passées sans feuille
 apparaissent dans le planning et le tableau de bord ; `workflow_quotidien` relance les formateurs de la
@@ -171,7 +182,7 @@ Mises à jour : **automatiques à chaque `git push` sur main** (`../docs/DEPLOIE
 ## Tests
 
 ```bash
-python manage.py test        # 88 tests : rôles, autorisations (apprenants, formateurs par module),
+python manage.py test        # 91 tests : rôles, autorisations (apprenants, formateurs par module),
                              # promotions des formateurs, auto-évaluation, fichiers, quiz, candidatures,
                              # création de compte, mot de passe oublié, e-mails, workflow des promotions
 ```

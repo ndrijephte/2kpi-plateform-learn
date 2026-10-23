@@ -269,3 +269,71 @@ class GrilleEtPrerequisTests(BaseTest):
         r = c.post(url, {**base, "cr-0-poids": 10, f"cr-{len(criteres)}-libelle": "Oral", f"cr-{len(criteres)}-poids": 10})
         self.assertEqual(r.status_code, 302)
         self.assertEqual(self.formation.criteres.count(), len(criteres) + 1)
+
+
+class AttestationTests(BaseTest):
+    """Attestation de réussite : numéro à la validation, PDF réservé, vérification publique."""
+
+    def setUp(self):
+        super().setUp()
+        from apps.agenda import workflow
+        self.insc_a.statut = Inscription.Statut.NON_VALIDEE
+        self.insc_a.save()
+        workflow.changer_statut_inscription(self.insc_a, Inscription.Statut.VALIDEE, self.admin, motif="Jury")
+        self.insc_a.refresh_from_db()
+
+    def test_numero_attribue_une_fois_et_pdf(self):
+        code = self.insc_a.code_attestation
+        self.assertRegex(code, r"^2KPI-[A-Z2-9]{4}-[A-Z2-9]{4}$")
+        from apps.evaluation.attestation import delivrer
+        self.assertEqual(delivrer(self.insc_a).code_attestation, code)  # stable
+        url = reverse("evaluation:attestation_pdf", args=[self.insc_a.pk])
+        r = self.client_de(self.app_a).get(url)
+        self.assertEqual((r.status_code, r["Content-Type"]), (200, "application/pdf"))
+        self.assertTrue(r.content.startswith(b"%PDF"))
+        self.assertEqual(self.client_de(self.form_a).get(url).status_code, 200)   # référent de la promotion
+        self.assertEqual(self.client_de(self.form_b).get(url).status_code, 404)   # autre promotion
+        self.assertEqual(self.client_de(self.app_b).get(url).status_code, 404)    # autre apprenant
+        tableau = self.client_de(self.app_a).get(reverse("tableau_bord:accueil"))
+        self.assertContains(tableau, "Ton attestation de réussite est disponible")
+
+    def test_verification_publique(self):
+        url = reverse("verifier_attestation", args=[self.insc_a.code_attestation])
+        self.assertContains(self.client.get(url), "Attestation authentique")
+        self.assertContains(self.client.get(reverse("verifier_attestation", args=["2KPI-AAAA-BBBB"])), "Numéro inconnu",
+                            status_code=404)
+        from apps.agenda import workflow
+        workflow.changer_statut_inscription(self.insc_a, Inscription.Statut.NON_VALIDEE, self.admin, motif="Fraude")
+        self.assertContains(self.client.get(url), "Attestation retirée")
+        self.assertEqual(self.client_de(self.app_a).get(reverse("evaluation:attestation_pdf", args=[self.insc_a.pk])).status_code, 404)
+
+
+class AFaireTests(BaseTest):
+    """Liste « À faire » de chaque rôle."""
+
+    def test_admin_formateur_apprenant(self):
+        import datetime as dt
+        from django.utils import timezone
+        from apps.agenda.models import Promotion
+        from apps.tableau_bord import a_faire
+        # Apprenant admis dans une promotion aux inscriptions ouvertes, prérequis non faits
+        self.promo_b.statut = Promotion.Statut.INSCRIPTIONS
+        self.promo_b.save()
+        self.insc_b.statut = Inscription.Statut.ADMISE
+        self.insc_b.save()
+        titres = [t.titre for t in a_faire.taches_apprenant(self.app_b, self.insc_b)]
+        self.assertIn("Inscription en attente de confirmation", titres)
+        self.assertIn("6 prérequis à finaliser", titres)
+        admin = [t.titre for t in a_faire.taches_admin(self.admin)]
+        self.assertIn("1 inscription à confirmer — Promo B", admin)
+        # Formateur : feuille de présence oubliée
+        self.promo_a.statut = Promotion.Statut.EN_COURS
+        self.promo_a.save()
+        ev = self.promo_a.evenements.order_by("date_debut").first()
+        ev.date_debut = timezone.now() - dt.timedelta(days=4)
+        ev.save()
+        taches = a_faire.taches_formateur(self.form_a)
+        self.assertEqual((taches[0].titre, taches[0].urgent), ("1 feuille de présence à enregistrer", True))
+        self.assertIn("Promo A : 1 feuille de présence en retard", [t.titre for t in a_faire.taches_admin(self.admin)])
+        self.assertContains(self.client_de(self.form_a).get(reverse("tableau_bord:accueil")), "feuille de présence à enregistrer")
+        self.assertContains(self.client_de(self.admin).get(reverse("tableau_bord:accueil")), "À faire")

@@ -139,7 +139,13 @@ Le bouton d'une étape n'apparaît que lorsque toutes ses conditions sont rempli
 6. **Clôturer** quand toutes les séances sont réalisées ou annulées, les présences saisies et les
    livrables notés : chaque apprenant est **validé** (assiduité ≥ 80 % et note ≥ 10/20, réglables dans
    Paramètres › Formations) ou **non validé**, et reçoit son résultat.
-7. **Archiver** (réversible avec « Désarchiver »).
+7. **Attestations** : chaque apprenant validé reçoit une attestation de réussite en PDF (numéro unique et
+   QR code de vérification en ligne), téléchargeable depuis son tableau de bord et depuis le Pilotage.
+   Renseigne le signataire dans **Paramètres → Attestations**.
+8. **Archiver** (réversible avec « Désarchiver »).
+
+Ton tableau de bord commence par la liste **À faire** : tout ce que le workflow attend de toi, les
+urgences en premier, chaque ligne menant à l'écran où agir.
 
 Abandon d'un apprenant et dérogation à un résultat : **motif obligatoire**, conservé au journal.
 

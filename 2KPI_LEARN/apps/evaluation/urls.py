@@ -10,4 +10,5 @@ urlpatterns = [
     path("mes-acquis/", views.mes_acquis, name="mes_acquis"),
     path("promotions/<int:promo_id>/auto-evaluations/", views.autoevaluations, name="autoevaluations"),
     path("promotions/<int:promo_id>/evaluation/", views.evaluation_promotion, name="evaluation_promotion"),
+    path("attestation/<int:inscription_id>.pdf", views.attestation_pdf, name="attestation_pdf"),
 ]

@@ -12,5 +12,6 @@
   <a href="{% url 'core:formations' %}" {% if section == "formations" %}class="on"{% endif %}>{% icon "layers" size=14 %} Formations &amp; séances</a>
   <a href="{% url 'core:calendrier' %}" {% if section == "calendrier" %}class="on"{% endif %}>{% icon "calendar" size=14 %} Jours non travaillés</a>
   <a href="{% url 'core:section' 'fichiers' %}" {% if section == "fichiers" %}class="on"{% endif %}>{% icon "upload" size=14 %} Fichiers déposés</a>
+  <a href="{% url 'core:section' 'attestations' %}" {% if section == "attestations" %}class="on"{% endif %}>{% icon "award" size=14 %} Attestations</a>
   <a href="{% url 'core:quiz_liste' %}" {% if section == "quiz" %}class="on"{% endif %}>{% icon "quiz" size=14 %} Quiz</a>
 </nav>

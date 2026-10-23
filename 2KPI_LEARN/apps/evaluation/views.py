@@ -289,3 +289,31 @@ def evaluation_promotion(request, promo_id):
         "lignes_prerequis": lignes_prerequis, "lignes_notes": lignes_notes,
         "composantes": grille.composantes(formation, bool(criteres)),
     })
+
+
+@login_required
+def attestation_pdf(request, inscription_id):
+    """PDF de l'attestation : l'apprenant concerné, l'administration et les formateurs de la promotion."""
+    from django.http import HttpResponse
+    from django.urls import reverse
+    from . import attestation
+    insc = get_object_or_404(Inscription.objects.select_related("apprenant", "formation", "promotion"), pk=inscription_id)
+    autorise = insc.apprenant_id == request.user.pk or (
+        role_de(request.user) != APPRENANT and promotions_visibles(request.user).filter(pk=insc.promotion_id).exists())
+    if not autorise or not attestation.est_valide(insc):
+        raise Http404
+    url = request.build_absolute_uri(reverse("verifier_attestation", args=[insc.code_attestation]))
+    reponse = HttpResponse(attestation.pdf(insc, url), content_type="application/pdf")
+    reponse["Content-Disposition"] = f'inline; filename="attestation-{insc.code_attestation}.pdf"'
+    return reponse
+
+
+def verifier_attestation(request, code):
+    """Page publique : authenticité d'une attestation à partir de son numéro (QR code du PDF)."""
+    from . import attestation
+    insc = (Inscription.objects.select_related("apprenant", "formation", "promotion")
+            .filter(code_attestation=code.strip().upper()).first())
+    debut, fin = attestation.periode(insc) if insc else (None, None)
+    return render(request, "evaluation/verifier_attestation.html", {
+        "code": code, "inscription": insc, "valide": bool(insc) and attestation.est_valide(insc),
+        "debut": debut, "fin": fin}, status=200 if insc else 404)

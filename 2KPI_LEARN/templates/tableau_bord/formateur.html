@@ -17,5 +17,6 @@
   <div class="kpi"><span class="kpi-icon amber">{% icon "clipboard-check" %}</span><div><strong>{{ nb_a_corriger }}</strong><span>Livrables à corriger</span></div></div>
   <div class="kpi"><span class="kpi-icon coral">{% icon "calendar-days" %}</span><div><strong>{{ nb_semaine }}</strong><span>Séances sous 7 jours</span></div></div>
 </div>
+{% include "tableau_bord/_a_faire.html" %}
 {% include "tableau_bord/_pilotage.html" %}
 {% endblock %}

@@ -37,6 +37,10 @@ class Inscription(models.Model):
     # Résultat figé à la clôture de la promotion
     taux_assiduite = models.PositiveSmallIntegerField("Assiduité (%)", null=True, blank=True)
     note_finale = models.DecimalField("Note finale (/20)", max_digits=4, decimal_places=2, null=True, blank=True)
+    heures_suivies = models.DecimalField("Heures suivies", max_digits=6, decimal_places=1, null=True, blank=True)
+    # Attestation de réussite : numéro public (vérification en ligne), attribué à la validation
+    code_attestation = models.CharField(max_length=16, unique=True, null=True, blank=True, editable=False)
+    date_attestation = models.DateField(null=True, blank=True, editable=False)
 
     @property
     def est_active(self):

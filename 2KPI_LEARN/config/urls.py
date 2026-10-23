@@ -6,6 +6,7 @@ from apps.comptes.api import candidature as candidature_api
 from apps.comptes.forms import ConnexionForm
 from apps.comptes.views import MotDePasseOublieView, creer_compte
 from apps.core.views import media_publique
+from apps.evaluation.views import verifier_attestation
 from django.contrib.auth import views as auth_views
 
 admin.site.site_header = "2KPI Learn — Administration"
@@ -32,6 +33,7 @@ urlpatterns = [
     path("parametres/", include("apps.core.urls")),
     path("api/candidatures/", candidature_api, name="api_candidatures"),
     path("api/sessions/", sessions_api, name="api_sessions"),
+    path("attestation/<str:code>/", verifier_attestation, name="verifier_attestation"),  # public (QR code)
     path("", include("apps.tableau_bord.urls")),
 ]
 

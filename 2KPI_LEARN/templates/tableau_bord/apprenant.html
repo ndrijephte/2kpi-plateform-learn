@@ -14,6 +14,8 @@
   {% endif %}
 </div>
 
+{% if taches %}{% include "tableau_bord/_a_faire.html" %}{% endif %}
+
 {% if synthese %}
 <div class="card">
   <div class="progress-label"><span>Progression de la formation</span><strong>{{ synthese.progression }} %</strong></div>

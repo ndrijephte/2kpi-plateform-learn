@@ -587,3 +587,5 @@ dt.niveau-3,i.niveau-3{color:var(--niv3)} dt.niveau-4,i.niveau-4{color:var(--niv
 .grille-notes th.col-saisie:first-of-type{border-left:2px solid var(--border)}
 .panneaux-larges{margin-top:18px}
 .choix-tbl input[type=text]{min-width:0}
+.badge-compte{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--coral);color:#fff;font-size:.74rem;font-weight:700;margin-left:4px}
+.a-faire .list-item .pill{margin-left:auto}

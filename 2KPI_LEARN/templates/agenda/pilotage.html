@@ -67,7 +67,8 @@
                 {% for v, l in paiements %}<option value="{{ v }}" {% if i.paiement == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
               </select><noscript><button class="btn btn-sm btn-secondary">OK</button></noscript>
             </form>{% else %}{{ i.get_paiement_display }}{% endif %}</td>
-          <td>{% if i.note_finale is not None %}{{ i.taux_assiduite }} % · {{ i.note_finale }}/20{% else %}<span class="muted">—</span>{% endif %}</td>
+          <td>{% if i.note_finale is not None %}{{ i.taux_assiduite }} % · {{ i.note_finale }}/20{% else %}<span class="muted">—</span>{% endif %}
+            {% if i.code_attestation and i.statut == "validee" %}<br><a class="link" href="{% url 'evaluation:attestation_pdf' i.pk %}">{% icon "award" size=12 %} Attestation</a>{% endif %}</td>
           {% if peut_decider %}<td>{% if i.actions %}
             <form method="post" class="inline-form">{% csrf_token %}
               <input type="hidden" name="action" value="inscription"><input type="hidden" name="inscription" value="{{ i.pk }}">

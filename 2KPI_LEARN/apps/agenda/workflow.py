@@ -254,9 +254,12 @@ def _cloturer(promo, par):
     nb_realises = promo.evenements.filter(statut=Evenement.Statut.REALISE).count()
     validees = 0
     inscriptions = list(promo.inscriptions.filter(statut=Inscription.Statut.EN_COURS).select_related("apprenant", "formation"))
+    from django.db.models import Sum
     for insc in inscriptions:
         insc.taux_assiduite, insc.note_finale, ok = resultat_inscription(insc, nb_realises)
-        insc.save(update_fields=["taux_assiduite", "note_finale"])
+        insc.heures_suivies = insc.presences.filter(evenement__promotion=promo, evenement__statut=Evenement.Statut.REALISE
+                                                    ).aggregate(h=Sum("duree_realisee_h"))["h"] or 0
+        insc.save(update_fields=["taux_assiduite", "note_finale", "heures_suivies"])
         cible = Inscription.Statut.VALIDEE if ok else Inscription.Statut.NON_VALIDEE
         changer_statut_inscription(insc, cible, par=par, systeme=True,
                                    motif=f"Clôture : assiduité {insc.taux_assiduite} % (min. {f.seuil_assiduite} %), "
@@ -264,7 +267,8 @@ def _cloturer(promo, par):
         validees += ok
         notifier([insc.apprenant], titre=f"Résultat de la formation « {promo.nom} »",
                  message=f"{insc.get_statut_display()} — assiduité {insc.taux_assiduite} %, "
-                         f"note finale {insc.note_finale}/20.",
+                         f"note finale {insc.note_finale}/20."
+                         + (" Ton attestation de réussite est disponible sur ton tableau de bord." if ok else ""),
                  type=Notification.Type.INFO, expediteur=par)
     abandons = _abandonner_restantes(promo, par, "Inscription non confirmée à la clôture de la session")
     return (f" {validees}/{len(inscriptions)} validée(s)."
@@ -332,6 +336,9 @@ def changer_statut_inscription(insc, cible, par=None, motif="", systeme=False):
     insc.statut = cible
     insc.save(update_fields=["statut"])
     _journaliser(par, motif, de, cible, inscription=insc)
+    if cible == S.VALIDEE:  # numéro d'attestation attribué une fois pour toutes
+        from apps.evaluation.attestation import delivrer
+        delivrer(insc)
     if cible == S.CONFIRMEE and not systeme:
         from .services import notifier
         notifier([insc.apprenant], titre=f"Inscription confirmée : {insc.promotion.nom}",

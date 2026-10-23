@@ -1,0 +1,25 @@
+{% extends "base_auth.html" %}
+{% load ui %}
+{% block title %}Vérification d'attestation — {{ site_nom }}{% endblock %}
+{% block content %}
+{% if valide %}
+<span class="ico-tile done" style="margin-bottom:14px">{% icon "circle-check" %}</span>
+<h1>Attestation authentique</h1>
+<p class="muted">Cette attestation de réussite a bien été délivrée par {{ site_nom }}.</p>
+<dl class="dl stack">
+  <dt>Titulaire</dt><dd><strong>{{ inscription.apprenant.get_full_name|default:inscription.apprenant.username }}</strong></dd>
+  <dt>Formation</dt><dd>{{ inscription.formation.titre }}</dd>
+  {% if inscription.promotion %}<dt>Session</dt><dd>{{ inscription.promotion.nom }}{% if debut and fin %}, du {{ debut|date:"j F Y" }} au {{ fin|date:"j F Y" }}{% endif %}</dd>{% endif %}
+  {% if inscription.note_finale is not None %}<dt>Résultat</dt><dd>Note finale {{ inscription.note_finale|floatformat:2 }}/20 · assiduité {{ inscription.taux_assiduite }} %</dd>{% endif %}
+  <dt>Numéro</dt><dd>{{ inscription.code_attestation }} · délivrée le {{ inscription.date_attestation|date:"j F Y" }}</dd>
+</dl>
+{% elif inscription %}
+<span class="ico-tile coral" style="margin-bottom:14px">{% icon "circle-x" %}</span>
+<h1>Attestation retirée</h1>
+<p class="muted">Le numéro {{ inscription.code_attestation }} a existé mais ne correspond plus à une formation validée. Contactez-nous en cas de doute.</p>
+{% else %}
+<span class="ico-tile coral" style="margin-bottom:14px">{% icon "circle-x" %}</span>
+<h1>Numéro inconnu</h1>
+<p class="muted">Aucune attestation ne porte le numéro « {{ code }} ». Vérifiez la saisie (format 2KPI-XXXX-XXXX).</p>
+{% endif %}
+{% endblock %}

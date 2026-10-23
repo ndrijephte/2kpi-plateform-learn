@@ -1,0 +1,19 @@
+{% load ui %}
+<div class="card a-faire" id="a-faire">
+  <div class="card-head">
+    <h2 class="section-title">{% icon "list-checks" size=18 %} À faire{% if taches %} <span class="badge-compte">{{ taches|length }}</span>{% endif %}</h2>
+  </div>
+  {% if taches %}
+  <ul class="list">
+    {% for t in taches %}
+    <li><a class="list-item" href="{{ t.url }}">
+      <span class="ico-tile{% if t.urgent %} coral{% endif %}">{% icon t.icone size=18 %}</span>
+      <span class="grow"><strong>{{ t.titre }}</strong><small>{{ t.detail }}</small></span>
+      {% if t.urgent %}<span class="pill pill-ko">Urgent</span>{% endif %}
+      <span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="list-item"><span class="ico-tile done">{% icon "check-check" size=18 %}</span><span class="grow muted">Tout est à jour : rien n'attend ton action.</span></div>
+  {% endif %}
+</div>

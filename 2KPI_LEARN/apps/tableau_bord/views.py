@@ -13,7 +13,7 @@ from apps.evaluation.utils import inscription_courante
 from apps.formation.acces import etats_modules
 from apps.formation.models import Seance
 from apps.agenda.services import seances_a_pointer
-from . import services
+from . import a_faire, services
 
 
 @login_required
@@ -29,7 +29,8 @@ def _apprenant(request):
     user = request.user
     inscription = inscription_courante(user)
     ctx = {"inscription": inscription, "synthese": None, "a_venir": [], "reprendre": None,
-           "notifications": user.notifications.filter(lu=False)[:3]}
+           "notifications": user.notifications.filter(lu=False)[:3],
+           "taches": a_faire.taches_apprenant(user, inscription)}
     if not inscription:  # compte créé en ligne : demande d'inscription en attente de validation ?
         ctx["demande"] = user.candidatures.filter(statut="nouvelle").order_by("-date_reception").first()
     if inscription:
@@ -76,6 +77,7 @@ def _pilotage(request, admin):
         "a_corriger": livrables.select_related("inscription__apprenant", "seance__module")
                                .order_by("seance__module__ordre", "seance__ordre")[:5],
         "notifications": user.notifications.filter(lu=False)[:3],
+        "taches": a_faire.taches_admin(user) if admin else a_faire.taches_formateur(user),
         "aides": (AutoEvaluation.objects
                   .filter(q_interventions(user, promotion="inscription__promotion", module="objectif__seance__module"),
                           besoin_aide=True, inscription__promotion__in=promos)
@@ -90,9 +92,6 @@ def _pilotage(request, admin):
             "promotions": Promotion.objects.filter(active=True).count(),
             "inscriptions": Inscription.objects.filter(statut__in=Inscription.STATUTS_ACTIFS).count(),
         }
-        ctx["sans_formateur"] = Promotion.objects.filter(active=True, formateur__isnull=True, affectations__isnull=True)
-        ctx["sans_promotion"] = (User.objects.filter(profil__role=Profil.Role.APPRENANT, is_active=True)
-                                 .exclude(inscriptions__promotion__isnull=False).count())
         ctx["derniers_comptes"] = User.objects.select_related("profil").order_by("-date_joined")[:5]
         return render(request, "tableau_bord/admin.html", ctx)
     return render(request, "tableau_bord/formateur.html", ctx)

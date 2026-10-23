@@ -21,6 +21,12 @@ class Parametres(models.Model):
     slogan = models.CharField("Signature (pied de page)", max_length=120,
                               default="Knowledge · Key · Planning · Innovation", blank=True)
     email_contact = models.EmailField("E-mail de contact", blank=True)
+    # Attestations de réussite (PDF délivré à la clôture d'une promotion)
+    organisme = models.CharField("Organisme de formation", max_length=150, default="2KPI",
+                                 help_text="Nom porté sur les attestations.")
+    signataire_nom = models.CharField("Nom du signataire", max_length=120, blank=True)
+    signataire_fonction = models.CharField("Fonction du signataire", max_length=120, default="Directeur", blank=True)
+    lieu_signature = models.CharField("Lieu de signature", max_length=80, default="Abidjan", blank=True)
     # Page de connexion
     image_connexion = models.FileField("Image de fond", upload_to="parametres/", blank=True,
                                        validators=[FileExtensionValidator(["png", "jpg", "jpeg", "webp"])],
