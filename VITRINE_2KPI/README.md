@@ -20,7 +20,7 @@ VITRINE_2KPI/
 │   ├── academy.html
 │   ├── cabinet.html
 │   ├── realisations.html         (catalogue des réalisations, filtrable)
-│   ├── realisation-detail.html   (vue détail générique — ?projet=id)
+│   ├── realisation-detail.html   (ancienne vue détail : redirige vers realisations.html#id)
 │   ├── sessions.html        (catalogue des sessions ouvertes)
 │   ├── inscription.html     (formulaire d'inscription à une session)
 │   ├── contact.html
@@ -35,7 +35,6 @@ VITRINE_2KPI/
 │   ├── inscription-config.js   (adresse de l'API des candidatures de 2KPI Learn)
 │   ├── realisations-data.js    (catalogue des réalisations — à éditer pour en ajouter)
 │   ├── realisations-catalog.js (affichage + filtre du catalogue de réalisations)
-│   └── realisation-detail.js   (logique de la vue détail générique)
 └── assets/
     ├── img/                (logo, favicon, photos réelles optimisées)
     └── websig-demo/        (prototype Leaflet — carte interactive Côte d'Ivoire)
@@ -95,13 +94,14 @@ que le site lit en direct (`js/sessions-sync.js`, adresse dans `js/learn-config.
   intégré dans `assets/websig-demo/`) est la première réalisation du catalogue : son bouton
   "Ouvrir la carte interactive" renvoie directement vers `pages/websig-demo.html`.
 - Les projets sans démo dédiée (Plans d'Urbanisme Directeur, PIDACC/BN, occupation du sol,
-  enquêtes socio-démographiques) utilisent une vue détail générique,
-  `pages/realisation-detail.html?projet=<id>`, qui affiche automatiquement le résumé, les
-  chiffres clés et le descriptif renseignés dans `js/realisations-data.js`.
+  enquêtes socio-démographiques) se lisent **sur la page même** : « Voir le détail » déplie, sous le
+  résumé, les chiffres clés et le descriptif renseignés dans `js/realisations-data.js`.
+  Lien direct vers un projet ouvert : `pages/realisations.html#<id>` (les anciens liens
+  `realisation-detail.html?projet=<id>` y sont redirigés).
 - Pour ajouter une future réalisation avec sa propre démo (comme le WebSIG), il suffit de
   déposer la démo dans `assets/`, une page dédiée dans `pages/` si besoin, puis de renseigner
   `vueUrl` dans l'entrée correspondante de `js/realisations-data.js` — sinon, ne rien renseigner
-  et la vue détail générique s'en charge automatiquement.
+  et le détail se dépliera automatiquement sur la page Réalisations.
 
 ## Ce qui a été intégré
 
@@ -122,7 +122,7 @@ que le site lit en direct (`js/sessions-sync.js`, adresse dans `js/learn-config.
   (démographe, développeurs, formateurs spécialisés).
 - **Catalogue & inscription** : catalogue filtrable lu en direct sur 2KPI Learn, liste d'intérêt
   « Être prévenu(e) », inscription reliée aux candidatures de la plateforme (voir ci-dessus).
-- **Réalisations paramétrables** : catalogue filtrable + vue détail générique, avec la
+- **Réalisations paramétrables** : catalogue filtrable, détail dépliable sur place, avec la
   cartographie interactive de la Côte d'Ivoire comme première réalisation (voir ci-dessus).
 
 ## Ce qui reste à faire

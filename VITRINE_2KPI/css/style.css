@@ -611,6 +611,56 @@ strong { color: var(--navy); }
 .badge.coral { background: rgba(239,106,82,0.14); color: var(--coral-dark); }
 .project-card .badge { align-self: flex-start; margin-bottom: 14px; }
 
+/* ---------- Réalisations : cartes larges, détail dépliable sur place ---------- */
+#realisation-filters { margin-bottom: 1.6rem; }
+.projets-liste { display: flex; flex-direction: column; gap: 18px; }
+.projet {
+  display: grid; grid-template-columns: 88px minmax(0, 1fr); background: #fff;
+  border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;
+  scroll-margin-top: 96px; transition: box-shadow var(--dur) ease, border-color var(--dur) ease;
+}
+.projet:hover, .projet.is-open { box-shadow: var(--shadow-sm); border-color: #d3dce3; }
+.projet-repere {
+  display: flex; justify-content: center; padding-top: 30px;
+  background: linear-gradient(180deg, var(--bg-navy-10), transparent); border-right: 1px solid var(--border);
+}
+.projet-numero { font-family: var(--ff-heading); font-weight: 800; font-size: 1.6rem; color: var(--coral); letter-spacing: -0.02em; line-height: 1; }
+.projet-corps { padding: 28px 32px 26px; display: flex; flex-direction: column; align-items: flex-start; }
+.projet-meta { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; }
+.projet-annee { font-size: 0.85rem; font-weight: 600; color: var(--text-soft); }
+.projet h3 { margin: 0 0 8px; font-size: 1.22rem; }
+.projet-resume { margin: 0; color: var(--text-soft); max-width: 78ch; }
+
+/* Dépliage animé : grid-template-rows 0fr → 1fr, sans hauteur fixe */
+.projet-detail { display: grid; grid-template-rows: 0fr; width: 100%; transition: grid-template-rows 0.4s ease, opacity 0.3s ease; opacity: 0; }
+.projet.is-open .projet-detail { grid-template-rows: 1fr; opacity: 1; }
+.projet-detail-interieur { overflow: hidden; }
+.projet-detail-interieur > :first-child { margin-top: 20px; }
+.projet-detail p { margin: 0 0 12px; max-width: 78ch; line-height: 1.7; }
+.projet-chiffres { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.projet-chiffre { display: flex; align-items: baseline; gap: 10px; padding: 12px 18px; border-radius: var(--radius-sm); background: var(--bg-soft); border-left: 3px solid var(--coral); }
+.projet-chiffre strong { font-family: var(--ff-heading); font-size: 1.5rem; color: var(--coral-dark); line-height: 1; }
+.projet-chiffre span { font-size: 0.88rem; color: var(--text-soft); }
+
+.projet-toggle {
+  margin-top: 18px; display: inline-flex; align-items: center; gap: 8px; padding: 0; border: 0; background: none;
+  font-family: var(--ff-heading); font-weight: 600; font-size: 0.92rem; color: var(--navy); cursor: pointer;
+}
+.projet-toggle:hover .projet-toggle-texte { text-decoration: underline; text-underline-offset: 4px; }
+.projet-toggle:focus-visible { outline: 2px solid var(--coral); outline-offset: 4px; border-radius: 4px; }
+.projet-chevron { width: 18px; height: 18px; color: var(--coral); transition: transform 0.3s ease; }
+.projet.is-open .projet-chevron { transform: rotate(180deg); }
+.projet-action { margin-top: 18px; }
+
+@media (prefers-reduced-motion: reduce) { .projet-detail, .projet-chevron { transition: none; } }
+@media (max-width: 640px) {
+  .projet { grid-template-columns: 1fr; }
+  .projet-repere { justify-content: flex-start; padding: 14px 22px 0; background: none; border-right: 0; }
+  .projet-numero { font-size: 1.2rem; }
+  .projet-corps { padding: 10px 22px 22px; }
+  .projet-action { align-self: stretch; justify-content: center; }
+}
+
 /* ---------- Formulaire contact ---------- */
 .contact-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 48px; }
 .info-card {

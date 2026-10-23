@@ -1,23 +1,22 @@
 /* 2KPI - Catalogue des réalisations
    ===================================
    C'est ICI que tu ajoutes une nouvelle réalisation : ajoute un objet dans
-   le tableau REALISATIONS ci-dessous. La page réalisations.html (liste et
-   filtres) et la page de détail générique (realisation-detail.html) lisent
-   automatiquement ce fichier - aucune autre page à modifier.
+   le tableau REALISATIONS ci-dessous. La page realisations.html (liste, filtres
+   et détail dépliable de chaque projet) lit automatiquement ce fichier - aucune
+   autre page à modifier.
 
    Champs :
-   - id          : identifiant unique, sans espace (utilisé dans l'URL ?projet=...)
+   - id          : identifiant unique, sans espace (lien direct : realisations.html#id)
    - titre       : nom du projet
    - categorie   : "WebSIG", "Urbanisme", "Climat & adaptation", "Environnement"
                    ou "Démographie" (sert aussi de filtre)
    - annee       : année ou période affichée
    - resume      : court résumé affiché sur la carte
-   - details     : liste de paragraphes affichés sur la vue détail (utilisé
+   - details     : liste de paragraphes dépliés par « Voir le détail » (utilisé
                    seulement si le projet n'a pas de démo dédiée - voir vueUrl)
-   - chiffres    : (optionnel) liste de { valeur, label } mise en avant sur la vue détail
-   - vueUrl      : (optionnel) si renseigné, le bouton "Voir la réalisation" ouvre
-                   directement cette page (ex. une démo interactive dédiée) au lieu
-                   de la vue détail générique
+   - chiffres    : (optionnel) liste de { valeur, label } mise en avant dans le détail
+   - vueUrl      : (optionnel) si renseigné, le bouton ouvre directement cette page
+                   (ex. une démo interactive dédiée) au lieu de déplier le détail
    - vueLabel    : (optionnel) texte du bouton si vueUrl est renseigné
 */
 
