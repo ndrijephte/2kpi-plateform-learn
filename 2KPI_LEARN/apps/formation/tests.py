@@ -204,3 +204,8 @@ class RessourcesTests(BaseTest):
         self.assertEqual(self.client.get(reverse("formation:ressource_fichier", args=[r1.pk])).status_code, 302)
         with self.assertRaises(ValueError):
             r1.fichier.url  # aucune URL publique pour un fichier privé
+        # La page de modification affiche le fichier actuel via la vue contrôlée (plus d'erreur 500)
+        r = self.client_de(self.form_a).get(reverse("formation:ressource_modifier", args=[r1.pk]))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, f'href="{reverse("formation:ressource_fichier", args=[r1.pk])}"')
+        self.assertContains(r, "r1")

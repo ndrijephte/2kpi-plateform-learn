@@ -171,8 +171,9 @@ def detail_seance(request, pk):
         messages.success(request, "Livrable déposé. Ton formateur pourra le noter.")
         return redirect("formation:seance", pk=seance.pk)
 
-    # Navigation séance précédente / suivante dans toute la formation
-    toutes = list(Seance.objects.filter(module__formation=seance.module.formation)
+    # Navigation séance précédente / suivante dans les modules accessibles de la formation
+    ouverts = [m.pk for m in seance.module.formation.modules.all() if acces_module(request.user, m).ouvert]
+    toutes = list(Seance.objects.filter(module__formation=seance.module.formation, module_id__in=ouverts)
                   .values_list("pk", flat=True))
     i = toutes.index(seance.pk)
     precedente = toutes[i - 1] if i > 0 else None

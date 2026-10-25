@@ -72,6 +72,27 @@ class EnvoiNotificationsTests(BaseTest):
         self.assertFalse(Notification.objects.filter(titre="Vide").exists())
 
 
+class RestitutionTests(BaseTest):
+    """Ce que voient les apprenants : pas de balise affichée, pas de lien vers un module fermé."""
+
+    def test_message_en_texte_brut_sans_balise_ni_double_echappement(self):
+        from .services import notifier
+        notifier([self.app_a], titre="Module ouvert", message="« Comprendre la GéoAI & sa chaîne »\nà lire",
+                 envoyer_email=False)
+        r = self.client_de(self.app_a).get("/agenda/notifications/")
+        self.assertContains(r, "<p>« Comprendre la GéoAI &amp; sa chaîne »<br>à lire</p>", html=False)
+        self.assertNotContains(r, "&lt;p&gt;")
+        self.assertNotContains(r, "&amp;amp;")
+
+    def test_agenda_seance_d_un_module_ferme_sans_lien(self):
+        ev_m2 = self.promo_a.evenements.filter(seance__module=self.m2).first()
+        ev_m1 = self.promo_a.evenements.filter(seance__module=self.m1).first()
+        r = self.client_de(self.app_a).get(reverse("agenda:mon_agenda"))
+        self.assertContains(r, reverse("formation:seance", args=[ev_m1.seance_id]))
+        self.assertNotContains(r, f'href="{reverse("formation:seance", args=[ev_m2.seance_id])}"')
+        self.assertContains(r, "Module pas encore ouvert")
+
+
 class OuvertureNotificationTests(BaseTest):
     def test_clic_marque_lue_et_ouvre_la_page_concernee(self):
         from .services import notifier

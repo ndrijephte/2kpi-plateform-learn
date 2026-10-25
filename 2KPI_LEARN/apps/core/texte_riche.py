@@ -85,7 +85,7 @@ def rendre(texte):
         return ""
     if est_riche(texte):
         return mark_safe(nettoyer(texte))
-    return linebreaks(texte, autoescape=True)
+    return mark_safe(linebreaks(texte, autoescape=True))  # texte échappé par linebreaks : sûr
 
 
 class _Texte(HTMLParser):

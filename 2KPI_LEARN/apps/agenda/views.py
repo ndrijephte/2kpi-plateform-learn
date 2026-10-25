@@ -40,6 +40,12 @@ def mon_agenda(request):
         qs = Evenement.objects.filter(q_interventions(request.user), promotion__active=True)
     evenements = list(qs.select_related("seance", "seance__module", "promotion")
                       .order_by("date_debut"))
+    if role_de(request.user) == APPRENANT and evenements:
+        from apps.formation.acces import etats_modules  # séance d'un module pas encore ouvert : sans lien
+        modules = {e.seance.module for e in evenements if e.seance_id}
+        etats = etats_modules(insc, modules)
+        for e in evenements:
+            e.verrouille = bool(e.seance_id) and not etats[e.seance.module_id].ouvert
     maintenant = timezone.now()
     prochaine = next((e for e in evenements
                       if e.date_debut >= maintenant and e.statut != Evenement.Statut.ANNULE), None)

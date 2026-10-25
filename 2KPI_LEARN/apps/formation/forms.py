@@ -150,6 +150,32 @@ def completer(r, type_choisi=""):
     return r
 
 
+class _FichierAffiche(str):
+    """Nom du fichier affiché par le widget, avec l'URL de téléchargement contrôlée."""
+    def __new__(cls, nom, url):
+        obj = super().__new__(cls, nom)
+        obj.url = url
+        return obj
+
+
+class FichierPriveInput(forms.ClearableFileInput):
+    """Fichier en stockage privé : le lien « Actuellement » passe par la vue de téléchargement contrôlée
+    (`url_fichier`), le stockage privé n'ayant pas d'URL publique."""
+    url_fichier = ""
+
+    def is_initial(self, value):
+        return bool(value and getattr(value, "name", ""))  # sans toucher à .url (refusé par le stockage privé)
+
+    def get_context(self, name, value, attrs):
+        contexte = super().get_context(name, value, attrs)
+        if self.is_initial(value):
+            contexte["widget"]["value"] = _FichierAffiche(value.name.rsplit("/", 1)[-1], self.url_fichier)
+        return contexte
+
+    def format_value(self, value):
+        return value if self.is_initial(value) else None
+
+
 class RessourceForm(_CibleMixin, forms.ModelForm):
     """Modification d'une ressource existante."""
     seance = _SeanceChoix(label="Séance", queryset=Seance.objects.none(), required=False)
@@ -170,6 +196,11 @@ class RessourceForm(_CibleMixin, forms.ModelForm):
         super().__init__(*a, **kw)
         self._init_cibles(modules if modules is not None else Module.objects.none())
         self.fields["type"].initial = self.instance.type if self.instance.pk else ""
+        if self.instance.pk:
+            from django.urls import reverse
+            widget = FichierPriveInput()
+            widget.url_fichier = reverse("formation:ressource_fichier", args=[self.instance.pk])
+            self.fields["fichier"].widget = widget
         self.fields["ordre"].required = False
         self.fields["titre"].required = False
 

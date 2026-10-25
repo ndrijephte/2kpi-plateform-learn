@@ -46,6 +46,8 @@ def _apprenant(request):
         # … parmi les modules ouverts pour l'apprenant uniquement
         etats = etats_modules(inscription, inscription.formation.modules.all())
         ouverts = [mid for mid, e in etats.items() if e.ouvert]
+        for ev in ctx.get("a_venir", []):  # séance d'un module pas encore ouvert : affichée sans lien
+            ev.verrouille = bool(ev.seance_id) and ev.seance.module_id not in ouverts
         ctx["reprendre"] = (Seance.objects.filter(module__formation=inscription.formation, module_id__in=ouverts)
                             .exclude(pk__in=rendus).select_related("module").first())
         ctx["acquis"] = autoevaluation.synthese_apprenant(inscription, ouverts)

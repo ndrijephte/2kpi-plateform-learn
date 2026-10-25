@@ -17,7 +17,7 @@
     <h2 style="margin:.6rem 0 .2rem">{{ prochaine.libelle }}</h2>
     <p class="muted">{{ prochaine.date_debut|date:"l d F, H:i" }} · {{ prochaine.get_mode_display }}{% if prochaine.lieu %} · {{ prochaine.lieu }}{% endif %}</p>
     {% if vue_formateur %}<div class="btn-row"><a class="btn btn-sm btn-navy" href="{% url 'agenda:planning' prochaine.promotion_id %}">{% icon "calendar-days" size=14 %} Planning de {{ prochaine.promotion.nom }}</a> <a class="btn btn-sm" href="{% url 'agenda:presences' prochaine.id %}">{% icon "user-check" size=14 %} Présences</a></div>
-    {% elif prochaine.seance_id %}<div class="btn-row"><a class="btn btn-sm" href="{% url 'formation:seance' prochaine.seance_id %}">Préparer la séance {% icon "arrow-right" size=14 %}</a></div>{% endif %}
+    {% elif prochaine.seance_id and not prochaine.verrouille %}<div class="btn-row"><a class="btn btn-sm" href="{% url 'formation:seance' prochaine.seance_id %}">Préparer la séance {% icon "arrow-right" size=14 %}</a></div>{% endif %}
   </div>
   {% endif %}
   {% for sem in semaines %}
