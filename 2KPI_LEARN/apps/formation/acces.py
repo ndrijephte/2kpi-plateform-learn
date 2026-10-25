@@ -111,7 +111,7 @@ def diagnostic_apprenant(user):
     insc = inscription_courante(user)
     resultat["inscription"] = insc
     if not etape(insc is not None, "Inscription à une formation",
-                 "Aucune inscription : rattache-le à une promotion (Utilisateurs › Promotion)." if insc is None
+                 "Aucune inscription : rattache-le à une session (champ Promotion de cette fiche)." if insc is None
                  else f"{insc.formation}"):
         return resultat
     autres = Inscription.objects.filter(apprenant=user).exclude(pk=insc.pk).count()
@@ -120,8 +120,14 @@ def diagnostic_apprenant(user):
                       f"{insc.formation} (prise en compte ; {autres} autre{'s' if autres > 1 else ''} inscription{'s' if autres > 1 else ''} ignorée{'s' if autres > 1 else ''})")
     if not etape(insc.est_active, "Inscription confirmée",
                  "" if insc.est_active else f"Statut actuel : « {insc.get_statut_display()} »."
-                 + (" Confirme-la (paiement reçu ou exonération) dans Promotions › Pilotage."
+                 + (" À confirmer dans Sessions › Pilotage et inscriptions, une fois les points ci-dessous réglés."
                     if insc.statut == Inscription.Statut.ADMISE else "")):
+        if insc.statut == Inscription.Statut.ADMISE:  # ce qui empêche encore la confirmation
+            from apps.agenda.workflow import conditions_inscription
+            ou = {"Paiement reçu ou exonération": "Pilotage de la session, colonne Paiement : « Reçu » ou « Exonéré ».",
+                  "Prérequis obligatoires remplis": "Bloc « Prérequis de la formation » de cette fiche, ou Sessions › Évaluation."}
+            for c in conditions_inscription(insc, Inscription.Statut.CONFIRMEE):
+                etape(c.ok, c.libelle, c.detail + (f" {ou[c.libelle]}" if not c.ok and c.libelle in ou else ""))
         return resultat
     promo = insc.promotion
     if not etape(promo is not None, "Rattachement à une promotion",
@@ -143,7 +149,7 @@ def diagnostic_apprenant(user):
             module__formation_id=insc.formation_id, etat=AccesModule.Etat.OUVERT).exclude(promotion=promo)
             .select_related("module", "promotion")})
         etape(False, "Modules ouverts pour sa promotion",
-              f"Aucun module ouvert pour « {promo.nom} » (Promotions › Accès)."
+              f"Aucun module ouvert pour « {promo.nom} » (Sessions › ⋯ › Ouverture des modules)."
               + (f" Ouverts dans d'autres promotions seulement : {', '.join(ailleurs)}." if ailleurs else "")
               + ("" if modules else " La formation n'a encore aucun module."))
     return resultat

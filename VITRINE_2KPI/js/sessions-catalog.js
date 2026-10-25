@@ -3,7 +3,8 @@
    ouverte par l'administration apparaît avec ses dates et « S'inscrire », sinon la formation propose
    « Être prévenu(e) de l'ouverture » (liste d'intérêt, POST /api/interet/).
    Ordre : sessions ouvertes (dates fixes à venir, puis récurrentes, puis à confirmer ; complètes en
-   dernier), puis les formations à venir. Filtre par domaine. */
+   dernier), puis les sessions en cours (mises en valeur : semaine courante, dates, effectif), puis les
+   formations à venir. Filtre par domaine. */
 (function () {
   "use strict";
 
@@ -103,19 +104,42 @@
     return row;
   }
 
-  /* Une formation sans session ouverte : « Être prévenu(e) » et son formulaire */
+  /* Session qui se déroule : bandeau « En cours » avec la semaine courante et l'avancement */
+  function bandeauEnCours(e) {
+    var p = e.progression == null ? null : Math.max(0, Math.min(100, e.progression));
+    return '<div class="session-date session-date--encours">' +
+      '<span class="encours-pastille" aria-hidden="true"></span><span class="encours-libelle">En cours</span>' +
+      (e.semaines ? '<span class="encours-semaine">Semaine ' + e.semaine + " sur " + e.semaines + "</span>" : "") +
+      (p != null ? '<span class="encours-progression" role="progressbar" aria-label="Avancement de la session" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' +
+        p + '"><span style="width:' + p + '%"></span></span>' : "") +
+      "</div>";
+  }
+
+  function asideEnCours(e) {
+    var dates = "Depuis le " + escapeHtml(e.debutAffichage) + (e.finAffichage ? " · jusqu'au " + escapeHtml(e.finAffichage) : "");
+    return '<p class="session-etat session-etat--encours">Session en cours</p>' +
+      '<p class="encours-dates">' + dates + "</p>" +
+      (e.apprenants ? '<p class="encours-effectif"><strong>' + e.apprenants + "</strong> apprenant" +
+        (e.apprenants > 1 ? "s" : "") + " en formation</p>" : "");
+  }
+
+  /* Une formation sans session ouverte : « Être prévenu(e) » et son formulaire ; mise en valeur si une
+     session est en cours */
   function ligneAVenir(f) {
     var row = document.createElement("article");
-    row.className = "session-row is-avenir";
+    var e = f.etat === "en_cours" && f.enCours ? f.enCours : null;
+    row.className = "session-row is-avenir" + (e ? " is-en-cours" : "");
     var etat = f.etat === "en_cours" ? "Session en cours · prochaine à venir" : "Prochaine session bientôt annoncée";
     var id = "interet-" + f.id;
     row.innerHTML =
-      '<div class="session-date session-date--texte session-date--attente">' + ICON_CAL + "<span>Dates à venir</span></div>" +
-      corps(f, null) +
+      (e ? bandeauEnCours(e)
+         : '<div class="session-date session-date--texte session-date--attente">' + ICON_CAL + "<span>Dates à venir</span></div>") +
+      corps(f, e ? { mode: e.mode, lieu: e.lieu } : null) +
       '<div class="session-aside">' +
-        '<p class="session-etat">' + etat + "</p>" +
+        (e ? asideEnCours(e) : '<p class="session-etat">' + etat + "</p>") +
         (f.prix ? '<p class="session-price">' + escapeHtml(f.prix) + "</p>" : "") +
-        '<button type="button" class="btn btn-outline-navy" aria-expanded="false" aria-controls="' + id + '">' + ICON_BELL + " Être prévenu(e)</button>" +
+        '<button type="button" class="btn btn-outline-navy" aria-expanded="false" aria-controls="' + id + '">' + ICON_BELL +
+          (e ? " Être prévenu(e) de la prochaine" : " Être prévenu(e)") + "</button>" +
       "</div>" +
       '<form class="interet-form" id="' + id + '" hidden novalidate>' +
         '<p class="interet-intro">Laissez vos coordonnées : nous vous écrivons dès l\'ouverture des inscriptions, avec les dates et le lien pour vous inscrire.</p>' +
@@ -195,7 +219,9 @@
       return String(a.f.titre).localeCompare(String(b.f.titre), "fr");
     });
     aVenir.sort(function (a, b) { return String(a.titre).localeCompare(String(b.titre), "fr"); });
-    return { ouvertes: ouvertes, aVenir: aVenir };
+    var enCours = aVenir.filter(function (f) { return f.etat === "en_cours" && f.enCours; });
+    aVenir = aVenir.filter(function (f) { return enCours.indexOf(f) < 0; });
+    return { ouvertes: ouvertes, enCours: enCours, aVenir: aVenir };
   }
 
   function render() {
@@ -204,23 +230,30 @@
     if (countEl) {
       var ids = {};
       l.ouvertes.forEach(function (x) { ids[x.f.id] = true; });
-      var nf = l.aVenir.length + Object.keys(ids).length;
+      var nf = l.aVenir.length + l.enCours.length + Object.keys(ids).length;
       countEl.textContent = nf + " formation" + (nf > 1 ? "s" : "") + " · " +
         (l.ouvertes.length ? l.ouvertes.length + " session" + (l.ouvertes.length > 1 ? "s" : "") + " ouverte" +
-          (l.ouvertes.length > 1 ? "s" : "") + " aux inscriptions" : "aucune session ouverte pour le moment");
+          (l.ouvertes.length > 1 ? "s" : "") + " aux inscriptions" : "aucune session ouverte pour le moment") +
+        (l.enCours.length ? " · " + l.enCours.length + " en cours" : "");
     }
-    if (!l.ouvertes.length && !l.aVenir.length) {
+    if (!l.ouvertes.length && !l.enCours.length && !l.aVenir.length) {
       container.innerHTML = '<p class="sessions-empty">Aucune formation dans ce domaine pour le moment. ' +
         '<a href="contact.html">Contactez-nous</a> pour une formation sur mesure.</p>';
       return;
     }
-    l.ouvertes.forEach(function (x) { container.appendChild(ligneSession(x.f, x.s, x.n)); });
-    if (l.ouvertes.length && l.aVenir.length) {
+    var groupes = [l.ouvertes.length, l.enCours.length, l.aVenir.length].filter(Boolean).length;
+    function separateur(texte) {  // titres de groupe, seulement s'il y a plusieurs groupes
+      if (groupes < 2) return;
       var sep = document.createElement("h2");
       sep.className = "sessions-separateur";
-      sep.textContent = "Prochaines sessions à venir";
+      sep.textContent = texte;
       container.appendChild(sep);
     }
+    if (l.ouvertes.length) separateur("Inscriptions ouvertes");
+    l.ouvertes.forEach(function (x) { container.appendChild(ligneSession(x.f, x.s, x.n)); });
+    if (l.enCours.length) separateur("En ce moment");
+    l.enCours.forEach(function (f) { container.appendChild(ligneAVenir(f)); });
+    if (l.aVenir.length) separateur("Prochaines sessions à venir");
     l.aVenir.forEach(function (f) { container.appendChild(ligneAVenir(f)); });
   }
 

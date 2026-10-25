@@ -200,6 +200,28 @@ class CatalogueVitrineTests(BaseTest):
         apres = self.promo_a.evenements.order_by("date_debut").first().date_debut
         self.assertEqual((apres - avant).days, 14)
 
+    def test_catalogue_session_en_cours(self):
+        from apps.agenda.api import fiche_en_cours
+        f = self.formation
+        f.catalogue = True
+        f.save()
+        self.promo_a.statut = Promotion.Statut.EN_COURS
+        self.promo_a.save()
+        self.insc_a.statut = "en_cours"
+        self.insc_a.save()
+        geoai = next(x for x in self.client.get("/api/catalogue/").json()["formations"] if x["id"] == "geoai-sassandra")
+        self.assertEqual(geoai["etat"], "en_cours")
+        e = geoai["enCours"]
+        premiere = timezone.localdate(self.promo_a.evenements.order_by("date_debut").first().date_debut)
+        self.assertEqual((e["dateDebut"], e["apprenants"], e["semaine"]), (premiere.isoformat(), 1, 1))
+        self.assertTrue(e["semaines"] > 1 and e["finAffichage"])
+        # Semaine courante bornée par la durée de la session
+        self.promo_a.nb_apprenants = 1
+        tard = fiche_en_cours(self.promo_a, aujourd_hui=premiere + dt.timedelta(weeks=200))
+        self.assertEqual((tard["semaine"], tard["progression"]), (tard["semaines"], 100))
+        trois = fiche_en_cours(self.promo_a, aujourd_hui=premiere - dt.timedelta(days=premiere.weekday()) + dt.timedelta(weeks=2))
+        self.assertEqual(trois["semaine"], 3)
+
     def test_catalogue_etats_et_ouverture_officielle_par_le_workflow(self):
         from apps.agenda import workflow
         f = self.formation

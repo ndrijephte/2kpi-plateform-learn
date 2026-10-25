@@ -1,12 +1,14 @@
 """API publique lue par le site vitrine : catalogue des formations et sessions ouvertes.
 
-GET /api/catalogue/ - formations « au catalogue », avec leur état et leurs sessions ouvertes.
+GET /api/catalogue/ - formations « au catalogue », avec leur état, leurs sessions ouvertes et la session en
+cours (dates, semaine courante, effectif), mise en valeur sur la vitrine.
 
 GET /api/sessions/ - promotions publiées sur la vitrine (inscriptions ouvertes ou prêtes), au format attendu par
 VITRINE_2KPI/js/sessions-data.js. Lecture seule, données publiques ; CORS limité à
 settings.VITRINE_ORIGINS, jamais mis en cache pour que les places restent exactes.
 """
-from django.db.models import Count, Q
+import datetime as dt
+from django.db.models import Count, Max, Min, Q
 from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.formats import date_format
@@ -52,9 +54,37 @@ def sessions(request):
     return _cors(request, reponse)
 
 
-def _fiche_formation(f, sessions, en_cours):
+def fiche_en_cours(p, aujourd_hui=None):
+    """Session qui se déroule : dates, semaine courante et effectif (données agrégées, publiques)."""
+    from .models import Evenement
+    aujourd_hui = aujourd_hui or timezone.localdate()
+    dates = (p.evenements.exclude(statut=Evenement.Statut.ANNULE)
+             .aggregate(debut=Min("date_debut"), fin=Max("date_debut")))
+    debut = timezone.localdate(dates["debut"]) if dates["debut"] else p.date_debut
+    fin = timezone.localdate(dates["fin"]) if dates["fin"] else None
+    lundi = debut - dt.timedelta(days=debut.weekday())
+    semaines = (fin - lundi).days // 7 + 1 if fin else None
+    semaine = max(1, (aujourd_hui - lundi).days // 7 + 1)
+    if semaines:
+        semaine = min(semaine, semaines)
+    return {
+        "dateDebut": debut.isoformat(),
+        "dateFin": fin.isoformat() if fin else "",
+        "debutAffichage": date_format(debut, "j F Y"),
+        "finAffichage": date_format(fin, "j F Y") if fin else "",
+        "semaine": semaine,
+        "semaines": semaines,
+        "progression": round(100 * semaine / semaines) if semaines else None,
+        "apprenants": p.nb_apprenants,
+        "mode": p.mode,
+        "lieu": p.lieu or ("En ligne (visioconférence)" if p.mode == Promotion.Mode.EN_LIGNE else ""),
+    }
+
+
+def _fiche_formation(f, sessions, en_cours=None):
     """Une formation du catalogue et son état : « ouverte » (sessions réservables), « en_cours »
-    (une session se déroule, la prochaine reste à annoncer) ou « a_venir »."""
+    (une session se déroule, la prochaine reste à annoncer) ou « a_venir ». `en_cours` : fiche de la
+    session qui se déroule (fiche_en_cours), affichée en surbrillance sur la vitrine."""
     return {
         "id": f.slug,
         "titre": f.titre,
@@ -65,6 +95,7 @@ def _fiche_formation(f, sessions, en_cours):
         "prix": f.prix_indicatif if f.afficher_prix else "",
         "etat": "ouverte" if sessions else ("en_cours" if en_cours else "a_venir"),
         "sessions": sessions,
+        "enCours": en_cours,
     }
 
 
@@ -81,11 +112,16 @@ def catalogue(request):
     par_formation = {}
     for p in ouvertes:
         par_formation.setdefault(p.formation_id, []).append(fiche(p, p.nb_inscrits))
-    en_cours = set(Promotion.objects.filter(statut=Promotion.Statut.EN_COURS).values_list("formation_id", flat=True))
+    en_cours = {}  # la session démarrée le plus récemment, par formation
+    for p in (Promotion.objects.filter(statut=Promotion.Statut.EN_COURS)
+              .annotate(nb_apprenants=Count("inscriptions", filter=Q(inscriptions__statut="en_cours")))
+              .order_by("date_debut")):
+        en_cours[p.formation_id] = p
     # « Au catalogue » est une décision distincte de « active » (utilisable sur la plateforme) : une formation
     # peut être annoncée, avec « Être prévenu(e) », avant d'être montée dans 2KPI Learn.
     formations = Formation.objects.filter(catalogue=True).order_by("titre")
-    fiches = [_fiche_formation(f, par_formation.get(f.pk, []), f.pk in en_cours) for f in formations]
+    fiches = [_fiche_formation(f, par_formation.get(f.pk, []),
+                               fiche_en_cours(en_cours[f.pk]) if f.pk in en_cours else None) for f in formations]
     fiches.sort(key=lambda x: x["etat"] != "ouverte")  # tri stable : les formations ouvertes d'abord
     reponse = JsonResponse({"formations": fiches}, json_dumps_params={"ensure_ascii": False})
     reponse["Cache-Control"] = "no-cache"

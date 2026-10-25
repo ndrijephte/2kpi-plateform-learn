@@ -538,6 +538,28 @@ strong { color: var(--navy); }
 /* État de la formation, formations à venir, liste d'intérêt */
 .session-etat { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-soft); }
 .session-etat--ouverte { color: var(--green-dark); }
+/* Session en cours : mise en valeur sobre (bandeau navy, pastille, avancement) */
+.session-row.is-en-cours { border-color: rgba(92, 122, 58, 0.45); box-shadow: 0 0 0 1px rgba(92, 122, 58, 0.14), var(--shadow-sm); }
+.session-row.is-en-cours:hover { border-color: rgba(92, 122, 58, 0.7); box-shadow: 0 0 0 1px rgba(92, 122, 58, 0.22), var(--shadow); }
+.session-date--encours {
+  position: relative; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 14px 20px 17px;
+  background: linear-gradient(120deg, var(--navy) 0%, #1f4260 62%, var(--green-dark) 140%); color: #fff;
+}
+.encours-pastille { width: 8px; height: 8px; border-radius: 50%; background: #a6d47a; flex-shrink: 0; animation: encours-pouls 2.4s ease-out infinite; }
+.encours-libelle { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+.encours-semaine { margin-left: auto; font-size: 0.8rem; font-weight: 600; color: rgba(255, 255, 255, 0.82); }
+.encours-progression { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, 0.14); }
+.encours-progression > span { display: block; height: 100%; background: var(--cream); border-radius: 0 3px 3px 0; }
+.session-etat--encours { color: var(--green-dark); }
+.encours-dates { margin: 0; font-size: 0.86rem; color: var(--text-soft); }
+.encours-effectif { margin: 0; font-size: 0.85rem; color: var(--text-soft); }
+.encours-effectif strong { color: var(--navy); }
+@keyframes encours-pouls {
+  0% { box-shadow: 0 0 0 0 rgba(166, 212, 122, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(166, 212, 122, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(166, 212, 122, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .encours-pastille { animation: none; } }
 .sessions-separateur { grid-column: 1 / -1; font-size: 1.05rem; color: var(--text-soft); margin: 14px 0 0; font-weight: 700; }
 .interet-form { padding: 16px 20px 20px; border-top: 1px solid var(--border); background: var(--bg-soft); display: flex; flex-direction: column; gap: 12px; }
 .interet-form .form-row { grid-template-columns: 1fr; gap: 12px; margin: 0; }

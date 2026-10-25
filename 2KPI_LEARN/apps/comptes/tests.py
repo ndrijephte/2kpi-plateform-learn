@@ -337,9 +337,16 @@ class DiagnosticAccesTests(BaseTest):
         self.assertContains(r, "Accès aux cours")
         self.assertContains(r, "Aucun module ouvert pour « Promo B »")
         self.assertContains(self.client_de(self.admin).get(reverse("comptes:utilisateurs")), "Pas d'accès aux cours")
-        self.insc_a.statut = Inscription.Statut.ADMISE
+        # Nouvel apprenant admis : la fiche dit ce qui empêche encore la confirmation
+        self.insc_a.statut, self.insc_a.paiement = Inscription.Statut.ADMISE, Inscription.Paiement.EN_ATTENTE
         self.insc_a.save()
-        self.assertIn("Confirme-la", diagnostic_apprenant(self.app_a)["etapes"][-1][2])
+        etapes = {libelle: (ok, detail) for ok, libelle, detail in diagnostic_apprenant(self.app_a)["etapes"]}
+        self.assertIn("Pilotage et inscriptions", etapes["Inscription confirmée"][1])
+        self.assertEqual(etapes["Paiement reçu ou exonération"][0], False)
+        self.assertIn("« Reçu » ou « Exonéré »", etapes["Paiement reçu ou exonération"][1])
+        r = self.client_de(self.admin).get(reverse("comptes:utilisateur_editer", args=[self.app_a.pk]))
+        self.assertContains(r, "Paiement reçu ou exonération")
+        self.assertContains(r, reverse("agenda:pilotage", args=[self.promo_a.pk]))
 
     def test_inscription_plus_recente_ne_masque_pas_le_cours(self):
         from apps.formation.models import Formation
