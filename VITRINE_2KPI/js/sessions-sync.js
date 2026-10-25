@@ -11,7 +11,11 @@ function _chargerDepuisLearn(chemin, appliquer, suite) {
   fetch(LEARN_URL + chemin, { cache: "no-cache", signal: ctrl ? ctrl.signal : undefined })
     .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
     .then(function (data) { clearTimeout(delai); if (!fini) { appliquer(data); terminer(true); } })
-    .catch(function () { clearTimeout(delai); terminer(false); });
+    .catch(function (e) {
+      clearTimeout(delai);
+      if (fini) setTimeout(function () { throw e; });  // erreur de la page elle-même : visible en console
+      else terminer(false);
+    });
 }
 
 function chargerSessions(suite) {
