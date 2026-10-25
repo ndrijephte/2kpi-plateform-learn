@@ -1,36 +1,68 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Fiche vitrine - {{ promo.nom }} - {{ site_nom }}{% endblock %}
-{% block crumbs %}{% icon "users" size=16 %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<span>{{ promo.nom }}</span>{% endblock %}
+{% block title %}Publier sur la vitrine - {{ promo.nom }} - {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "users" size=16 %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<span>{{ promo.nom }}</span>{% icon "chevron-right" size=14 %}<span>Vitrine</span>{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
-    <span class="eyebrow">{% icon "globe" size=14 %} Site vitrine</span>
+    <span class="eyebrow">{% icon "globe" size=14 %} Site vitrine · {{ promo.formation.titre }}</span>
     <h1>{{ promo.nom }}</h1>
-    <p class="muted">Ce que <strong>2kpinnov.org</strong> affiche de cette promotion dans le catalogue des sessions et le formulaire d'inscription. Les candidatures reçues arrivent dans <a href="{% url 'comptes:candidatures' %}">Candidatures</a>, rattachées à cette promotion.</p>
+    <p class="muted">Ce que <strong>2kpinnov.org</strong> affiche de cette session (catalogue et formulaire d'inscription). Les candidatures reçues arrivent dans <a href="{% url 'comptes:candidatures' %}">Candidatures</a>, rattachées à cette promotion.</p>
   </div>
+  <a class="btn btn-secondary" href="{% url 'agenda:pilotage' promo.pk %}">{% icon "list-checks" size=16 %} Pilotage</a>
 </div>
 
 <div class="grid-2">
   <div class="card">
-    <form method="post" class="stack-sm">{% csrf_token %}
+    <h2 class="section-title">{% icon "file-text" size=18 %} Fiche de la session</h2>
+    <form method="post" class="stack-sm" id="fiche">{% csrf_token %}
       {% include "partials/form_fields.html" %}
       <div class="actions">
-        <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
+        {% if publiable %}
+        <button class="btn" type="submit" name="action" value="publier">{% icon "globe" size=16 %} Enregistrer et publier</button>
+        <button class="btn btn-secondary" type="submit" name="action" value="enregistrer">{% icon "check" size=16 %} Enregistrer sans publier</button>
+        {% else %}
+        <button class="btn" type="submit" name="action" value="enregistrer">{% icon "check" size=16 %} Enregistrer</button>
+        {% endif %}
         <a class="btn btn-secondary" href="{% url 'agenda:promotions' %}">Annuler</a>
       </div>
     </form>
   </div>
+
   <div>
     <div class="card">
-      <h2 class="section-title">{% icon "info" size=18 %} État actuel</h2>
-      <p>{% if promo.publiee_vitrine %}<span class="pill pill-ok">{% icon "globe" size=12 %} En ligne : inscriptions ouvertes</span>{% else %}<span class="pill">Pas encore en ligne</span><br>
-        <small class="muted">La session apparaît sur le site, avec ses dates et le bouton « S'inscrire », dès que tu ouvres ses inscriptions dans <a class="link" href="{% url 'agenda:pilotage' promo.pk %}">Pilotage</a>. Avant, le site montre la formation avec « Être prévenu(e) ».</small>{% endif %}
+      <h2 class="section-title">{% icon "info" size=18 %} État sur le site</h2>
+      <p>{% if promo.publiee_vitrine %}<span class="pill pill-ok">{% icon "globe" size=12 %} En ligne : inscriptions ouvertes</span>
+        {% elif publiable %}<span class="pill">Pas encore en ligne</span><br><small class="muted">Avant publication, le site montre la formation avec « Être prévenu(e) » ; à la publication, les personnes intéressées sont prévenues par e-mail.</small>
+        {% else %}<span class="pill pill-promo-{{ promo.statut }}">{{ promo.get_statut_display }}</span><br><small class="muted">La session n'accepte plus d'inscriptions en ligne : elle n'est plus annoncée sur le site.</small>{% endif %}
         {% if promo.code_vitrine %}<br><small class="muted">{% icon "link" size=12 %} …/inscription.html?session={{ promo.code_vitrine }}</small>{% endif %}</p>
       <p><strong>{{ promo.places_restantes }}</strong> place(s) disponible(s) sur {{ promo.places_total }}<br>
         <small class="muted">= {{ promo.places_total }} − {{ promo.nb_inscrits_actifs }} inscrit(s) sur la plateforme − {{ promo.places_hors_plateforme }} attribuée(s) hors plateforme</small></p>
-      <p class="muted">{% icon "clock" size=14 %} Le site se met à jour tout seul, dès l'enregistrement : rien à redéployer.</p>
+      {% if retirable %}
+      <form method="post" onsubmit="return confirm('Retirer la session du site et fermer les inscriptions ?')">{% csrf_token %}
+        <button class="btn btn-sm btn-secondary" type="submit" name="action" value="retirer">{% icon "ban" size=14 %} Retirer du site</button>
+      </form>
+      {% endif %}
+      <p class="muted">{% icon "clock" size=14 %} Le site se met à jour tout seul : rien à redéployer.</p>
     </div>
+
+    {% if conditions %}
+    <div class="card diagnostic">
+      <h2 class="section-title">{% icon "list-checks" size=18 %} Avant de publier</h2>
+      <ol class="diagnostic-etapes">
+        {% for c in conditions %}
+        <li class="{% if c.ok %}ok{% else %}ko{% endif %}"><span class="puce">{% if c.ok %}{% icon "check" size=13 stroke=2.5 %}{% else %}{% icon "x" size=13 stroke=2.5 %}{% endif %}</span>
+          <span><strong>{{ c.libelle }}</strong>{% if c.detail %}<small>{{ c.detail }}</small>{% endif %}</span></li>
+        {% endfor %}
+      </ol>
+      {% if sans_calendrier %}
+      <form method="post" style="margin-top:12px">{% csrf_token %}
+        <button class="btn btn-sm btn-secondary" type="submit" name="action" value="calendrier">{% icon "calendar-plus" size=14 %} Générer le calendrier</button>
+      </form>
+      {% endif %}
+      <p class="muted" style="margin-top:10px"><small>Le formateur référent et le nombre de places se règlent dans la fiche ci-contre.</small></p>
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

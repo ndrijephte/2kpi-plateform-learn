@@ -81,9 +81,23 @@ class FicheVitrineForm(forms.ModelForm):
     class Meta:
         from .models import Promotion
         model = Promotion
-        fields = ["code_vitrine", "domaine", "mode", "date_affichage", "horaire",
+        fields = ["formateur", "date_debut", "code_vitrine", "domaine", "mode", "date_affichage", "horaire",
                   "duree", "lieu", "places_total", "places_hors_plateforme", "prix", "afficher_prix", "description_vitrine"]
-        widgets = {"description_vitrine": forms.Textarea(attrs={"rows": 3, "maxlength": 400})}
+        widgets = {"description_vitrine": forms.Textarea(attrs={"rows": 3, "maxlength": 400}),
+                   "date_debut": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")}
+        labels = {"date_debut": "Date de début"}
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.fields["formateur"].queryset = (User.objects.filter(profil__role=FORMATEUR, is_active=True, is_superuser=False)
+                                             .order_by("first_name", "last_name", "username"))
+        self.fields["formateur"].label_from_instance = lambda u: u.get_full_name() or u.username
+        self.fields["formateur"].empty_label = "— à affecter —"
+        if self.instance.pk and self.instance.statut not in (self.instance.Statut.PLANIFIEE, self.instance.Statut.INSCRIPTIONS):
+            del self.fields["date_debut"]  # session prête ou démarrée : le calendrier se recale depuis le planning
+        else:
+            self.fields["date_debut"].help_text = ("Changer la date recale les séances encore « planifiées » "
+                                                   "du calendrier (les autres ne bougent pas).")
 
     def clean_code_vitrine(self):
         from django.utils.text import slugify

@@ -79,10 +79,10 @@ def _conditions_preparation(promo):
                   (f"Sans séance : {', '.join(vides)}." if vides else _pluriel(len(modules), "module"))),
         Condition(promo.formateur_id is not None, "Formateur référent désigné",
                   str(promo.formateur.get_full_name() or promo.formateur) if promo.formateur_id
-                  else "Choisis-le dans la liste des promotions."),
+                  else "À choisir dans la fiche vitrine ou la liste des promotions."),
         Condition(promo.evenements.exists(), "Calendrier généré",
                   _pluriel(promo.evenements.count(), "séance datée") if promo.evenements.exists()
-                  else "Bouton « Calendrier » de la promotion."),
+                  else "Bouton « Générer le calendrier » (fiche vitrine) ou « Calendrier » (promotions)."),
         Condition(promo.places_total > 0, "Nombre de places renseigné", "Fiche vitrine de la promotion."),
     ]
 

@@ -191,11 +191,16 @@ def promotions(request):
         formation_id = request.POST.get("formation")
         date_debut = request.POST.get("date_debut")
         if nom and formation_id and date_debut:
-            Promotion.objects.create(
+            promo = Promotion.objects.create(
                 nom=nom, formation_id=formation_id, date_debut=date_debut,
                 code_vitrine=slugify(request.POST.get("code_vitrine", ""))[:100],
                 formateur=formateurs.filter(pk=request.POST.get("formateur") or None).first())
-            messages.success(request, "Promotion créée. Tu peux générer son calendrier.")
+            promo.refresh_from_db()  # date_debut reçue en texte : relue en date
+            n = generer_agenda(promo)  # calendrier daté d'office (recalable ensuite depuis le planning)
+            messages.success(request, f"Session « {promo.nom} » créée"
+                             + (f", calendrier de {n} séance(s) généré" if n else "")
+                             + ". Complète sa fiche puis publie-la sur le site vitrine.")
+            return redirect("agenda:fiche_vitrine", promo_id=promo.pk)
         else:
             messages.error(request, "Renseigne le nom, la formation et la date de début.")
         return redirect("agenda:promotions")
@@ -214,18 +219,51 @@ def promotions(request):
 
 @formateur_requis
 def fiche_vitrine(request, promo_id):
-    """Admin : ce que le site vitrine affiche de la promotion (API publique /api/sessions/)."""
+    """Admin : lancer une session sur le site vitrine. Fiche publique (API /api/sessions/), conditions
+    de publication, et publication en un geste : « Publier » ouvre les inscriptions (workflow), ce qui
+    l'affiche sur 2kpinnov.org ; « Retirer » les referme."""
+    from . import workflow
     if not est_admin(request.user):
         raise PermissionDenied
-    promo = get_object_or_404(Promotion.objects.select_related("formation"), pk=promo_id)
-    form = FicheVitrineForm(request.POST or None, instance=promo)
-    if request.method == "POST" and form.is_valid():
+    promo = get_object_or_404(Promotion.objects.select_related("formation", "formateur"), pk=promo_id)
+    action = request.POST.get("action", "enregistrer") if request.method == "POST" else ""
+    form = FicheVitrineForm(request.POST if action in ("enregistrer", "publier") else None, instance=promo)
+    if action == "calendrier":
+        n = generer_agenda(promo)
+        messages.success(request, f"Calendrier généré : {n} séance(s) datée(s)." if n
+                         else "Le calendrier est déjà généré.")
+        return redirect("agenda:fiche_vitrine", promo_id=promo.pk)
+    if action == "retirer":
+        try:
+            messages.success(request, workflow.changer_statut_promotion(
+                promo, Promotion.Statut.PLANIFIEE, request.user, "Retirée du site vitrine"))
+        except workflow.TransitionRefusee as refus:
+            messages.error(request, "Retrait impossible : " + " ; ".join(refus.manques))
+        return redirect("agenda:fiche_vitrine", promo_id=promo.pk)
+    if action in ("enregistrer", "publier") and form.is_valid():
         promo = form.save()
+        if "date_debut" in form.changed_data and promo.evenements.exists():
+            recales, _ = synchroniser_agenda(promo)  # seules les séances encore « planifiées » bougent
+            messages.info(request, f"Nouvelle date de début : {recales} séance(s) recalée(s) dans le calendrier.")
+        if action == "publier":
+            try:
+                messages.success(request, workflow.changer_statut_promotion(
+                    promo, Promotion.Statut.INSCRIPTIONS, request.user, "Publiée sur le site vitrine"))
+            except workflow.TransitionRefusee as refus:
+                messages.error(request, "Fiche enregistrée, mais publication impossible : " + " ; ".join(refus.manques))
+            return redirect("agenda:fiche_vitrine", promo_id=promo.pk)
         messages.success(request, f"Fiche vitrine de « {promo.nom} » enregistrée."
                          + (f" Elle est en ligne ({promo.places_restantes} place(s) disponible(s))." if promo.publiee_vitrine
-                            else " Elle apparaîtra sur le site à l'ouverture des inscriptions (Pilotage)."))
+                            else " Publie-la pour l'afficher sur le site."))
         return redirect("agenda:promotions")
-    return render(request, "agenda/fiche_vitrine.html", {"promo": promo, "form": form})
+    statut = promo.statut
+    conditions = (workflow.conditions_promotion(promo, Promotion.Statut.INSCRIPTIONS)
+                  if statut == Promotion.Statut.PLANIFIEE else [])
+    return render(request, "agenda/fiche_vitrine.html", {
+        "promo": promo, "form": form, "conditions": conditions,
+        "publiable": statut == Promotion.Statut.PLANIFIEE,
+        "retirable": statut == Promotion.Statut.INSCRIPTIONS,
+        "sans_calendrier": not promo.evenements.exists()})
 
 
 @formateur_requis
