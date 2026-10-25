@@ -1,15 +1,19 @@
 {% extends "base.html" %}
 {% load ui %}
 {% block title %}Pilotage - {{ promotion.nom }}{% endblock %}
-{% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<span>{{ promotion.nom }}</span>{% icon "chevron-right" size=14 %}<span>Pilotage</span>{% endblock %}
+{% block crumbs %}<a href="{% url 'agenda:promotions' %}">Sessions</a>{% icon "chevron-right" size=14 %}<span>{{ promotion.nom }}</span>{% icon "chevron-right" size=14 %}<span>Pilotage</span>{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
     <span class="eyebrow">{% icon "list-checks" size=14 %} Cycle de vie · {{ promotion.formation.titre }}</span>
     <h1>Pilotage - {{ promotion.nom }}</h1>
+    {% with etat=promotion.etat_session %}<p><span class="etat-session etat-{{ etat.1 }}">{{ etat.0 }}</span></p>{% endwith %}
     <p class="muted">Chaque étape ne s'ouvre que lorsque ses conditions sont remplies. Démarrage prévu le {{ promotion.date_debut|date:"d/m/Y" }} ; il se fait automatiquement ce jour-là si la promotion est prête.</p>
   </div>
-  <a class="btn btn-secondary" href="{% url 'agenda:planning' promotion.pk %}">{% icon "calendar-days" size=16 %} Planning</a>
+  <div class="actions">
+    {% if peut_decider %}<a class="btn btn-secondary" href="{% url 'agenda:fiche_vitrine' promotion.pk %}">{% icon "pencil" size=16 %} Fiche de la session</a>{% endif %}
+    <a class="btn btn-secondary" href="{% url 'agenda:planning' promotion.pk %}">{% icon "calendar-days" size=16 %} Planning</a>
+  </div>
 </div>
 
 <ol class="etapes-workflow" aria-label="Étapes de la promotion">

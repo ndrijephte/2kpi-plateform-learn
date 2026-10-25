@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load ui %}
 {% block title %}Évaluation - {{ promotion.nom }}{% endblock %}
-{% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<span>{{ promotion.nom }}</span>{% icon "chevron-right" size=14 %}<span>Évaluation</span>{% endblock %}
+{% block crumbs %}<a href="{% url 'agenda:promotions' %}">Sessions</a>{% icon "chevron-right" size=14 %}<span>{{ promotion.nom }}</span>{% icon "chevron-right" size=14 %}<span>Évaluation</span>{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>

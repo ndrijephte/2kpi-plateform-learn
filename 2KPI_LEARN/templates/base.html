@@ -34,7 +34,7 @@
         {% icon "inbox" %}<span>Candidatures</span>
         {% if candidatures_nouvelles %}<span class="badge" aria-label="{{ candidatures_nouvelles }} nouvelles">{{ candidatures_nouvelles }}</span>{% endif %}</a>
       <a href="{% url 'agenda:promotions' %}" {% if rubrique == "promotions" %}class="active" aria-current="page"{% endif %}>
-        {% icon "users" %}<span>Promotions</span></a>
+        {% icon "users" %}<span>Sessions</span></a>
 
       <p class="nav-section">Pédagogie</p>
       <a href="{% url 'agenda:mon_agenda' %}" {% if rubrique == "agenda" %}class="active" aria-current="page"{% endif %}>
@@ -58,7 +58,7 @@
       <a href="{% url 'tableau_bord:accueil' %}" {% if rubrique == "accueil" %}class="active" aria-current="page"{% endif %}>
         {% icon "dashboard" %}<span>Tableau de bord</span></a>
       <a href="{% url 'agenda:promotions' %}" {% if rubrique == "promotions" %}class="active" aria-current="page"{% endif %}>
-        {% icon "users" %}<span>Mes promotions</span></a>
+        {% icon "users" %}<span>Mes sessions</span></a>
       <a href="{% url 'agenda:mon_agenda' %}" {% if rubrique == "agenda" %}class="active" aria-current="page"{% endif %}>
         {% icon "calendar-days" %}<span>Mes séances</span></a>
       <a href="{% url 'evaluation:livrables' %}" {% if rubrique == "livrables" %}class="active" aria-current="page"{% endif %}>

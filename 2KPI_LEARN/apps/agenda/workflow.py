@@ -33,12 +33,13 @@ class Condition:
     ok: bool
     libelle: str
     detail: str = ""
+    cle: str = ""  # repère pour l'interface (ex. mise à jour en direct dans la page de publication)
 
 
 # (de, vers) → libellé du bouton
 TRANSITIONS_PROMOTION = {
-    (P.PLANIFIEE, P.INSCRIPTIONS): "Ouvrir les inscriptions",
-    (P.INSCRIPTIONS, P.PLANIFIEE): "Fermer les inscriptions",
+    (P.PLANIFIEE, P.INSCRIPTIONS): "Publier sur le site (ouvrir les inscriptions)",
+    (P.INSCRIPTIONS, P.PLANIFIEE): "Retirer du site (repasser en brouillon)",
     (P.INSCRIPTIONS, P.PRETE): "Déclarer prête à démarrer",
     (P.PRETE, P.INSCRIPTIONS): "Revenir aux inscriptions",
     (P.PRETE, P.EN_COURS): "Démarrer la session",
@@ -79,11 +80,12 @@ def _conditions_preparation(promo):
                   (f"Sans séance : {', '.join(vides)}." if vides else _pluriel(len(modules), "module"))),
         Condition(promo.formateur_id is not None, "Formateur référent désigné",
                   str(promo.formateur.get_full_name() or promo.formateur) if promo.formateur_id
-                  else "À choisir dans la fiche vitrine ou la liste des promotions."),
+                  else "À choisir dans la fiche de la session.", cle="formateur"),
         Condition(promo.evenements.exists(), "Calendrier généré",
                   _pluriel(promo.evenements.count(), "séance datée") if promo.evenements.exists()
-                  else "Bouton « Générer le calendrier » (fiche vitrine) ou « Calendrier » (promotions)."),
-        Condition(promo.places_total > 0, "Nombre de places renseigné", "Fiche vitrine de la promotion."),
+                  else "À générer depuis la fiche de la session.", cle="calendrier"),
+        Condition(promo.places_total > 0, "Nombre de places renseigné",
+                  "" if promo.places_total > 0 else "À renseigner dans la fiche de la session.", cle="places"),
     ]
 
 

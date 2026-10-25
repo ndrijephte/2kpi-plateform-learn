@@ -38,7 +38,7 @@
             <span><strong>{{ libelle }}</strong>{% if detail %}<small>{{ detail }}</small>{% endif %}</span></li>
           {% endfor %}
         </ol>
-        {% if diagnostic.inscription.promotion %}<p class="muted"><small>Ouverture des modules : <a class="link" href="{% url 'agenda:promotions' %}">Promotions</a> › {{ diagnostic.inscription.promotion.nom }} › Accès.</small></p>{% endif %}
+        {% if diagnostic.inscription.promotion %}<p class="muted"><small>Ouverture des modules : <a class="link" href="{% url 'agenda:promotions' %}">Sessions</a> › {{ diagnostic.inscription.promotion.nom }} › Accès.</small></p>{% endif %}
       </div>
       {% endif %}
       {% if prerequis_form %}

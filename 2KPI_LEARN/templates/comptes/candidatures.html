@@ -20,7 +20,7 @@
 </nav>
 
 {% if filtre == "interets" %}
-<p class="muted">Personnes qui ont demandé à être prévenues de l'ouverture d'une formation du catalogue. Elles reçoivent automatiquement un e-mail avec le lien d'inscription quand tu ouvres les inscriptions d'une session de cette formation (Promotions › Pilotage).</p>
+<p class="muted">Personnes qui ont demandé à être prévenues de l'ouverture d'une formation du catalogue. Elles reçoivent automatiquement un e-mail avec le lien d'inscription quand tu publies une session de cette formation sur le site (Sessions › Publier).</p>
 {% for g in interets_par_formation %}
 <div class="card">
   <div class="card-head"><h2 class="section-title">{% icon "layers" size=18 %} {{ g.formation.titre }}</h2>

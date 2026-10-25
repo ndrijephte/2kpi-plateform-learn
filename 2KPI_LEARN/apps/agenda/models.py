@@ -79,6 +79,30 @@ class Promotion(models.Model):
     def __str__(self):
         return self.nom
 
+    # Statut tel que l'interface le présente (le statut du workflow reste la référence)
+    ETATS_SESSION = {
+        Statut.PLANIFIEE: ("Brouillon", "brouillon"),
+        Statut.INSCRIPTIONS: ("En ligne", "en-ligne"),
+        Statut.PRETE: ("En ligne · prête", "en-ligne"),
+        Statut.EN_COURS: ("En cours", "en-cours"),
+        Statut.CLOTUREE: ("Terminée", "terminee"),
+        Statut.ARCHIVEE: ("Archivée", "archivee"),
+    }
+
+    @property
+    def etat_session(self):
+        """(libellé, classe CSS) : Brouillon, En ligne, Complète, En cours, Terminée, Archivée."""
+        if self.publiee_vitrine and self.places_restantes == 0:
+            return "Complète", "complete"
+        return self.ETATS_SESSION[self.statut]
+
+    @property
+    def lien_vitrine(self):
+        """Page d'inscription publique de la session (si elle est annoncée)."""
+        if not (self.publiee_vitrine and self.code_vitrine):
+            return ""
+        return f"{settings.VITRINE_URL}/pages/inscription.html?session={self.code_vitrine}"
+
     @property
     def nb_inscrits_actifs(self):
         return self.inscriptions.exclude(statut="abandon").count()

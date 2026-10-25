@@ -232,7 +232,7 @@ Le dépôt étant **unique**, un `.cpanel.yml` à la **racine** copie `VITRINE_2
 
 # PARTIE C — Relier la vitrine et l'app
 
-1. **Promotions › Vitrine** (dans l'app) : publie une promotion comme « session vitrine ».
+1. **Sessions › Lancer une session** (dans l'app) : crée la session et publie-la sur la vitrine.
    → la vitrine lit le catalogue sur `https://learn.2kpinnov.org/api/sessions/`.
 2. **Inscription** depuis la vitrine → POST `…/api/candidatures/` → apparaît dans **Candidatures**
    (côté admin) ; « Accepter » crée le compte + inscription + e-mail.

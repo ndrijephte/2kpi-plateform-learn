@@ -43,7 +43,7 @@ Un seul clone sur le serveur : `/home/c2864961c/repositories/2kpi-plateform-lear
 ## Comment la vitrine et l'app se parlent
 
 - **Catalogue des sessions** → la vitrine lit `https://learn.2kpinnov.org/api/sessions/` : les
-  promotions publiées dans l'app (**Promotions › Vitrine**), avec places restantes calculées.
+  sessions publiées dans l'app (**Sessions › Lancer une session**), avec places restantes calculées.
   Repli automatique sur `VITRINE_2KPI/js/sessions-data.js` si l'app ne répond pas.
 - **Inscription depuis la vitrine** → envoyée en POST à `https://learn.2kpinnov.org/api/candidatures/`
   (réglée dans `VITRINE_2KPI/js/inscription-config.js` › `LEARN_API_URL`). Les demandes arrivent

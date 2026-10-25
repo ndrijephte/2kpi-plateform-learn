@@ -302,9 +302,10 @@ class AdministrateurHorsRolesTests(BaseTest):
         self.promo_b.refresh_from_db()
         self.assertIsNone(self.promo_b.formateur)
         self.assertFalse(Affectation.objects.filter(formateur=self.admin).exists())
-        r = self.client_de(self.admin).get(reverse("agenda:promotions"))
-        self.assertNotIn(self.admin, r.context["formateurs"])
-        self.assertIn(self.form_a, r.context["formateurs"])
+        r = self.client_de(self.admin).get(reverse("agenda:session_nouvelle"))
+        referents = r.context["form"].fields["formateur"].queryset
+        self.assertNotIn(self.admin, referents)
+        self.assertIn(self.form_a, referents)
 
     def test_super_utilisateur_toujours_admin(self):
         from apps.core.permissions import appliquer_role

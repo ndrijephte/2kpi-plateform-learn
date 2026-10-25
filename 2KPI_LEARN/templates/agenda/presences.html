@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load ui %}
 {% block title %}Présences - {{ evenement.libelle }}{% endblock %}
-{% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<a href="{% url 'agenda:planning' evenement.promotion_id %}">{{ evenement.promotion.nom }}</a>{% icon "chevron-right" size=14 %}<span>Présences</span>{% endblock %}
+{% block crumbs %}<a href="{% url 'agenda:promotions' %}">Sessions</a>{% icon "chevron-right" size=14 %}<a href="{% url 'agenda:planning' evenement.promotion_id %}">{{ evenement.promotion.nom }}</a>{% icon "chevron-right" size=14 %}<span>Présences</span>{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
@@ -28,7 +28,7 @@
         </div></td>
       </tr>
     {% endwith %}{% empty %}
-      <tr><td colspan="2"><div class="empty"><span class="ico-tile">{% icon "users" %}</span><strong>Aucun apprenant confirmé dans cette promotion</strong>Les inscriptions se confirment dans Promotions › Pilotage.</div></td></tr>
+      <tr><td colspan="2"><div class="empty"><span class="ico-tile">{% icon "users" %}</span><strong>Aucun apprenant confirmé dans cette session</strong>Les inscriptions se confirment dans Sessions › Pilotage et inscriptions.</div></td></tr>
     {% endfor %}
     </tbody>
   </table>

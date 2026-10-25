@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load static ui %}
+{% block title %}{% if creation %}Nouvelle session{% else %}{{ promo.nom }}{% endif %} - {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "users" size=16 %}<a href="{% url 'agenda:promotions' %}">Sessions</a>{% icon "chevron-right" size=14 %}<span>{% if creation %}Nouvelle session{% else %}{{ promo.nom }}{% endif %}</span>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{% icon "globe" size=14 %} {% if creation %}Nouvelle session{% else %}{{ promo.formation.titre }}{% endif %}</span>
+    <h1>{% if creation %}Lancer une session{% else %}{{ promo.nom }}{% endif %}</h1>
+    {% if creation %}<p class="muted">Trois étapes : la formation et ses dates, ce que le site affichera, puis la publication. L'aperçu se met à jour pendant la saisie.</p>
+    {% else %}{% with etat=promo.etat_session %}<p><span class="etat-session etat-{{ etat.1 }}">{{ etat.0 }}</span>
+      {% if promo.lien_vitrine %}<a class="link" href="{{ promo.lien_vitrine }}" target="_blank" rel="noopener">{% icon "external-link" size=14 %} Voir sur le site</a>{% endif %}</p>{% endwith %}{% endif %}
+  </div>
+  {% if not creation %}<a class="btn btn-secondary" href="{% url 'agenda:pilotage' promo.pk %}">{% icon "list-checks" size=16 %} Pilotage et inscriptions</a>{% endif %}
+</div>
+
+{% if not creation %}
+<form method="post" id="f-calendrier" hidden>{% csrf_token %}<input type="hidden" name="action" value="calendrier"></form>
+<form method="post" id="f-retirer" hidden onsubmit="return confirm('Retirer la session du site et fermer les inscriptions ?')">{% csrf_token %}<input type="hidden" name="action" value="retirer"></form>
+{% endif %}
+
+<form method="post" id="session" class="session-layout" novalidate>{% csrf_token %}
+  <div class="session-etapes">
+    {% if form.non_field_errors %}<ul class="errorlist nonfield">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+
+    <section class="card etape-session" aria-labelledby="etape-1">
+      <h2 class="section-title" id="etape-1"><span class="etape-num">1</span> Formation et calendrier</h2>
+      {% if not creation %}<p class="muted" style="margin:0">{% icon "book-open" size=14 %} {{ promo.formation.titre }}</p>{% endif %}
+      <div class="form-grid">{% for field in etape_calendrier %}{% include "partials/champ.html" %}{% endfor %}</div>
+      {% if creation %}<p class="help">{% icon "calendar-days" size=12 %} Le calendrier des séances est généré à l'enregistrement, à partir de la date de début.</p>{% endif %}
+    </section>
+
+    <section class="card etape-session" aria-labelledby="etape-2">
+      <h2 class="section-title" id="etape-2"><span class="etape-num">2</span> Fiche publique</h2>
+      <p class="muted" style="margin:0">Ce que 2kpinnov.org affiche sur la carte de la session et dans le formulaire d'inscription.</p>
+      <div class="form-grid">{% for field in etape_fiche %}{% include "partials/champ.html" %}{% endfor %}</div>
+      <details class="avance"{% if avance_ouvert %} open{% endif %}>
+        <summary>{% icon "sliders" size=14 %} Options avancées <small class="muted">domaine, identifiant public, places hors plateforme, effectif minimum</small></summary>
+        <div class="form-grid">{% for field in etape_avance %}{% include "partials/champ.html" %}{% endfor %}</div>
+      </details>
+    </section>
+
+    <section class="card etape-session" aria-labelledby="etape-3">
+      <h2 class="section-title" id="etape-3"><span class="etape-num">3</span> {% if publiable %}Vérifier et publier{% else %}Enregistrer{% endif %}</h2>
+      {% if conditions %}
+      <ol class="diagnostic-etapes" data-conditions>
+        {% for c in conditions %}
+        <li class="{% if c.ok %}ok{% else %}ko{% endif %}"{% if c.cle %} data-cond="{{ c.cle }}"{% endif %}><span class="puce" data-puce>{% if c.ok %}{% icon "check" size=13 stroke=2.5 %}{% else %}{% icon "x" size=13 stroke=2.5 %}{% endif %}</span>
+          <span><strong>{{ c.libelle }}</strong><small data-detail>{{ c.detail }}</small></span></li>
+        {% endfor %}
+      </ol>
+      {% if sans_calendrier %}<button class="btn btn-sm btn-secondary" type="submit" form="f-calendrier" style="margin-top:10px">{% icon "calendar-plus" size=14 %} Générer le calendrier</button>{% endif %}
+      {% elif promo.publiee_vitrine %}
+      <p class="muted">{% icon "globe" size=14 %} En ligne : {{ promo.places_restantes }} place(s) disponible(s) sur {{ promo.places_total }}. Les modifications s'affichent sur le site dès l'enregistrement.</p>
+      {% elif not creation %}
+      <p class="muted">{% icon "info" size=14 %} La session n'accepte plus d'inscriptions en ligne : elle n'est pas sur le site. Son déroulement se suit dans le Pilotage.</p>
+      {% endif %}
+      <div class="btn-row" style="margin-top:14px">
+        {% if publiable %}
+        <button class="btn" type="submit" name="action" value="publier" data-publier>{% icon "globe" size=16 %} {% if creation %}Créer et publier{% else %}Enregistrer et publier{% endif %}</button>
+        <button class="btn btn-secondary" type="submit" name="action" value="enregistrer">{% icon "check" size=16 %} Enregistrer en brouillon</button>
+        {% else %}
+        <button class="btn" type="submit" name="action" value="enregistrer">{% icon "check" size=16 %} Enregistrer</button>
+        {% endif %}
+        {% if retirable %}<button class="btn btn-secondary" type="submit" form="f-retirer">{% icon "ban" size=16 %} Retirer du site</button>{% endif %}
+        <a class="btn btn-secondary" href="{% url 'agenda:promotions' %}">Annuler</a>
+      </div>
+      {% if publiable %}<p class="help" data-publier-aide hidden>{% icon "alert" size=12 %} Complète les points en rouge pour publier. Tu peux enregistrer en brouillon en attendant.</p>
+      <p class="help">À la publication, les inscriptions s'ouvrent et les personnes inscrites sur la liste d'intérêt de la formation sont prévenues par e-mail.</p>{% endif %}
+    </section>
+  </div>
+
+  <aside class="session-apercu" aria-labelledby="apercu-titre">
+    <div class="session-apercu-colle">
+      <h2 class="section-title" id="apercu-titre">{% icon "globe" size=18 %} Aperçu sur 2kpinnov.org</h2>
+      <article class="apercu-carte" data-apercu aria-live="polite"></article>
+      <p class="help">Aperçu indicatif de la carte du catalogue{% if not creation and not promo.publiee_vitrine %} : la session n'est pas encore visible sur le site{% endif %}.</p>
+    </div>
+  </aside>
+</form>
+{{ formations|json_script:"formations-data" }}
+{{ inscrits|json_script:"inscrits-data" }}
+<script src="{% static 'js/session.js' %}" defer></script>
+{% endblock %}

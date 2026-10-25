@@ -71,40 +71,77 @@ class AnnonceForm(forms.ModelForm):
         return d
 
 
-class FicheVitrineForm(forms.ModelForm):
-    """Fiche publique d'une promotion sur le site vitrine (catalogue + formulaire d'inscription)."""
+def suggestion_nom(formation, date_debut):
+    """Nom proposé pour une nouvelle session : « GéoAI - Session de mars 2027 »."""
+    from django.utils.formats import date_format
+    return f"{formation.titre} - Session de {date_format(date_debut, 'F Y')}" if formation and date_debut else ""
+
+
+class SessionForm(forms.ModelForm):
+    """Session (promotion) : création guidée et fiche publique sur le site vitrine.
+    Les champs sont rangés par étape (ETAPES) ; les champs techniques sont dans « Options avancées »."""
+    ETAPES = {
+        "calendrier": ["formation", "date_debut", "nom", "formateur"],
+        "fiche": ["mode", "date_affichage", "horaire", "duree", "lieu", "places_total", "prix", "afficher_prix",
+                  "description_vitrine"],
+        "avance": ["domaine", "code_vitrine", "places_hors_plateforme", "effectif_minimum"],
+    }
     code_vitrine = forms.CharField(
         label="Identifiant public", max_length=100, required=False,
-        help_text="Utilisé dans l'adresse d'inscription (…/inscription.html?session=<b>identifiant</b>). "
-                  "Vide = déduit du nom. Évite de le changer une fois la session annoncée.")
+        help_text="Dans l'adresse d'inscription (…/inscription.html?session=<b>identifiant</b>). "
+                  "Vide = déduit du nom. Évite de le changer une fois la session en ligne.")
 
     class Meta:
         from .models import Promotion
         model = Promotion
-        fields = ["formateur", "date_debut", "code_vitrine", "domaine", "mode", "date_affichage", "horaire",
-                  "duree", "lieu", "places_total", "places_hors_plateforme", "prix", "afficher_prix", "description_vitrine"]
+        fields = ["formation", "date_debut", "nom", "formateur", "mode", "date_affichage", "horaire", "duree",
+                  "lieu", "places_total", "prix", "afficher_prix", "description_vitrine", "domaine", "code_vitrine",
+                  "places_hors_plateforme", "effectif_minimum"]
         widgets = {"description_vitrine": forms.Textarea(attrs={"rows": 3, "maxlength": 400}),
                    "date_debut": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")}
-        labels = {"date_debut": "Date de début"}
+        labels = {"date_debut": "Date de début", "nom": "Nom de la session", "afficher_prix": "Afficher le prix sur le site",
+                  "description_vitrine": "Résumé affiché sur le site"}
+        help_texts = {"nom": "Nom interne et titre des messages aux apprenants. Proposé d'après la formation et la date.",
+                      "formateur": "Pilote la session et intervient sur tous ses modules.",
+                      "description_vitrine": "Deux lignes sur la carte du site. Vide = le résumé de la formation."}
 
     def __init__(self, *a, **kw):
+        from apps.formation.models import Formation
         super().__init__(*a, **kw)
-        self.fields["formateur"].queryset = (User.objects.filter(profil__role=FORMATEUR, is_active=True, is_superuser=False)
-                                             .order_by("first_name", "last_name", "username"))
-        self.fields["formateur"].label_from_instance = lambda u: u.get_full_name() or u.username
-        self.fields["formateur"].empty_label = "— à affecter —"
-        if self.instance.pk and self.instance.statut not in (self.instance.Statut.PLANIFIEE, self.instance.Statut.INSCRIPTIONS):
-            del self.fields["date_debut"]  # session prête ou démarrée : le calendrier se recale depuis le planning
+        self.creation = not self.instance.pk
+        f = self.fields
+        f["formateur"].queryset = (User.objects.filter(profil__role=FORMATEUR, is_active=True, is_superuser=False)
+                                   .order_by("first_name", "last_name", "username"))
+        f["formateur"].label_from_instance = lambda u: u.get_full_name() or u.username
+        f["formateur"].empty_label = "— à choisir —"
+        if self.creation:
+            f["formation"].queryset = Formation.objects.filter(active=True).order_by("titre")
+            f["formation"].empty_label = None
+            f["nom"].required = False  # proposé automatiquement si laissé vide
+            premiere = f["formation"].queryset.first()
+            if premiere and not self.is_bound:  # valeurs habituelles de la formation, modifiables
+                self.initial.update(self.valeurs_formation(premiere))
         else:
-            self.fields["date_debut"].help_text = ("Changer la date recale les séances encore « planifiées » "
-                                                   "du calendrier (les autres ne bougent pas).")
+            del f["formation"]  # une session reste attachée à sa formation
+            if self.instance.statut not in (self.instance.Statut.PLANIFIEE, self.instance.Statut.INSCRIPTIONS):
+                del f["date_debut"]  # session prête ou démarrée : le calendrier se recale depuis le planning
+            else:
+                f["date_debut"].help_text = "Changer la date recale les séances encore « planifiées » du calendrier."
+
+    @staticmethod
+    def valeurs_formation(formation):
+        return {"domaine": formation.domaine, "mode": formation.mode, "duree": formation.duree_type,
+                "prix": formation.prix_indicatif, "afficher_prix": formation.afficher_prix}
+
+    def etape(self, nom):
+        return [self[c] for c in self.ETAPES[nom] if c in self.fields]
 
     def clean_code_vitrine(self):
         from django.utils.text import slugify
         from .models import Promotion
         code = slugify(self.cleaned_data.get("code_vitrine") or "")[:100]
         if code and Promotion.objects.filter(code_vitrine=code, active=True).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError("Cet identifiant est déjà utilisé par une autre promotion active.")
+            raise forms.ValidationError("Cet identifiant est déjà utilisé par une autre session active.")
         return code
 
     def clean(self):
@@ -112,4 +149,7 @@ class FicheVitrineForm(forms.ModelForm):
         total, ailleurs = d.get("places_total"), d.get("places_hors_plateforme")
         if total is not None and ailleurs is not None and ailleurs > total:
             self.add_error("places_hors_plateforme", "Ne peut pas dépasser le nombre total de places.")
+        if self.creation and not d.get("nom"):
+            d["nom"] = suggestion_nom(d.get("formation"), d.get("date_debut"))
+            self.instance.nom = d["nom"]
         return d

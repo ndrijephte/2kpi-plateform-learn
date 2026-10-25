@@ -11,7 +11,7 @@
     </div>
     <div class="card">
       <div class="card-head">
-        <h2 class="section-title">{% icon "users" size=18 %} {% if admin %}Promotions actives{% else %}Mes promotions{% endif %}</h2>
+        <h2 class="section-title">{% icon "users" size=18 %} {% if admin %}Sessions actives{% else %}Mes sessions{% endif %}</h2>
         <a class="link" href="{% url 'agenda:promotions' %}">{% if admin %}Gérer{% else %}Tout voir{% endif %} {% icon "arrow-right" size=16 %}</a>
       </div>
       <ul class="list">

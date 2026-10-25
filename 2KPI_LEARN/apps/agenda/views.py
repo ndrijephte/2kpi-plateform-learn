@@ -13,7 +13,7 @@ from apps.core.permissions import (APPRENANT, FORMATEUR, admin_requis, formateur
                                    pilote_promotion, promotions_visibles, q_interventions, role_de)
 from apps.evaluation.models import Presence
 from apps.evaluation.utils import inscription_courante
-from .forms import AnnonceForm, FicheVitrineForm
+from .forms import AnnonceForm, SessionForm
 from .models import AccesModule, Affectation, Annonce, Promotion, Evenement, Notification
 from .services import (STATUTS_A_POINTER, apprenants_de, generer_agenda, inscriptions_a_pointer, notifier,
                        presences_manquantes, synchroniser_agenda)
@@ -172,66 +172,98 @@ def evenement_action(request, ev_id):
 
 @formateur_requis
 def promotions(request):
-    """Admin : crée les promotions et affecte les formateurs. Formateur : ses promotions."""
-    from apps.formation.models import Formation
-    admin = est_admin(request.user)
-    # L'administrateur n'est pas un formateur : il pilote tout sans être référent ni affecté.
-    formateurs = (get_user_model().objects.filter(profil__role=FORMATEUR, is_active=True, is_superuser=False)
-                  .order_by("first_name", "last_name", "username"))
+    """Liste des sessions. Admin : toutes, création par l'assistant. Formateur : celles où il intervient."""
+    from apps.evaluation.models import Inscription
     if request.method == "POST":
-        if not admin:
-            raise PermissionDenied
-        if request.POST.get("action") == "affecter":
-            promo = get_object_or_404(Promotion, pk=request.POST.get("promotion"))
-            promo.formateur = formateurs.filter(pk=request.POST.get("formateur") or None).first()
-            promo.save(update_fields=["formateur"])
-            messages.success(request, f"Formateur de « {promo.nom} » mis à jour.")
-            return redirect("agenda:promotions")
-        nom = (request.POST.get("nom") or "").strip()
-        formation_id = request.POST.get("formation")
-        date_debut = request.POST.get("date_debut")
-        if nom and formation_id and date_debut:
-            promo = Promotion.objects.create(
-                nom=nom, formation_id=formation_id, date_debut=date_debut,
-                code_vitrine=slugify(request.POST.get("code_vitrine", ""))[:100],
-                formateur=formateurs.filter(pk=request.POST.get("formateur") or None).first())
-            promo.refresh_from_db()  # date_debut reçue en texte : relue en date
-            n = generer_agenda(promo)  # calendrier daté d'office (recalable ensuite depuis le planning)
-            messages.success(request, f"Session « {promo.nom} » créée"
-                             + (f", calendrier de {n} séance(s) généré" if n else "")
-                             + ". Complète sa fiche puis publie-la sur le site vitrine.")
-            return redirect("agenda:fiche_vitrine", promo_id=promo.pk)
-        else:
-            messages.error(request, "Renseigne le nom, la formation et la date de début.")
-        return redirect("agenda:promotions")
+        raise PermissionDenied
     liste = list(promotions_visibles(request.user).select_related("formation", "formateur")
                  .prefetch_related("affectations__formateur")
                  .annotate(nb_evenements=Count("evenements", distinct=True),
-                           nb_apprenants=Count("inscriptions", distinct=True))
-                 .order_by("-date_debut"))
+                           nb_apprenants=Count("inscriptions", distinct=True,
+                                               filter=~Q(inscriptions__statut=Inscription.Statut.ABANDON)),
+                           nb_a_confirmer=Count("inscriptions", distinct=True,
+                                                filter=Q(inscriptions__statut=Inscription.Statut.ADMISE)))
+                 .order_by("-active", "-date_debut"))
     for p in liste:
         p.pilote = pilote_promotion(request.user, p)
-    return render(request, "agenda/promotions.html", {
-        "promotions": liste, "formations": Formation.objects.filter(active=True),
-        "formateurs": formateurs, "peut_gerer": admin,
-    })
+    return render(request, "agenda/promotions.html", {"promotions": liste, "peut_gerer": est_admin(request.user)})
 
 
-@formateur_requis
-def fiche_vitrine(request, promo_id):
-    """Admin : lancer une session sur le site vitrine. Fiche publique (API /api/sessions/), conditions
-    de publication, et publication en un geste : « Publier » ouvre les inscriptions (workflow), ce qui
-    l'affiche sur 2kpinnov.org ; « Retirer » les referme."""
+def _formations_json():
+    """Valeurs habituelles et état de préparation de chaque formation active (assistant de création)."""
+    from apps.formation.models import Formation
+    donnees = {}
+    for f in Formation.objects.filter(active=True).annotate(nb_modules=Count("modules", distinct=True)):
+        vides = list(f.modules.annotate(nb=Count("seances")).filter(nb=0).values_list("code", flat=True))
+        donnees[f.pk] = {
+            **SessionForm.valeurs_formation(f), "titre": f.titre, "resume": f.resume or f.description[:300],
+            "pret": bool(f.nb_modules) and not vides,
+            "detail": ("La formation n'a aucun module." if not f.nb_modules else
+                       f"Modules sans séance : {', '.join(vides)} (Paramètres › Formations)." if vides
+                       else f"{f.nb_modules} module(s), calendrier généré à la création."),
+        }
+    return donnees
+
+
+def _page_session(request, form, promo=None):
     from . import workflow
-    if not est_admin(request.user):
-        raise PermissionDenied
+    contexte = {"form": form, "promo": promo, "creation": promo is None,
+                "etape_calendrier": form.etape("calendrier"), "etape_fiche": form.etape("fiche"),
+                "etape_avance": form.etape("avance"), "avance_ouvert": any(f.errors for f in form.etape("avance"))}
+    if promo is None:
+        contexte.update(publiable=True, formations=_formations_json(), inscrits=0, conditions=[
+            workflow.Condition(True, "Formation prête", "", cle="formation"),
+            workflow.Condition(False, "Formateur référent désigné", "À choisir à l'étape 1.", cle="formateur"),
+            workflow.Condition(True, "Nombre de places renseigné", "", cle="places"),
+            workflow.Condition(True, "Calendrier généré", "Automatiquement, à la création.", cle="calendrier")])
+    else:
+        planifiee = promo.statut == Promotion.Statut.PLANIFIEE
+        contexte.update(
+            publiable=planifiee, retirable=promo.statut == Promotion.Statut.INSCRIPTIONS,
+            inscrits=promo.nb_inscrits_actifs, sans_calendrier=not promo.evenements.exists(),
+            formations={promo.formation_id: {"titre": promo.formation.titre,
+                                             "resume": promo.formation.resume or promo.formation.description[:300]}},
+            conditions=workflow.conditions_promotion(promo, Promotion.Statut.INSCRIPTIONS) if planifiee else [])
+    return render(request, "agenda/session.html", contexte)
+
+
+def _publier(request, promo):
+    from . import workflow
+    try:
+        messages.success(request, workflow.changer_statut_promotion(
+            promo, Promotion.Statut.INSCRIPTIONS, request.user, "Publiée sur le site vitrine"))
+        return True
+    except workflow.TransitionRefusee as refus:
+        messages.error(request, "Session enregistrée en brouillon, publication impossible : " + " ; ".join(refus.manques))
+        return False
+
+
+@admin_requis
+def session_nouvelle(request):
+    """Assistant « Nouvelle session » : formation et calendrier, fiche publique (aperçu en direct), publication."""
+    form = SessionForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        promo = form.save()
+        promo.refresh_from_db()
+        n = generer_agenda(promo)  # calendrier daté d'office (recalable ensuite depuis le planning)
+        if request.POST.get("action") == "publier" and _publier(request, promo):
+            return redirect("agenda:promotions")
+        if request.POST.get("action") != "publier":
+            messages.success(request, f"Session « {promo.nom} » enregistrée en brouillon"
+                             + (f", calendrier de {n} séance(s) généré" if n else "") + ".")
+        return redirect("agenda:fiche_vitrine", promo_id=promo.pk)
+    return _page_session(request, form)
+
+
+@admin_requis
+def fiche_vitrine(request, promo_id):
+    """Fiche d'une session existante : modification, publication sur le site vitrine, retrait."""
+    from . import workflow
     promo = get_object_or_404(Promotion.objects.select_related("formation", "formateur"), pk=promo_id)
     action = request.POST.get("action", "enregistrer") if request.method == "POST" else ""
-    form = FicheVitrineForm(request.POST if action in ("enregistrer", "publier") else None, instance=promo)
     if action == "calendrier":
         n = generer_agenda(promo)
-        messages.success(request, f"Calendrier généré : {n} séance(s) datée(s)." if n
-                         else "Le calendrier est déjà généré.")
+        messages.success(request, f"Calendrier généré : {n} séance(s) datée(s)." if n else "Le calendrier est déjà généré.")
         return redirect("agenda:fiche_vitrine", promo_id=promo.pk)
     if action == "retirer":
         try:
@@ -240,30 +272,20 @@ def fiche_vitrine(request, promo_id):
         except workflow.TransitionRefusee as refus:
             messages.error(request, "Retrait impossible : " + " ; ".join(refus.manques))
         return redirect("agenda:fiche_vitrine", promo_id=promo.pk)
+    form = SessionForm(request.POST if action in ("enregistrer", "publier") else None, instance=promo)
     if action in ("enregistrer", "publier") and form.is_valid():
         promo = form.save()
         if "date_debut" in form.changed_data and promo.evenements.exists():
             recales, _ = synchroniser_agenda(promo)  # seules les séances encore « planifiées » bougent
             messages.info(request, f"Nouvelle date de début : {recales} séance(s) recalée(s) dans le calendrier.")
         if action == "publier":
-            try:
-                messages.success(request, workflow.changer_statut_promotion(
-                    promo, Promotion.Statut.INSCRIPTIONS, request.user, "Publiée sur le site vitrine"))
-            except workflow.TransitionRefusee as refus:
-                messages.error(request, "Fiche enregistrée, mais publication impossible : " + " ; ".join(refus.manques))
+            if _publier(request, promo):
+                return redirect("agenda:promotions")
             return redirect("agenda:fiche_vitrine", promo_id=promo.pk)
-        messages.success(request, f"Fiche vitrine de « {promo.nom} » enregistrée."
-                         + (f" Elle est en ligne ({promo.places_restantes} place(s) disponible(s))." if promo.publiee_vitrine
-                            else " Publie-la pour l'afficher sur le site."))
+        messages.success(request, f"Session « {promo.nom} » enregistrée."
+                         + (" Le site est à jour." if promo.publiee_vitrine else ""))
         return redirect("agenda:promotions")
-    statut = promo.statut
-    conditions = (workflow.conditions_promotion(promo, Promotion.Statut.INSCRIPTIONS)
-                  if statut == Promotion.Statut.PLANIFIEE else [])
-    return render(request, "agenda/fiche_vitrine.html", {
-        "promo": promo, "form": form, "conditions": conditions,
-        "publiable": statut == Promotion.Statut.PLANIFIEE,
-        "retirable": statut == Promotion.Statut.INSCRIPTIONS,
-        "sans_calendrier": not promo.evenements.exists()})
+    return _page_session(request, form, promo)
 
 
 @formateur_requis

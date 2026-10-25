@@ -37,11 +37,11 @@ Pages : `/` (tableau de bord) · `/formation/modules/` · `/agenda/` · `/agenda
 | Agenda | sa promotion | ses séances | toutes les séances |
 | Planning, présences, correction | — | **ses** promotions, **ses** modules (attribués par l'admin) | toutes |
 | Utilisateurs, rôles, rattachement | — | — | `/comptes/utilisateurs/` |
-| Créer une promotion, choisir le référent | — | — | `/agenda/promotions/` |
+| Lancer une session (assistant + aperçu), choisir le référent, publier sur la vitrine | — | — | Sessions › **Lancer une session** |
 | Confier une ou plusieurs promotions à un formateur | — | — | Utilisateurs › fiche du formateur |
-| Autoriser des formateurs, module par module | — | — | Promotions › **Formateurs** |
+| Autoriser des formateurs, module par module | — | — | Sessions › ⋯ › **Formateurs par module** |
 | Auto-évaluation sur les objectifs des séances | s'évalue, **Mes acquis** | rédige les objectifs, synthèse, demandes d'aide | toutes |
-| Ouvrir les modules aux apprenants | — | consultation | Promotions › **Accès** |
+| Ouvrir les modules aux apprenants | — | consultation | Sessions › ⋯ › **Ouverture des modules** |
 | Générer / recaler le calendrier | — | référent uniquement | toutes |
 | Admin Django | — | — | ✔ (accès synchronisé avec le rôle) |
 
@@ -223,9 +223,11 @@ La plateforme est la seule source : le site vitrine lit et écrit par une API pu
 - **Catalogue** : Paramètres › Formations › « Afficher au catalogue du site », avec domaine, mode,
   durée habituelle, résumé et prix indicatif (affiché seulement si « Afficher le prix » est coché).
   Indépendant de « Active » (formation utilisable sur la plateforme, exigé pour ouvrir une session).
-- **Publication d'une session** : automatique à « Ouvrir les inscriptions » (Pilotage) ; retrait à la
-  fermeture des inscriptions ou au démarrage. La fiche *Vitrine* de la promotion règle dates
-  affichées, lieu, horaire, places et prix.
+- **Publication d'une session** : assistant *Lancer une session* (`/agenda/promotions/nouvelle/`) puis
+  « Créer et publier », ou « Enregistrer et publier » depuis la fiche d'un brouillon : la publication
+  ouvre les inscriptions (workflow). Retrait : « Retirer du site » ou démarrage de la session. La fiche
+  (`/agenda/promotions/<id>/vitrine/`) règle dates affichées, lieu, horaire, places et prix, avec un
+  aperçu en direct de la carte du site.
 - **Liste d'intérêt** (`Interet`) : Candidatures › *Listes d'intérêt* et liste « À faire » ; à
   l'ouverture d'une session, chaque personne en attente reçoit un e-mail avec le lien d'inscription
   (`VITRINE_URL/pages/inscription.html?session=<code>`), puis est marquée « prévenue ».

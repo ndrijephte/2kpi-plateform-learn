@@ -88,8 +88,8 @@ Deux niveaux, tous deux décidés par toi :
 
 | | Comment | Accès |
 |---|---|---|
-| **Formateur référent** | **Promotions** → menu déroulant de la colonne *Formateurs* | **tous** les modules de la promotion + pilotage du calendrier (génération, « Appliquer le paramétrage ») |
-| **Formateur intervenant** | **Promotions** → bouton **Formateurs** de la promotion | uniquement les **modules cochés** (ou « Tous les modules ») |
+| **Formateur référent** | **Sessions** → menu ⋯ → *Fiche de la session* (champ « Formateur référent ») | **tous** les modules de la promotion + pilotage du calendrier (génération, « Appliquer le paramétrage ») |
+| **Formateur intervenant** | **Sessions** → menu ⋯ → *Formateurs par module* | uniquement les **modules cochés** (ou « Tous les modules ») |
 
 Sur l'écran **Formateurs** d'une promotion :
 1. **Autoriser un formateur** : choisis-le, coche les modules qu'il enseigne (ou *Tous les modules*)
@@ -111,7 +111,7 @@ intervenant). Également possible dans `/admin/` → Promotions → section *Aff
 
 ## 2 ter. Ouvrir les modules aux apprenants (admin uniquement)
 
-**Promotions** → bouton **Accès** de la promotion :
+**Sessions** → menu ⋯ → *Ouverture des modules* :
 - **Ouverture automatique selon le calendrier** (case en haut) : chaque module s'ouvre le lundi de la
   semaine de sa première séance. C'est une autorisation que tu donnes en bloc ; décoche-la pour tout
   décider à la main.
@@ -122,17 +122,42 @@ Les formateurs voient cette page **en lecture seule** (l'état de leurs modules)
 
 ---
 
-## 2 quater. Faire avancer une promotion (Pilotage)
+## 2 ter bis. Lancer une session et la publier sur le site
 
-**Promotions** → bouton **Pilotage**. La page montre l'étape actuelle, la **check-list** de l'étape
+Dans l'application, une **session** (appelée « promotion » dans l'admin Django) est un groupe
+d'apprenants qui suit une formation à des dates données.
+
+**Sessions** → **Lancer une session**. La page compte trois étapes, avec à droite l'**aperçu en direct**
+de la carte telle qu'elle apparaîtra sur 2kpinnov.org :
+
+1. **Formation et calendrier** : formation, date de début, formateur référent. Le nom est proposé
+   automatiquement (« Formation … - Session de mars 2027 ») ; le calendrier des séances est généré à
+   l'enregistrement.
+2. **Fiche publique** : mode, date affichée (ex. « Tous les samedis »), horaire, durée, lieu, places,
+   prix (et s'il s'affiche), résumé. Le mode, la durée et le prix sont pré-remplis depuis la formation.
+   *Options avancées* : domaine, identifiant public, places attribuées hors plateforme, effectif minimum.
+3. **Vérifier et publier** : la liste des conditions (formation prête, référent, places, calendrier) se
+   met à jour pendant la saisie. **Créer et publier** ouvre les inscriptions : la session apparaît
+   aussitôt sur le site et les personnes de la liste d'intérêt reçoivent un e-mail. **Enregistrer en
+   brouillon** la garde hors du site.
+
+Statuts affichés : **Brouillon** (pas sur le site) · **En ligne** · **Complète** (en ligne, plus de place)
+· **En cours** · **Terminée** · **Archivée**. Une session en ligne se modifie depuis sa fiche (le site se
+met à jour seul) ; **Retirer du site** la repasse en brouillon.
+
+La liste des sessions propose **une action principale** selon l'état (Publier, Inscriptions, Planning,
+Évaluation) ; les autres sont dans le menu **⋯**.
+
+## 2 quater. Faire avancer une session (Pilotage)
+
+**Sessions** → bouton **Inscriptions** ou menu ⋯ → **Pilotage et inscriptions**. La page montre l'étape actuelle, la **check-list** de l'étape
 suivante (✔ / ✘ avec ce qu'il manque), les inscriptions et le journal de tous les changements.
 Le bouton d'une étape n'apparaît que lorsque toutes ses conditions sont remplies.
 
-1. **Planifiée** : crée la promotion, choisis le référent, génère le calendrier.
-2. **Ouvrir les inscriptions** : la session apparaît **aussitôt** sur le site vitrine, avec ses dates
-   et le bouton « S'inscrire » (renseigne d'abord sa fiche **Vitrine** : dates affichées, lieu,
-   horaire, places). Les personnes inscrites sur la liste d'intérêt de la formation reçoivent un
-   e-mail avec le lien d'inscription. « Fermer les inscriptions » la retire du site.
+1. **Brouillon** : la session est créée (§ 2 ter bis), pas encore sur le site.
+2. **Publier sur le site** (depuis la fiche, ou ici) : les inscriptions s'ouvrent, la session apparaît
+   **aussitôt** sur le site vitrine avec le bouton « S'inscrire », et les personnes de la liste d'intérêt
+   reçoivent un e-mail. « Retirer du site » la repasse en brouillon.
 3. Pour chaque apprenant **admis** : indique le **paiement** (Reçu ou Exonéré), puis **Confirmer**.
    Seule une inscription confirmée donne accès aux cours.
 4. **Déclarer prête à démarrer** dès que l'effectif minimum est confirmé.

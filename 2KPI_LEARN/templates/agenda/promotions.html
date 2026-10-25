@@ -1,84 +1,69 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Promotions - {{ site_nom }}{% endblock %}
-{% block crumbs %}{% icon "users" size=16 %}<span>{% if peut_gerer %}Promotions{% else %}Mes promotions{% endif %}</span>{% endblock %}
+{% block title %}{% if peut_gerer %}Sessions{% else %}Mes sessions{% endif %} - {{ site_nom }}{% endblock %}
+{% block crumbs %}{% icon "users" size=16 %}<span>{% if peut_gerer %}Sessions{% else %}Mes sessions{% endif %}</span>{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
     <span class="eyebrow">{% if peut_gerer %}{% icon "shield" size=14 %} Administration{% else %}{% icon "briefcase" size=14 %} Espace formateur{% endif %}</span>
-    <h1>{% if peut_gerer %}Promotions{% else %}Mes promotions{% endif %}</h1>
-    <p class="muted">{% if peut_gerer %}Lance une session : crée-la ci-dessous, complète sa fiche puis publie-la sur le site vitrine (bouton « Publier »). Fais-la ensuite avancer depuis son Pilotage (inscriptions, démarrage, clôture).{% else %}Les promotions où l'administration t'a autorisé à intervenir : planning, présences et livrables de tes modules.{% endif %}</p>
+    <h1>{% if peut_gerer %}Sessions de formation{% else %}Mes sessions{% endif %}</h1>
+    <p class="muted">{% if peut_gerer %}Une session est un groupe d'apprenants qui suit une formation à des dates données. Lance-la, publie-la sur le site, puis suis ses inscriptions et son déroulement.{% else %}Les sessions où l'administration t'a autorisé à intervenir : planning, présences et livrables de tes modules.{% endif %}</p>
   </div>
-  {% if peut_gerer %}<a class="btn" href="#nouvelle" onclick="setTimeout(function(){document.getElementById('p-nom').focus()},0)">{% icon "globe" size=16 %} Lancer une session</a>{% endif %}
+  {% if peut_gerer %}<a class="btn" href="{% url 'agenda:session_nouvelle' %}">{% icon "plus" size=16 %} Lancer une session</a>{% endif %}
 </div>
-
-{% if peut_gerer %}
-<div class="card" id="nouvelle">
-  <h2 class="section-title">{% icon "plus" size=18 %} Nouvelle session</h2>
-  <p class="muted" style="margin-top:-4px"><small>Le calendrier est généré à la création ; tu arrives ensuite sur la fiche vitrine pour la publier.</small></p>
-  <form method="post" class="form-inline">{% csrf_token %}
-    <div class="field"><label for="p-nom">Nom</label><input id="p-nom" type="text" name="nom" placeholder="GéoAI Sassandra - Promo 2026" required></div>
-    <div class="field"><label for="p-formation">Formation</label>
-      <select id="p-formation" name="formation" required>
-        {% for f in formations %}<option value="{{ f.id }}">{{ f.titre }}</option>{% empty %}<option value="">Aucune formation</option>{% endfor %}
-      </select></div>
-    <div class="field"><label for="p-ens">Formateur référent</label>
-      <select id="p-ens" name="formateur">
-        <option value="">— à affecter —</option>
-        {% for e in formateurs %}<option value="{{ e.id }}">{{ e.get_full_name|default:e.username }}</option>{% endfor %}
-      </select></div>
-    <div class="field" style="flex:0 1 170px"><label for="p-date">Date de début</label><input id="p-date" type="date" name="date_debut" required></div>
-    <div class="field"><label for="p-code">Code session vitrine <small class="muted">(optionnel)</small></label><input id="p-code" type="text" name="code_vitrine" placeholder="teledetection-sig-initiation"></div>
-    <button class="btn" type="submit">{% icon "plus" size=16 %} Créer et préparer la publication</button>
-  </form>
-</div>
-<h2 class="section-title">{% icon "users" size=18 %} Promotions existantes</h2>
-{% endif %}
 
 <div class="table-wrap">
 <table class="tbl">
-  <thead><tr><th>Promotion</th><th>Formateurs</th><th>Début</th><th class="num">Apprenants</th><th class="num">Séances</th><th>Actions</th></tr></thead>
+  <thead><tr><th>Session</th><th>Début</th><th class="num">Inscrits</th><th>Formateurs</th><th><span class="sr-only">Actions</span></th></tr></thead>
   <tbody>
-  {% for p in promotions %}
+  {% for p in promotions %}{% with etat=p.etat_session %}
     <tr>
-      <td><strong>{{ p.nom }}</strong> <span class="pill pill-promo-{{ p.statut }}">{{ p.get_statut_display }}</span><br><small class="muted">{{ p.formation.titre }}</small>
-        {% if p.publiee_vitrine %}<br><small class="muted">{% icon "globe" size=12 %} Sur la vitrine · {{ p.places_restantes }}/{{ p.places_total }} place(s)</small>
-        {% elif p.code_vitrine %}<br><small class="muted">{% icon "link" size=12 %} {{ p.code_vitrine }} · non publiée</small>{% endif %}</td>
-      <td>
-        {% if peut_gerer %}
-        <form method="post" class="inline-form">{% csrf_token %}
-          <input type="hidden" name="action" value="affecter"><input type="hidden" name="promotion" value="{{ p.id }}">
-          <select name="formateur" aria-label="Formateur référent de {{ p.nom }}" title="Formateur référent (tous les modules)" onchange="this.form.submit()">
-            <option value="">— à affecter —</option>
-            {% for e in formateurs %}<option value="{{ e.id }}" {% if p.formateur_id == e.id %}selected{% endif %}>{{ e.get_full_name|default:e.username }}</option>{% endfor %}
-          </select>
-          <noscript><button class="btn btn-sm btn-secondary">OK</button></noscript>
-        </form>
-        {% else %}{% if p.formateur %}{{ p.formateur.get_full_name|default:p.formateur.username }} <small class="muted">(référent)</small>{% endif %}{% endif %}
-        {% with autres=p.affectations.all %}{% if autres %}<small class="muted fmt-liste">+ {% for a in autres %}{{ a.formateur.get_full_name|default:a.formateur.username }}{% if not forloop.last %}, {% endif %}{% endfor %}</small>{% endif %}{% endwith %}
-      </td>
+      <td><strong>{{ p.nom }}</strong> <span class="etat-session etat-{{ etat.1 }}">{{ etat.0 }}</span>
+        <small class="muted session-sous">{{ p.formation.titre }}{% if p.publiee_vitrine %} · {{ p.places_restantes }}/{{ p.places_total }} place(s) libre(s){% endif %}</small></td>
       <td>{{ p.date_debut|date:"d M Y" }}</td>
-      <td class="num">{{ p.nb_apprenants }}</td>
-      <td class="num">{{ p.nb_evenements }}</td>
-      <td><div class="actions">
-        <a class="btn btn-sm btn-navy" href="{% url 'agenda:pilotage' p.id %}" title="Étapes, conditions, inscriptions à confirmer">{% icon "list-checks" size=14 %} Pilotage</a>
-        {% if p.pilote %}<form method="post" action="{% url 'agenda:generer_promo' p.id %}" class="inline">{% csrf_token %}
-          <button class="btn btn-sm btn-secondary" type="submit" title="Ajoute les séances manquantes">{% icon "calendar-plus" size=14 %} Calendrier</button>
-        </form>{% endif %}
-        <a class="btn btn-sm btn-secondary" href="{% url 'agenda:planning' p.id %}">{% icon "calendar-days" size=14 %} Planning</a>
-        <a class="btn btn-sm btn-secondary" href="{% url 'agenda:acces' p.id %}" title="Ouverture des modules aux apprenants">{% icon "lock" size=14 %} Accès</a>
-        <a class="btn btn-sm btn-secondary" href="{% url 'evaluation:evaluation_promotion' p.id %}" title="Prérequis des apprenants, grille du projet, soutenance, note finale">{% icon "clipboard-check" size=14 %} Évaluation</a>
-        <a class="btn btn-sm btn-secondary" href="{% url 'evaluation:autoevaluations' p.id %}" title="Auto-évaluations des apprenants sur les objectifs des séances">{% icon "gauge" size=14 %} Auto-éval.</a>
-        {% if peut_gerer %}<a class="btn btn-sm btn-secondary" href="{% url 'agenda:affectations' p.id %}" title="Autoriser des formateurs, module par module">{% icon "user-check" size=14 %} Formateurs</a>{% endif %}
-        {% if peut_gerer %}{% if p.statut == "planifiee" %}<a class="btn btn-sm" href="{% url 'agenda:fiche_vitrine' p.id %}" title="Compléter la fiche et publier la session sur le site vitrine">{% icon "globe" size=14 %} Publier</a>
-        {% else %}<a class="btn btn-sm btn-secondary" href="{% url 'agenda:fiche_vitrine' p.id %}" title="Fiche sur le site vitrine : dates, lieu, prix, places">{% icon "globe" size=14 %} Vitrine</a>{% endif %}{% endif %}
+      <td class="num">{{ p.nb_apprenants }}{% if peut_gerer and p.nb_a_confirmer %}<small class="muted session-sous">{{ p.nb_a_confirmer }} à confirmer</small>{% endif %}</td>
+      <td>{% if p.formateur %}{{ p.formateur.get_full_name|default:p.formateur.username }} <small class="muted">(référent)</small>{% else %}<small class="muted">Référent à choisir</small>{% endif %}
+        {% with autres=p.affectations.all %}{% if autres %}<small class="muted fmt-liste">+ {% for a in autres %}{{ a.formateur.get_full_name|default:a.formateur.username }}{% if not forloop.last %}, {% endif %}{% endfor %}</small>{% endif %}{% endwith %}</td>
+      <td><div class="actions-session">
+        {% if peut_gerer %}
+          {% if p.statut == "planifiee" %}<a class="btn btn-sm" href="{% url 'agenda:fiche_vitrine' p.id %}">{% icon "globe" size=14 %} Publier</a>
+          {% elif p.statut == "inscriptions" or p.statut == "prete" %}<a class="btn btn-sm btn-navy" href="{% url 'agenda:pilotage' p.id %}">{% icon "user-check" size=14 %} Inscriptions</a>
+          {% elif p.statut == "en_cours" %}<a class="btn btn-sm btn-navy" href="{% url 'agenda:planning' p.id %}">{% icon "calendar-days" size=14 %} Planning</a>
+          {% elif p.statut == "cloturee" %}<a class="btn btn-sm btn-navy" href="{% url 'evaluation:evaluation_promotion' p.id %}">{% icon "clipboard-check" size=14 %} Évaluation</a>
+          {% else %}<a class="btn btn-sm btn-secondary" href="{% url 'agenda:pilotage' p.id %}">{% icon "list-checks" size=14 %} Pilotage</a>{% endif %}
+        {% else %}<a class="btn btn-sm btn-navy" href="{% url 'agenda:planning' p.id %}">{% icon "calendar-days" size=14 %} Planning</a>{% endif %}
+        <details class="menu-actions">
+          <summary class="btn btn-sm btn-secondary" aria-label="Autres actions pour {{ p.nom }}" title="Autres actions">⋯</summary>
+          <ul class="menu-actions-liste">
+            {% if peut_gerer %}<li><a href="{% url 'agenda:fiche_vitrine' p.id %}">{% icon "pencil" size=16 %} Fiche de la session</a></li>{% endif %}
+            {% if p.lien_vitrine %}<li><a href="{{ p.lien_vitrine }}" target="_blank" rel="noopener">{% icon "external-link" size=16 %} Voir sur le site</a></li>{% endif %}
+            <li><a href="{% url 'agenda:pilotage' p.id %}">{% icon "list-checks" size=16 %} Pilotage et inscriptions</a></li>
+            <li><hr></li>
+            <li><a href="{% url 'agenda:planning' p.id %}">{% icon "calendar-days" size=16 %} Planning et présences</a></li>
+            {% if p.pilote %}<li><form method="post" action="{% url 'agenda:generer_promo' p.id %}">{% csrf_token %}
+              <button type="submit">{% icon "calendar-plus" size=16 %} Compléter le calendrier</button></form></li>{% endif %}
+            <li><a href="{% url 'agenda:acces' p.id %}">{% icon "lock" size=16 %} Ouverture des modules</a></li>
+            <li><a href="{% url 'evaluation:evaluation_promotion' p.id %}">{% icon "clipboard-check" size=16 %} Évaluation</a></li>
+            <li><a href="{% url 'evaluation:autoevaluations' p.id %}">{% icon "gauge" size=16 %} Auto-évaluations</a></li>
+            {% if peut_gerer %}<li><a href="{% url 'agenda:affectations' p.id %}">{% icon "user-check" size=16 %} Formateurs par module</a></li>{% endif %}
+          </ul>
+        </details>
       </div></td>
     </tr>
-  {% empty %}<tr><td colspan="6"><div class="empty"><span class="ico-tile">{% icon "users" %}</span>
-    {% if peut_gerer %}<strong>Aucune promotion pour l'instant</strong>Crée la première avec le formulaire ci-dessus.
-    {% else %}<strong>Aucune promotion ne t'est encore confiée</strong>L'administration doit t'autoriser à intervenir dans une promotion.{% endif %}</div></td></tr>{% endfor %}
+  {% endwith %}{% empty %}<tr><td colspan="5"><div class="empty"><span class="ico-tile">{% icon "users" %}</span>
+    {% if peut_gerer %}<strong>Aucune session pour l'instant</strong><a class="link" href="{% url 'agenda:session_nouvelle' %}">Lance la première session</a>
+    {% else %}<strong>Aucune session ne t'est encore confiée</strong>L'administration doit t'autoriser à intervenir dans une session.{% endif %}</div></td></tr>{% endfor %}
   </tbody>
 </table>
 </div>
-{% if peut_gerer %}<p class="muted" style="margin-top:12px">{% icon "info" size=14 %} Les apprenants sont rattachés à une promotion depuis la page <a href="{% url 'comptes:utilisateurs' %}?role=apprenant">Utilisateurs</a>.</p>{% endif %}
+{% if peut_gerer %}<p class="muted" style="margin-top:12px">{% icon "info" size=14 %} Les apprenants sont rattachés à une session depuis la page <a href="{% url 'comptes:utilisateurs' %}?role=apprenant">Utilisateurs</a> ou en acceptant leur candidature.</p>{% endif %}
+<script>
+document.addEventListener("click", function (e) {  // un seul menu « ⋯ » ouvert à la fois
+  document.querySelectorAll(".menu-actions[open]").forEach(function (d) { if (!d.contains(e.target)) d.open = false; });
+});
+document.addEventListener("keydown", function (e) {
+  if (e.key !== "Escape") return;
+  document.querySelectorAll(".menu-actions[open]").forEach(function (d) { d.open = false; d.querySelector("summary").focus(); });
+});
+</script>
 {% endblock %}

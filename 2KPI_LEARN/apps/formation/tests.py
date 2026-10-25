@@ -68,7 +68,7 @@ class AutorisationsFormateurTests(BaseTest):
         c = self.client_de(self.form_c)
         self.assertContains(c.get(reverse("formation:modules")), "Aucune formation accessible")
         self.assertEqual(c.get("/formation/modules/M1/").status_code, 404)
-        self.assertContains(c.get(reverse("agenda:promotions")), "Aucune promotion ne t'est encore confiée")
+        self.assertContains(c.get(reverse("agenda:promotions")), "Aucune session ne t'est encore confiée")
         self.assertEqual(c.get(reverse("agenda:planning", args=[self.promo_a.pk])).status_code, 404)
         self.assertEqual(c.get(reverse("agenda:presences", args=[self.ev_m1.pk])).status_code, 404)
         self.assertEqual(c.get(reverse("formation:ressources")).context["total"], 0)

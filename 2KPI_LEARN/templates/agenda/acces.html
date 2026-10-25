@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load ui %}
 {% block title %}Accès aux contenus - {{ promotion.nom }}{% endblock %}
-{% block crumbs %}<a href="{% url 'agenda:promotions' %}">Promotions</a>{% icon "chevron-right" size=14 %}<a href="{% url 'agenda:planning' promotion.pk %}">{{ promotion.nom }}</a>{% icon "chevron-right" size=14 %}<span>Accès aux contenus</span>{% endblock %}
+{% block crumbs %}<a href="{% url 'agenda:promotions' %}">Sessions</a>{% icon "chevron-right" size=14 %}<a href="{% url 'agenda:planning' promotion.pk %}">{{ promotion.nom }}</a>{% icon "chevron-right" size=14 %}<span>Accès aux contenus</span>{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>

@@ -124,56 +124,79 @@ class CatalogueVitrineTests(BaseTest):
         self.assertEqual(self.client.get(self.api).json()["sessions"][0]["placesRestantes"], 7)
         self.assertNotIn("Access-Control-Allow-Origin", self.client.get(self.api, HTTP_ORIGIN="https://pirate.example"))
 
+    def fiche(self, promo, **extra):
+        """Données complètes du formulaire de session (tous les champs, comme le navigateur les envoie)."""
+        return {"nom": promo.nom, "date_debut": promo.date_debut.isoformat(), "formateur": promo.formateur_id or "",
+                "mode": "En ligne", "places_total": 20, "domaine": "Socle", "code_vitrine": promo.code_vitrine,
+                "places_hors_plateforme": 0, "effectif_minimum": 1, **extra}
+
     def test_fiche_vitrine_reservee_admin_et_controle_des_places(self):
         url = reverse("agenda:fiche_vitrine", args=[self.promo_a.pk])
         self.assertEqual(self.client_de(self.form_a).get(url).status_code, 403)
         c = self.client_de(self.admin)
-        base = {"code_vitrine": "GeoAI Sassandra", "domaine": "Socle", "mode": "Hybride", "formateur": self.form_a.pk,
-                "date_debut": self.promo_a.date_debut.isoformat(), "places_total": 5, "places_hors_plateforme": 9}
+        base = self.fiche(self.promo_a, code_vitrine="GeoAI Sassandra", mode="Hybride",
+                          places_total=5, places_hors_plateforme=9)
         self.assertEqual(c.post(url, base).status_code, 200)  # 9 > 5 : refusé
         self.assertRedirects(c.post(url, {**base, "places_hors_plateforme": 1}), reverse("agenda:promotions"))
         self.promo_a.refresh_from_db()
         self.assertEqual((self.promo_a.code_vitrine, self.promo_a.places_restantes), ("geoai-sassandra", 3))
 
-    def test_lancer_une_session_sur_la_vitrine(self):
+    def test_assistant_nouvelle_session_et_publication(self):
+        url = reverse("agenda:session_nouvelle")
+        self.assertEqual(self.client_de(self.form_a).get(url).status_code, 403)
         c = self.client_de(self.admin)
-        debut = (dt.date.today() + dt.timedelta(weeks=6)).isoformat()
-        r = c.post(reverse("agenda:promotions"), {"nom": "GéoAI - Session de mars", "formation": self.formation.pk,
-                                                   "date_debut": debut})
-        promo = Promotion.objects.get(nom="GéoAI - Session de mars")
-        self.assertRedirects(r, reverse("agenda:fiche_vitrine", args=[promo.pk]))
-        self.assertTrue(promo.evenements.exists())  # calendrier généré à la création
-        url = reverse("agenda:fiche_vitrine", args=[promo.pk])
         r = c.get(url)
-        self.assertContains(r, "Enregistrer et publier")
-        self.assertContains(r, "Formateur référent désigné")
-        fiche = {"code_vitrine": "", "domaine": "Socle", "mode": "En ligne", "date_debut": debut,
-                 "places_total": 15, "places_hors_plateforme": 0, "formateur": ""}
-        # Sans formateur référent : fiche enregistrée, publication refusée
-        c.post(url, {**fiche, "action": "publier"})
-        promo.refresh_from_db()
-        self.assertEqual((promo.statut, promo.publiee_vitrine, promo.places_total), ("planifiee", False, 15))
-        # Avec référent : publiée en un geste, visible par l'API de la vitrine
-        r = c.post(url, {**fiche, "formateur": self.form_a.pk, "action": "publier"}, follow=True)
+        self.assertContains(r, "Créer et publier")
+        self.assertContains(r, "Aperçu sur 2kpinnov.org")
+        debut = dt.date.today() + dt.timedelta(weeks=6)
+        donnees = {"formation": self.formation.pk, "date_debut": debut.isoformat(), "nom": "", "formateur": "",
+                   "mode": "En ligne", "places_total": 15, "domaine": "Socle", "code_vitrine": "",
+                   "places_hors_plateforme": 0, "effectif_minimum": 1}
+        # Sans référent : enregistrée en brouillon (nom proposé, calendrier généré), publication refusée
+        r = c.post(url, {**donnees, "action": "publier"})
+        from django.utils.formats import date_format
+        nom = f"{self.formation.titre} - Session de {date_format(debut, 'F Y')}"
+        promo = Promotion.objects.get(nom=nom)
+        self.assertRedirects(r, reverse("agenda:fiche_vitrine", args=[promo.pk]))
+        self.assertEqual((promo.statut, promo.publiee_vitrine, promo.etat_session[0]), ("planifiee", False, "Brouillon"))
+        self.assertTrue(promo.evenements.exists())
+        fiche = reverse("agenda:fiche_vitrine", args=[promo.pk])
+        self.assertContains(c.get(fiche), "Enregistrer et publier")
+        # Référent choisi dans la fiche : publiée en un geste, visible par l'API de la vitrine
+        r = c.post(fiche, self.fiche(promo, formateur=self.form_a.pk, places_total=15, action="publier"), follow=True)
         self.assertContains(r, "Annoncée sur le site vitrine")
         promo.refresh_from_db()
-        self.assertEqual((promo.statut, promo.publiee_vitrine, promo.code_vitrine),
-                         ("inscriptions", True, "geoai-session-de-mars"))
-        self.assertIn("geoai-session-de-mars", [x["id"] for x in self.client.get("/api/sessions/").json()["sessions"]])
-        self.assertContains(c.get(url), "Retirer du site")
-        # Retrait : inscriptions fermées, plus sur le site
-        c.post(url, {"action": "retirer"})
+        self.assertEqual((promo.statut, promo.publiee_vitrine, promo.etat_session[0]), ("inscriptions", True, "En ligne"))
+        code = promo.code_vitrine
+        self.assertIn(code, [x["id"] for x in self.client.get("/api/sessions/").json()["sessions"]])
+        self.assertTrue(promo.lien_vitrine.endswith(f"/pages/inscription.html?session={code}"))
+        liste = c.get(reverse("agenda:promotions"))
+        self.assertContains(liste, "Voir sur le site")
+        self.assertContains(liste, "Inscriptions")
+        # Retrait : brouillon, plus sur le site
+        self.assertContains(c.get(fiche), "Retirer du site")
+        c.post(fiche, {"action": "retirer"})
         promo.refresh_from_db()
         self.assertEqual((promo.statut, promo.publiee_vitrine), ("planifiee", False))
-        self.assertNotIn("geoai-session-de-mars", [x["id"] for x in self.client.get("/api/sessions/").json()["sessions"]])
+        self.assertNotIn(code, [x["id"] for x in self.client.get("/api/sessions/").json()["sessions"]])
+
+    def test_creation_directe_publiee_et_complete(self):
+        c = self.client_de(self.admin)
+        r = c.post(reverse("agenda:session_nouvelle"), {
+            "formation": self.formation.pk, "date_debut": (dt.date.today() + dt.timedelta(weeks=3)).isoformat(),
+            "nom": "Session express", "formateur": self.form_a.pk, "mode": "Présentiel", "places_total": 1,
+            "domaine": "Socle", "code_vitrine": "", "places_hors_plateforme": 1, "effectif_minimum": 1,
+            "action": "publier"})
+        self.assertRedirects(r, reverse("agenda:promotions"))
+        promo = Promotion.objects.get(nom="Session express")
+        self.assertEqual((promo.statut, promo.etat_session[0]), ("inscriptions", "Complète"))
 
     def test_nouvelle_date_de_debut_recale_le_calendrier(self):
         c = self.client_de(self.admin)
         avant = self.promo_a.evenements.order_by("date_debut").first().date_debut
         nouvelle = self.promo_a.date_debut + dt.timedelta(weeks=2)
-        c.post(reverse("agenda:fiche_vitrine", args=[self.promo_a.pk]), {
-            "action": "enregistrer", "domaine": "Socle", "mode": "Hybride", "formateur": self.form_a.pk,
-            "date_debut": nouvelle.isoformat(), "places_total": 20, "places_hors_plateforme": 0})
+        c.post(reverse("agenda:fiche_vitrine", args=[self.promo_a.pk]),
+               self.fiche(self.promo_a, date_debut=nouvelle.isoformat(), action="enregistrer"))
         apres = self.promo_a.evenements.order_by("date_debut").first().date_debut
         self.assertEqual((apres - avant).days, 14)
 
@@ -378,7 +401,7 @@ class WorkflowTests(BaseTest):
         url = reverse("agenda:pilotage", args=[self.promo_a.pk])
         c = self.client_de(self.admin)
         r = c.get(url)
-        self.assertContains(r, "Ouvrir les inscriptions")
+        self.assertContains(r, "Publier sur le site")
         self.assertContains(r, "Conditions manquantes")  # annulation : app_a y suit déjà la formation
         r = c.post(url, {"action": "promotion", "cible": self.P.INSCRIPTIONS}, follow=True)
         self.promo_a.refresh_from_db()
