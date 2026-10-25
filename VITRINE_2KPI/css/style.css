@@ -804,3 +804,5 @@ strong { color: var(--navy); }
 .card-bandeau-texte h3 { margin-top: 0; }
 .card-bandeau-texte p { margin-bottom: 0; }
 @media (max-width: 760px) { .card--bandeau { flex-direction: column; align-items: flex-start; } }
+.social-row a.social-bientot { cursor: default; opacity: 0.85; }
+.social-row a.social-bientot:hover { background: rgba(255,255,255,0.12); transform: none; }
