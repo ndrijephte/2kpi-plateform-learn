@@ -82,6 +82,18 @@ class ParametresTests(BaseTest):
         gift = SimpleUploadedFile("q.gift", "::Q:: La Terre est ronde {T}\n".encode(), "text/plain")
         c.post(reverse("core:quiz", args=[quiz.pk]), {"quoi": "gift", "fichier": gift})
         self.assertEqual(quiz.questions.count(), 2)
+        # Réponses ajoutées et retirées à la volée : cinq lignes envoyées, une retirée
+        q = quiz.questions.get(intitule="Q")
+        self.assertEqual(c.get(reverse("core:question", args=[quiz.pk, q.pk])).context["formset"].total_form_count(), 2)
+        a, b = q.choix.order_by("id")
+        c.post(reverse("core:question", args=[quiz.pk, q.pk]), {
+            **base, "choix-TOTAL_FORMS": "5", "choix-INITIAL_FORMS": "2", "intitule": "Q", "type": "qcm",
+            "choix-0-id": a.pk, "choix-0-texte": "A", "choix-0-correct": "on",
+            "choix-1-id": b.pk, "choix-1-texte": "B", "choix-1-DELETE": "on",
+            "choix-2-texte": "C", "choix-3-texte": "D", "choix-3-correct": "on", "choix-4-texte": "E"})
+        self.assertEqual(list(q.choix.order_by("id").values_list("texte", "correct")),
+                         [("A", True), ("C", False), ("D", True), ("E", False)])
+        self.assertEqual(c.get(reverse("core:question_ajouter", args=[quiz.pk])).context["formset"].total_form_count(), 2)
 
 
 class EnvoiEmailTests(SimpleTestCase):

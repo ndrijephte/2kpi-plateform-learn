@@ -6,6 +6,7 @@ from django.db.models import Count, Max, Q
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from apps.agenda.models import Notification
 from apps.agenda.services import notifier
 from apps.core.permissions import (ADMIN, APPRENANT, formateur_requis, interventions, promotions_visibles,
@@ -107,7 +108,8 @@ def livrables(request):
                      titre=f"Livrable corrigé : {livrable.seance.module.code}",
                      message=f"Note : {livrable.note_sur_20}/20"
                              + (f" - {livrable.observations}" if livrable.observations else ""),
-                     type=Notification.Type.INFO, expediteur=request.user)
+                     type=Notification.Type.INFO, expediteur=request.user, module=livrable.seance.module,
+                     lien=reverse("formation:seance", args=[livrable.seance_id]))
             messages.success(request, f"Note enregistrée pour {livrable.inscription.apprenant}.")
         return redirect(f"{request.path}?{request.GET.urlencode()}")
 
@@ -187,7 +189,8 @@ def autoevaluations(request, promo_id):
         a.save(update_fields=["besoin_aide"])
         notifier([a.inscription.apprenant], titre="Ta demande d'aide a été prise en compte",
                  message=f"Objectif « {a.objectif} » : n'hésite pas à te réévaluer après l'échange avec ton formateur.",
-                 type=Notification.Type.INFO, expediteur=request.user)
+                 type=Notification.Type.INFO, expediteur=request.user, module=a.objectif.seance.module,
+                 lien=reverse("formation:seance", args=[a.objectif.seance_id]))
         messages.success(request, f"Demande de {a.inscription.apprenant.get_full_name() or a.inscription.apprenant} marquée comme traitée.")
         return redirect(f"{request.path}?{request.GET.urlencode()}")
     synthese = autoevaluation.synthese_promotion(promo, seances)

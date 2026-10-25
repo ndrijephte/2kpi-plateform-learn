@@ -4,6 +4,7 @@
 - Le planifier, suivre et corriger les copies : promotions où le formateur intervient sur ce module.
 - Le faire : apprenant à l'inscription confirmée ou en cours dans la promotion, après l'ouverture.
 """
+from django.urls import reverse
 from django.utils import timezone
 from apps.agenda.models import Notification, Promotion
 from apps.agenda.services import notifier
@@ -51,7 +52,8 @@ def annoncer(planification, par):
              f"ouvert du {debut:%d/%m à %H:%M} au {fin:%d/%m à %H:%M}")
     notifier(apprenants, titre=f"Nouvel exercice : {planification.exercice.titre}",
              message=f"{planification.exercice.module.code} - {quand}. Ton résultat et la correction seront "
-                     "visibles après la date limite.", type=Notification.Type.INFO, expediteur=par)
+                     "visibles après la date limite.", type=Notification.Type.INFO, expediteur=par,
+             module=planification.exercice.module, lien=reverse("exercices:faire", args=[planification.pk]))
 
 
 def notifier_resultat(copie):
@@ -62,7 +64,8 @@ def notifier_resultat(copie):
     r = resultat(planif, copie)
     notifier([copie.inscription.apprenant], titre=f"Résultat disponible : {planif.exercice.titre}",
              message=f"{r['points']:g} / {r['bareme']:g} points ({r['note_sur_20']}/20). Consulte la correction dans Exercices.",
-             type=Notification.Type.INFO)
+             type=Notification.Type.INFO, module=planif.exercice.module,
+             lien=reverse("exercices:resultat", args=[planif.pk]))
     copie.resultat_notifie = True
     copie.save(update_fields=["resultat_notifie"])
     return True

@@ -109,13 +109,13 @@ def refuser(request, candidature, motif=""):
                     {"c": candidature})
 
 
-def notifier_admins(titre, message):
+def notifier_admins(titre, message, lien=""):
     from apps.agenda.models import Notification
     from apps.agenda.services import notifier
     from apps.core.permissions import ADMIN
     admins = [p.utilisateur for p in Profil.objects.filter(role=ADMIN, utilisateur__is_active=True)
               .select_related("utilisateur")]
-    notifier(admins, titre=titre, message=message, type=Notification.Type.INFO)
+    notifier(admins, titre=titre, message=message, type=Notification.Type.INFO, lien=lien)
 
 
 @transaction.atomic
@@ -140,7 +140,8 @@ def creer_compte_apprenant(request, d):
             ip=request.META.get("REMOTE_ADDR") or None)
     notifier_admins(f"Nouveau compte apprenant : {user.get_full_name()}",
                     f"{profil.get_categorie_display()} · {user.email} · {profil.telephone}"
-                    + (f" · demande la session « {promo.nom} »" if promo else ""))
+                    + (f" · demande la session « {promo.nom} »" if promo else ""),
+                    lien=reverse("comptes:candidatures") if promo else reverse("comptes:utilisateur_modifier", args=[user.pk]))
     transaction.on_commit(lambda: _envoyer(
         "Bienvenue sur 2KPI Learn - votre compte est créé", "emails/compte_cree.txt", user.email,
         {"user": user, "promotion": promo, "connexion": request.build_absolute_uri(reverse("login"))}))
@@ -183,7 +184,7 @@ def definir_promotions_formateur(user, promotions, par):
         noms = ", ".join(f"« {p.nom} »" for p in ajoutees)
         notifier([user], titre="Nouvelle(s) promotion(s) à encadrer",
                  message=f"L'administration t'a affecté à {noms} (tous les modules).",
-                 type=Notification.Type.INFO, expediteur=par)
+                 type=Notification.Type.INFO, expediteur=par, lien=reverse("agenda:promotions"))
     if hasattr(user, "_interventions"):
         del user._interventions
     return ajoutees, retirees

@@ -15,7 +15,7 @@ class ExerciceAdmin(admin.ModelAdmin):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ("enonce", "exercice", "type", "points")
+    list_display = ("__str__", "exercice", "type", "points")
     list_filter = ("type",)
     inlines = [ChoixInline]
 

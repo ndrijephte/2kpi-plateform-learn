@@ -7,6 +7,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.urls import reverse
 from django.utils.text import slugify
 from apps.core.permissions import (APPRENANT, FORMATEUR, admin_requis, formateur_requis, est_admin,
                                    pilote_promotion, promotions_visibles, q_interventions, role_de)
@@ -54,8 +55,18 @@ def notifications(request):
     if request.method == "POST":
         request.user.notifications.filter(lu=False).update(lu=True)
         return redirect("agenda:notifications")
-    liste = request.user.notifications.select_related("evenement", "evenement__seance", "expediteur")[:50]
+    liste = request.user.notifications.select_related("evenement", "expediteur", "module__formation")[:50]
     return render(request, "agenda/notifications.html", {"notifications": liste})
+
+
+@login_required
+def notification_ouvrir(request, pk):
+    """Clic sur une notification : la marque comme lue et ouvre la page concernée (module, séance…)."""
+    n = get_object_or_404(request.user.notifications.select_related("evenement", "module"), pk=pk)
+    if not n.lu:
+        n.lu = True
+        n.save(update_fields=["lu"])
+    return redirect(n.destination or "agenda:notifications")
 
 
 @formateur_requis
@@ -69,7 +80,7 @@ def envoyer(request):
         annonce.save()
         notifier(form.liste_destinataires, titre=annonce.titre, message=annonce.message,
                  type=Notification.Type.INFO, envoyer_email=annonce.par_email,
-                 expediteur=request.user, annonce=annonce)
+                 expediteur=request.user, annonce=annonce, module=annonce.module)
         messages.success(request, f"Notification envoyée à {annonce.nb_destinataires} personne(s).")
         return redirect("agenda:envoyer")
     historique = Annonce.objects.select_related("expediteur", "promotion")
@@ -311,7 +322,9 @@ def affectations(request, promo_id):
                 if cree:
                     notifier([formateur], titre=f"Nouvelle intervention : {promo.nom}",
                              message=f"L'administration t'a affecté à « {promo.nom} » ({portee}).",
-                             type=Notification.Type.INFO, expediteur=request.user)
+                             type=Notification.Type.INFO, expediteur=request.user,
+                             module=choisis[0] if len(choisis) == 1 else None,
+                             lien=reverse("agenda:planning", args=[promo.pk]))
                 messages.success(request, f"{formateur.get_full_name() or formateur} : {portee}.")
         return redirect("agenda:affectations", promo_id=promo.pk)
     liste = list(promo.affectations.select_related("formateur").prefetch_related("modules")
@@ -356,7 +369,7 @@ def acces_contenus(request, promo_id):
             if apres and not avant and request.POST.get("prevenir"):
                 notifier(apprenants_de(promo), titre=f"Nouveau module disponible : {module.code}",
                          message=f"« {module.titre} » est maintenant accessible dans ton cours.",
-                         type=Notification.Type.INFO, expediteur=request.user)
+                         type=Notification.Type.INFO, expediteur=request.user, module=module)
             messages.success(request, f"{module.code} : {'ouvert' if apres else 'fermé'} pour {promo.nom}.")
         return redirect("agenda:acces", promo_id=promo.pk)
     etats = etats_promotion(promo, modules)

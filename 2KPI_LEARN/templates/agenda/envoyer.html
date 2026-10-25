@@ -33,6 +33,8 @@
     </div>
     <div class="field"><label for="{{ form.titre.id_for_label }}">Titre</label>{{ form.titre }}{{ form.titre.errors }}</div>
     <div class="field"><label for="{{ form.message.id_for_label }}">Message</label>{{ form.message }}{{ form.message.errors }}</div>
+    <div class="field"><label for="{{ form.module.id_for_label }}">{{ form.module.label }}</label>{{ form.module }}
+      <div class="help">{{ form.module.help_text }}</div>{{ form.module.errors }}</div>
     <label class="opt">{{ form.par_email }} {% icon "mail" size=16 %} Envoyer aussi par e-mail</label>
     <div class="btn-row"><button class="btn" type="submit">{% icon "send" size=16 %} Envoyer</button></div>
   </form>
@@ -45,7 +47,7 @@
         <span class="ico-tile coral">{% icon "send" size=16 %}</span>
         <span class="grow"><strong>{{ a.titre }}</strong>
           <small>{{ a.date_envoi|date:"d/m/Y H:i" }} · {% if a.cible == "promotion" and a.promotion %}{{ a.promotion.nom }}{% else %}{{ a.get_cible_display }}{% endif %} · {{ a.nb_destinataires }} destinataire{{ a.nb_destinataires|pluralize }}{% if a.par_email %} · e-mail{% endif %}{% if est_admin and a.expediteur %} · par {{ a.expediteur.get_full_name|default:a.expediteur.username }}{% endif %}</small>
-          <small class="muted msg-apercu">« {{ a.message|truncatechars:120 }} »</small></span>
+          <small class="muted msg-apercu">« {{ a.message|texte_brut|truncatechars:120 }} »</small></span>
       </li>
       {% empty %}<li class="list-item muted">Aucun envoi pour l'instant.</li>{% endfor %}
     </ul>

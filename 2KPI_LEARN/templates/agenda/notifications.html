@@ -16,15 +16,17 @@
   </div>
 </div>
 {% for n in notifications %}
-<div class="notif {% if not n.lu %}nonlu{% endif %}">
+{% with dest=n.destination %}
+<div class="notif {% if not n.lu %}nonlu{% endif %}{% if dest %} cliquable{% endif %}">
   <span class="ico-tile {% if not n.lu %}coral{% endif %}">{% if n.type == "agenda" %}{% icon "calendar-days" size=18 %}{% elif n.type == "rappel" %}{% icon "clock" size=18 %}{% else %}{% icon "info" size=18 %}{% endif %}</span>
   <div class="grow">
-    <div class="card-head" style="margin:0"><strong>{{ n.titre }}</strong><small class="muted">{{ n.date_creation|date:"d/m H:i" }}</small></div>
+    <div class="card-head" style="margin:0"><strong>{% if dest %}<a class="notif-lien" href="{% url 'agenda:notification' n.pk %}">{{ n.titre }}</a>{% else %}{{ n.titre }}{% endif %}{% if n.module %}<span class="notif-module" title="{{ n.module.titre }}">{% icon "book-open" size=11 %} {{ n.module.code }}</span>{% endif %}</strong><small class="muted">{{ n.date_creation|date:"d/m H:i" }}</small></div>
     <small class="muted">{% if n.expediteur %}{% icon "user" size=12 %} De {{ n.expediteur.get_full_name|default:n.expediteur.username }}{% else %}{% icon "bell" size=12 %} Message automatique{% endif %}</small>
-    {% if n.message %}<p>{{ n.message }}</p>{% endif %}
-    {% if n.evenement and n.evenement.seance_id %}<a class="link" href="{% url 'formation:seance' n.evenement.seance_id %}" style="margin-top:6px;font-size:.85rem;display:inline-flex">Voir la séance {% icon "arrow-right" size=14 %}</a>{% endif %}
+    {% if n.message %}<div class="texte-riche">{{ n.message|riche }}</div>{% endif %}
+    {% if dest %}<span class="link" style="margin-top:6px;font-size:.85rem;display:inline-flex">{{ n.libelle_destination }} {% icon "arrow-right" size=14 %}</span>{% endif %}
   </div>
 </div>
+{% endwith %}
 {% empty %}
 <div class="card empty"><span class="ico-tile done">{% icon "check-check" %}</span><strong>Aucune notification</strong>Tu seras prévenu ici des changements de planning.</div>
 {% endfor %}

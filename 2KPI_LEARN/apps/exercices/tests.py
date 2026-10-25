@@ -54,6 +54,66 @@ class ExercicesTests(BaseTest):
         autre = self.compte("form_c", "formateur")
         self.assertEqual(self.client_de(autre).get(reverse("exercices:exercice", args=[ex.pk])).status_code, 404)
 
+    def test_qcm_propositions_ajoutees_et_retirees(self):
+        c = self.client_de(self.form_a)
+        url = reverse("exercices:question_ajouter", args=[self.ex.pk])
+        r = c.get(url)
+        self.assertEqual(r.context["formset"].total_form_count(), 2)  # deux lignes pour commencer
+        self.assertContains(r, "Ajouter une proposition")
+        textes = ["A", "B", "C", "D", "E", "F"]
+        donnees = {"choix-TOTAL_FORMS": 6, "choix-INITIAL_FORMS": 0, "choix-MIN_NUM_FORMS": 0,
+                   "choix-MAX_NUM_FORMS": 1000, "type": "qcm", "enonce": "Six choix ?", "points": "1",
+                   "ordre": 5, "tolerance": "0", "choix-5-correct": "on", "choix-4-DELETE": "on"}
+        donnees.update({f"choix-{i}-texte": t for i, t in enumerate(textes)})
+        c.post(url, donnees)
+        q = self.ex.questions.get(enonce="Six choix ?")
+        self.assertEqual(list(q.choix.values_list("texte", "correct", "ordre")),
+                         [("A", False, 1), ("B", False, 2), ("C", False, 3), ("D", False, 4), ("F", True, 5)])
+        # Modification : on retire « A » et on ajoute « G » (bonne réponse)
+        r = c.get(reverse("exercices:question", args=[self.ex.pk, q.pk]))
+        self.assertEqual(r.context["formset"].total_form_count(), 5)  # pas de lignes vides en trop
+        choix = list(q.choix.all())
+        modif = {"choix-TOTAL_FORMS": 6, "choix-INITIAL_FORMS": 5, "choix-MIN_NUM_FORMS": 0, "choix-MAX_NUM_FORMS": 1000,
+                 "type": "qcm", "enonce": "Six choix ?", "points": "1", "ordre": 5, "tolerance": "0",
+                 "choix-0-DELETE": "on", "choix-5-texte": "G", "choix-5-correct": "on"}
+        for i, ch in enumerate(choix):
+            modif.update({f"choix-{i}-id": ch.pk, f"choix-{i}-texte": ch.texte})
+            if ch.correct:
+                modif[f"choix-{i}-correct"] = "on"
+        c.post(reverse("exercices:question", args=[self.ex.pk, q.pk]), modif)
+        self.assertEqual(list(q.choix.values_list("texte", "correct")),
+                         [("B", False), ("C", False), ("D", False), ("F", True), ("G", True)])
+
+    def test_consignes_mises_en_forme(self):
+        self.ex.consignes = "<p>Lis <strong>tout</strong></p><ol><li>Calcule</li></ol><script>alert(1)</script>"
+        self.ex.save()
+        r = self.client_de(self.app_a).get(reverse("exercices:faire", args=[self.planif.pk]))
+        self.assertContains(r, "<p>Lis <strong>tout</strong></p><ol><li>Calcule</li></ol>")
+        self.assertNotContains(r, "alert(1)")
+        c = self.client_de(self.form_a)
+        c.post(reverse("exercices:exercice", args=[self.ex.pk]), {
+            "quoi": "exercice", "module": self.m1.pk, "titre": self.ex.titre,
+            "consignes": '<p onclick="x()"><em>Avant</em> lundi</p>'})
+        self.ex.refresh_from_db()
+        self.assertEqual(self.ex.consignes, "<p><em>Avant</em> lundi</p>")
+
+    def test_enonce_et_correction_mis_en_forme(self):
+        c = self.client_de(self.form_a)
+        url = reverse("exercices:question_ajouter", args=[self.ex.pk])
+        gestion = {"choix-TOTAL_FORMS": 0, "choix-INITIAL_FORMS": 0, "choix-MIN_NUM_FORMS": 0, "choix-MAX_NUM_FORMS": 1000}
+        c.post(url, {**gestion, "type": "redaction", "points": "2", "ordre": 9, "tolerance": "0",
+                     "enonce": "<p>Explique le <b>NDVI</b></p><ul><li>formule</li><li>usage</li></ul>",
+                     "correction": '<p><i>NDVI</i> = (PIR - R) / (PIR + R)</p><img src=x onerror="alert(1)">'})
+        q = self.ex.questions.get(ordre=9)
+        self.assertEqual(q.enonce, "<p>Explique le <b>NDVI</b></p><ul><li>formule</li><li>usage</li></ul>")
+        self.assertEqual(q.correction, "<p><i>NDVI</i> = (PIR - R) / (PIR + R)</p>")
+        self.assertEqual(str(q), "Explique le NDVI\n- formule\n- usage")
+        r = self.client_de(self.app_a).get(reverse("exercices:faire", args=[self.planif.pk]))
+        self.assertContains(r, "<p>Explique le <b>NDVI</b></p><ul><li>formule</li><li>usage</li></ul>")
+        r = c.post(url, {**gestion, "type": "redaction", "points": "1", "ordre": 10, "tolerance": "0",
+                         "enonce": "<p><br></p>"})
+        self.assertFalse(self.ex.questions.filter(ordre=10).exists())  # énoncé vide refusé
+
     def test_planification_previent_les_apprenants(self):
         c = self.client_de(self.form_a)
         ex = Exercice.objects.create(module=self.m1, titre="Bis")
@@ -65,7 +125,9 @@ class ExercicesTests(BaseTest):
         c.post(reverse("exercices:exercice", args=[ex.pk]), {
             "quoi": "planifier", "promotion": self.promo_a.pk, "ouverture": "2026-11-02T08:00", "date_limite": "2026-11-09T18:00"})
         self.assertTrue(Planification.objects.filter(exercice=ex, promotion=self.promo_a).exists())
-        self.assertTrue(self.app_a.notifications.filter(titre="Nouvel exercice : Bis").exists())
+        n = self.app_a.notifications.get(titre="Nouvel exercice : Bis")
+        planif = Planification.objects.get(exercice=ex, promotion=self.promo_a)
+        self.assertEqual((n.module, n.destination), (self.m1, reverse("exercices:faire", args=[planif.pk])))
         self.assertFalse(self.app_b.notifications.filter(titre="Nouvel exercice : Bis").exists())
         # promo_b n'est pas proposée à form_a
         r = c.post(reverse("exercices:exercice", args=[ex.pk]), {

@@ -9,7 +9,7 @@ from apps.core.permissions import APPRENANT, formateur_requis, modules_gerables,
 from apps.evaluation.utils import inscription_courante
 from . import services
 from .correction import choix_coches, enregistrer_copie, resultat, resultat_visible
-from .forms import ChoixFormSet, CorrectionSeuleForm, ExerciceForm, PlanificationForm, QuestionForm
+from .forms import choix_formset, CorrectionSeuleForm, ExerciceForm, PlanificationForm, QuestionForm
 from .models import Choix, Copie, Exercice, Planification, Question
 
 
@@ -115,7 +115,7 @@ def question(request, exercice_pk, pk=None):
         return render(request, "exercices/question.html", {"exercice": ex, "question": q, "form": form,
                                                           "verrouille": True})
     form = QuestionForm(data, instance=q)
-    formset = ChoixFormSet(data, instance=q, prefix="choix")
+    formset = choix_formset(q)(data, instance=q, prefix="choix")
     erreurs = []
     if request.method == "POST" and form.is_valid() and formset.is_valid():
         t = form.cleaned_data["type"]
@@ -128,7 +128,9 @@ def question(request, exercice_pk, pk=None):
                 if t == Question.Type.QCM:
                     formset.instance = q
                     formset.save()
-                    for n, c in enumerate(q.choix.all(), 1):
+                    gardes = [f.instance for f in formset.forms  # ordre de la page, ajouts compris
+                              if f.instance.pk and f not in formset.deleted_forms]
+                    for n, c in enumerate(gardes, 1):
                         c.ordre = n
                         c.save(update_fields=["ordre"])
                 elif t == Question.Type.VF:

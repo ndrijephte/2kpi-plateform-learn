@@ -20,10 +20,10 @@
   <div class="card-head"><h2 class="section-title"><span class="pill">Q{{ forloop.counter }}</span>
     {% if r and r.points == q.points %}<span class="pill pill-ok">Juste</span>{% elif r and r.points %}<span class="pill pill-warn">Partiel</span>{% else %}<span class="pill pill-ko">Faux</span>{% endif %}</h2>
     <strong>{% if r and r.points is not None %}{{ r.points|floatformat:"-2" }}{% else %}0{% endif %} / {{ q.points|floatformat:"-2" }}</strong></div>
-  <p>{{ q.enonce|linebreaksbr }}</p>
+  <div class="texte-riche enonce">{{ q.enonce|riche }}</div>
   {% include "exercices/_reponse.html" with montrer_attendu=True %}
   {% if r.commentaire %}<p class="commentaire">{% icon "info" size=14 %} <strong>Ton formateur :</strong> {{ r.commentaire }}</p>{% endif %}
-  {% if q.correction %}<p class="correction"><strong>Correction :</strong> {{ q.correction|linebreaksbr }}</p>{% endif %}
+  {% if q.correction %}<div class="correction"><strong>Correction :</strong><div class="texte-riche">{{ q.correction|riche }}</div></div>{% endif %}
 </div>
 {% endwith %}{% endfor %}
 {% endif %}

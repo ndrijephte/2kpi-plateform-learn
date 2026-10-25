@@ -6,6 +6,7 @@ from apps.core.stockage import stockage_prive
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.urls import reverse
 from django.utils.text import slugify
 
 class Formation(models.Model):
@@ -83,6 +84,9 @@ class Module(models.Model):
 
     def __str__(self):
         return f"{self.code} - {self.titre}"
+
+    def get_absolute_url(self):
+        return f"{reverse('formation:module_detail', args=[self.code])}?formation={self.formation_id}"
 
 
 class Seance(models.Model):

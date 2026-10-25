@@ -10,13 +10,13 @@
   {% else %}<p class="alert-inline">{% icon "clock" size=14 %} À rendre avant le {{ planif.date_limite|date:"l d F à H:i" }}</p>{% endif %}
 </div></div>
 {% if planif.ouvert %}
-{% if planif.exercice.consignes %}<div class="card"><h2 class="section-title">{% icon "info" size=18 %} Consignes</h2><p>{{ planif.exercice.consignes|linebreaksbr }}</p></div>{% endif %}
+{% if planif.exercice.consignes %}<div class="card"><h2 class="section-title">{% icon "info" size=18 %} Consignes</h2><div class="texte-riche">{{ planif.exercice.consignes|riche }}</div></div>{% endif %}
 <form method="post">{% csrf_token %}
   {% for item in items %}{% with q=item.q %}
   <fieldset class="card question-exercice">
     <legend class="sr-only">Question {{ forloop.counter }}</legend>
     <div class="card-head"><h2 class="section-title"><span class="pill">Q{{ forloop.counter }}</span></h2><small class="muted">{{ q.points|floatformat:"-2" }} pt{{ q.points|pluralize }}</small></div>
-    <p>{{ q.enonce|linebreaksbr }}</p>
+    <div class="texte-riche enonce">{{ q.enonce|riche }}</div>
     {% if q.type == "qcm" or q.type == "vf" %}
       <div class="choice-list">{% for c in q.choix.all %}
         <label class="opt"><input type="{% if q.type == 'vf' %}radio{% else %}checkbox{% endif %}" name="q{{ q.pk }}" value="{{ c.pk }}" {% if c.pk in item.coches %}checked{% endif %}> <span>{{ c.texte }}</span></label>{% endfor %}</div>

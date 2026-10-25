@@ -1,5 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
+from apps.core.texte_riche import ChampRiche, EditeurRiche
 from .models import Choix, Exercice, Planification, Question
 
 
@@ -7,7 +8,8 @@ class ExerciceForm(forms.ModelForm):
     class Meta:
         model = Exercice
         fields = ["module", "titre", "consignes"]
-        widgets = {"consignes": forms.Textarea(attrs={"rows": 4})}
+        field_classes = {"consignes": ChampRiche}
+        widgets = {"consignes": EditeurRiche}
 
     def __init__(self, *a, modules, **kw):
         super().__init__(*a, **kw)
@@ -22,7 +24,8 @@ class QuestionForm(forms.ModelForm):
     class Meta:
         model = Question
         fields = ["type", "enonce", "points", "correction", "reponses_acceptees", "valeur_attendue", "tolerance", "ordre"]
-        widgets = {"enonce": forms.Textarea(attrs={"rows": 3}), "correction": forms.Textarea(attrs={"rows": 3})}
+        field_classes = {"enonce": ChampRiche, "correction": ChampRiche}
+        widgets = {"enonce": EditeurRiche({"rows": 4}), "correction": EditeurRiche({"rows": 4})}
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
@@ -48,11 +51,19 @@ class CorrectionSeuleForm(forms.ModelForm):
     class Meta:
         model = Question
         fields = ["correction"]
-        widgets = {"correction": forms.Textarea(attrs={"rows": 4})}
+        field_classes = {"correction": ChampRiche}
+        widgets = {"correction": EditeurRiche}
 
 
-ChoixFormSet = inlineformset_factory(Question, Choix, fields=["texte", "correct"], extra=4, can_delete=True,
-                                     labels={"texte": "Proposition", "correct": "Bonne réponse"})
+def choix_formset(question):
+    """Propositions d'un QCM : lignes ajoutées et retirées à la volée dans la page (question.html) ;
+    deux lignes vides pour commencer une question sans propositions."""
+    extra = 0 if question.pk and question.choix.exists() else 2
+    return inlineformset_factory(Question, Choix, fields=["texte", "correct"], extra=extra, can_delete=True,
+                                 labels={"texte": "Proposition", "correct": "Bonne réponse"},
+                                 widgets={"texte": forms.TextInput(attrs={"placeholder": "Saisis une proposition",
+                                                                          "aria-label": "Proposition"}),
+                                          "correct": forms.CheckboxInput(attrs={"aria-label": "Bonne réponse"})})
 
 
 class PlanificationForm(forms.ModelForm):

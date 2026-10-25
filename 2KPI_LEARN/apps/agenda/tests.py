@@ -50,6 +50,46 @@ class EnvoiNotificationsTests(BaseTest):
                                 .values_list("destinataire__username", flat=True)), ["form_a", "form_b"])
         self.assertEqual(self.client_de(self.app_a).get(self.url).status_code, 403)
 
+    def test_message_mis_en_forme_et_module_concerne(self):
+        c = self.client_de(self.form_a)
+        c.post(self.url, {"cible": "promotion", "promotion": self.promo_a.pk, "titre": "Consignes TP",
+                          "module": self.m1.pk, "par_email": "on",
+                          "message": '<p><b>Important</b> <span style="color:red">à lire</span></p>'
+                                     '<ul><li>Point 1</li><li>Point 2</li></ul><img src=x onerror=alert(1)>'
+                                     '<a href="javascript:alert(1)">piège</a><a href="https://2kpinnov.org">site</a>'})
+        n = Notification.objects.get(titre="Consignes TP")
+        self.assertEqual(n.message, '<p><b>Important</b> à lire</p><ul><li>Point 1</li><li>Point 2</li></ul>piège'
+                                    '<a href="https://2kpinnov.org" target="_blank" rel="noopener noreferrer">site</a>')
+        self.assertEqual(n.module, self.m1)
+        self.assertEqual(n.destination, self.m1.get_absolute_url())
+        from django.core import mail
+        self.assertIn("- Point 1\n- Point 2", mail.outbox[-1].body)
+        r = self.client_de(self.app_a).get("/agenda/notifications/")
+        self.assertContains(r, "<b>Important</b>", html=False)
+        self.assertContains(r, f"Ouvrir le module {self.m1.code}")
+        # Un message vide (seulement des balises) est refusé
+        r = c.post(self.url, {"cible": "promotion", "promotion": self.promo_a.pk, "titre": "Vide", "message": "<p><br></p>"})
+        self.assertFalse(Notification.objects.filter(titre="Vide").exists())
+
+
+class OuvertureNotificationTests(BaseTest):
+    def test_clic_marque_lue_et_ouvre_la_page_concernee(self):
+        from .services import notifier
+        n, = notifier([self.app_a], titre="Module ouvert", message="", module=self.m1, envoyer_email=False)
+        r = self.client_de(self.app_a).get(reverse("agenda:notification", args=[n.pk]))
+        self.assertRedirects(r, self.m1.get_absolute_url(), fetch_redirect_response=False)
+        n.refresh_from_db()
+        self.assertTrue(n.lu)
+        lien, = notifier([self.app_a], titre="Lien", message="", lien="/agenda/", envoyer_email=False)
+        self.assertRedirects(self.client_de(self.app_a).get(reverse("agenda:notification", args=[lien.pk])),
+                             "/agenda/", fetch_redirect_response=False)
+        # Lien externe ignoré, notification sans cible : retour à la liste
+        externe, = notifier([self.app_a], titre="Ext", message="", lien="//exemple.org", envoyer_email=False)
+        self.assertRedirects(self.client_de(self.app_a).get(reverse("agenda:notification", args=[externe.pk])),
+                             reverse("agenda:notifications"), fetch_redirect_response=False)
+        # La notification d'un autre utilisateur reste inaccessible
+        self.assertEqual(self.client_de(self.app_b).get(reverse("agenda:notification", args=[n.pk])).status_code, 404)
+
 
 @override_settings(VITRINE_ORIGINS=["https://www.2kpinnov.org"])
 class CatalogueVitrineTests(BaseTest):

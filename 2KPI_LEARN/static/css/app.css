@@ -592,6 +592,8 @@ dt.niveau-3,i.niveau-3{color:var(--niv3)} dt.niveau-4,i.niveau-4{color:var(--niv
 
 /* Exercices */
 .question-exercice p{margin:0 0 10px}
+.question-exercice .enonce{margin:0 0 12px}
+.correction .texte-riche{margin-top:4px}
 .choix-liste{list-style:none;margin:6px 0 10px;padding:0;display:flex;flex-direction:column;gap:6px}
 .choix-liste li{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.92rem}
 .choix-liste li.juste{border-color:var(--green);background:var(--green-50)}
@@ -603,3 +605,33 @@ dt.niveau-3,i.niveau-3{color:var(--niv3)} dt.niveau-4,i.niveau-4{color:var(--niv
 .correction-saisie{margin-top:12px}
 fieldset.question-exercice{min-width:0}
 fieldset.question-exercice textarea{width:100%}
+
+/* Éditeur de texte mis en forme (static/js/editeur.js) et rendu des textes riches */
+.editeur{border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:#fff;overflow:hidden}
+.editeur:focus-within{border-color:var(--coral);box-shadow:0 0 0 3px rgba(239,106,82,.15)}
+.editeur-barre{display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:4px 6px;border-bottom:1px solid var(--border);background:var(--bg)}
+.editeur-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:0;border-radius:7px;background:transparent;color:var(--soft);cursor:pointer}
+.editeur-btn:hover{background:var(--surface);color:var(--navy)}
+.editeur-btn[aria-pressed=true]{background:var(--surface);color:var(--coral);box-shadow:inset 0 0 0 1px var(--border-strong)}
+.editeur-sep{width:1px;height:18px;margin:0 4px;background:var(--border-strong)}
+.editeur-zone{min-height:7.5rem;max-height:26rem;overflow-y:auto;padding:10px 12px;font-size:.92rem;color:var(--text);outline:none}
+.editeur-zone.vide::before{content:attr(data-placeholder);color:var(--soft);pointer-events:none}
+.texte-riche>:first-child{margin-top:0}
+.texte-riche>:last-child{margin-bottom:0}
+.texte-riche p{margin:0 0 .6em}
+.texte-riche ul,.texte-riche ol{margin:.3em 0 .6em;padding-left:1.4em}
+.texte-riche li{margin:.15em 0}
+.texte-riche a{text-decoration:underline}
+.notif .texte-riche{margin:.2rem 0 0;color:var(--soft);font-size:.9rem}
+.notif .texte-riche p{margin:0 0 .35em}
+.notif.cliquable{position:relative;transition:border-color .15s}
+.notif.cliquable:hover{border-color:var(--border-strong)}
+.notif-lien{color:inherit}
+.notif-lien::after{content:"";position:absolute;inset:0;border-radius:12px}  /* toute la carte est cliquable */
+.notif .texte-riche a{position:relative;z-index:1}
+.notif-module{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--bg);border:1px solid var(--border);font-size:.72rem;font-weight:600;color:var(--navy)}
+.choix-tbl .col-retirer{width:1%;white-space:nowrap;text-align:right}
+.choix-tbl td.col-num,.choix-tbl th.col-num{width:1%;white-space:nowrap;text-align:center;font-weight:600}
+.choix-tbl td.col-texte{width:100%}
+.choix-tbl tr[hidden]{display:none}
+.choix-tbl.sans-correct .col-correct{display:none}

@@ -124,3 +124,17 @@ def avatar(user, classe=""):
     if photo:
         return format_html('<span class="avatar {}"><img src="{}" alt=""></span>', classe, photo.url)
     return format_html('<span class="avatar {}">{}</span>', classe, initiales(user))
+
+
+@register.filter
+def riche(texte):
+    """Consignes / messages mis en forme : HTML filtré (liste blanche) ou texte brut avec retours à la ligne."""
+    from apps.core.texte_riche import rendre
+    return rendre(texte)
+
+
+@register.filter
+def texte_brut(texte):
+    """Version sans mise en forme, pour les aperçus tronqués."""
+    from apps.core.texte_riche import en_texte
+    return en_texte(texte)

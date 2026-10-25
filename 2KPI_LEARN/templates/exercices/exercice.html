@@ -21,12 +21,12 @@
         <h2 class="section-title"><span class="pill">Q{{ forloop.counter }}</span> {{ q.get_type_display }}</h2>
         <strong>{{ q.points|floatformat:"-2" }} pt{{ q.points|pluralize }}</strong>
       </div>
-      <p>{{ q.enonce|linebreaksbr }}</p>
+      <div class="texte-riche enonce">{{ q.enonce|riche }}</div>
       {% if q.type == "qcm" or q.type == "vf" %}<ul class="choix-liste">{% for c in q.choix.all %}<li class="{% if c.correct %}juste{% endif %}">{% if c.correct %}{% icon "check" size=14 %}{% else %}{% icon "x" size=14 %}{% endif %} {{ c.texte }}</li>{% endfor %}</ul>
       {% elif q.type == "courte" %}<p class="muted"><small>Réponses acceptées : {{ q.reponse_attendue }}</small></p>
       {% elif q.type == "numerique" %}<p class="muted"><small>Attendu : {{ q.reponse_attendue }}</small></p>
       {% else %}<p class="muted"><small>Réponse rédigée : notée par le formateur après la date limite.</small></p>{% endif %}
-      {% if q.correction %}<p class="correction"><strong>Correction :</strong> {{ q.correction|linebreaksbr }}</p>{% endif %}
+      {% if q.correction %}<div class="correction"><strong>Correction :</strong><div class="texte-riche">{{ q.correction|riche }}</div></div>{% endif %}
       <div class="actions">
         <a class="btn btn-sm btn-secondary" href="{% url 'exercices:question' exercice.pk q.pk %}">{% icon "pencil" size=14 %} {% if verrouille %}Modifier la correction{% else %}Modifier{% endif %}</a>
         {% if not verrouille %}<form method="post" action="{% url 'exercices:question_supprimer' exercice.pk q.pk %}" class="inline" onsubmit="return confirm('Supprimer cette question ?')">{% csrf_token %}

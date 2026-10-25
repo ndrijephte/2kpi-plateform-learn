@@ -77,7 +77,8 @@
       </div>
       <ul class="list">
         {% for n in notifications %}
-        <li class="list-item"><span class="ico-tile coral">{% icon "bell" size=18 %}</span><span class="grow"><strong>{{ n.titre }}</strong><small>il y a {{ n.date_creation|timesince }}</small></span></li>
+        <li><a class="list-item" href="{% url 'agenda:notification' n.pk %}"><span class="ico-tile coral">{% icon "bell" size=18 %}</span>
+          <span class="grow"><strong>{{ n.titre }}</strong><small>{% if n.module %}{{ n.module.code }} · {% endif %}il y a {{ n.date_creation|timesince }}</small></span><span class="chev">{% icon "chevron-right" size=18 %}</span></a></li>
         {% empty %}
         <li class="list-item"><span class="ico-tile done">{% icon "check-check" size=18 %}</span><span class="grow muted">Tu es à jour.</span></li>
         {% endfor %}

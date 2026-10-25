@@ -8,6 +8,7 @@
 """
 from collections import Counter
 from django.db import transaction
+from django.urls import reverse
 from apps.formation.models import ObjectifSeance
 from .models import AutoEvaluation
 
@@ -76,7 +77,9 @@ def signaler_besoin_aide(inscription, seance, objectifs):
              titre=f"Demande d'aide : {apprenant} ({seance.module.code})",
              message=f"Séance « {seance.theme or seance} » - objectif(s) : "
                      + " ; ".join(o.libelle for o in objectifs),
-             type=Notification.Type.INFO, expediteur=inscription.apprenant)
+             type=Notification.Type.INFO, expediteur=inscription.apprenant, module=seance.module,
+             lien=reverse("evaluation:autoevaluations", args=[inscription.promotion_id])
+                  + f"?filtre=aide&module={seance.module_id}")
 
 
 def apprenants_concernes(seance):
@@ -106,7 +109,8 @@ def annoncer_objectifs(seance, nouveaux, par):
     notifier(destinataires, titre=f"{seance.module.code} : {n} objectif{'s' if n > 1 else ''} à auto-évaluer",
              message=f"Séance « {seance.theme or seance} » - " + " ; ".join(o.libelle for o in nouveaux)
                      + ". Positionne-toi sur la page de la séance.",
-             type=Notification.Type.INFO, envoyer_email=False, expediteur=par)
+             type=Notification.Type.INFO, envoyer_email=False, expediteur=par, module=seance.module,
+             lien=reverse("formation:seance", args=[seance.pk]))
     return len(destinataires)
 
 

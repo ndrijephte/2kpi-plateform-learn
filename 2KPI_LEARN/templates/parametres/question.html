@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load ui %}
+{% load static ui %}
 {% block title %}Paramètres - {{ libelle }}{% endblock %}
 {% block crumbs %}{% include "parametres/_fil.html" %}{% endblock %}
 {% block content %}
@@ -19,21 +19,17 @@
       <div class="field" data-pour="court num">
         <label for="{{ form.reponse_courte.id_for_label }}">{{ form.reponse_courte.label }}</label>{{ form.reponse_courte }}{{ form.reponse_courte.errors }}
       </div>
-      <div data-pour="qcm vf appariement">
+      <div data-pour="qcm vf appariement" data-choix-bloc data-prefix="choix" data-libelle="Réponse">
         <label class="field-label">Réponses proposées</label>
         <table class="tbl choix-tbl">
-          <thead><tr><th>Réponse</th><th class="col-correct">Correcte</th><th class="num">Retirer</th></tr></thead>
-          <tbody>
-          {% for f in formset %}
-            <tr>{{ f.id }}
-              <td>{{ f.texte }}{{ f.texte.errors }}</td>
-              <td class="col-correct">{{ f.correct }}</td>
-              <td class="num">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
-            </tr>
-          {% endfor %}
-          </tbody>
+          <thead><tr><th class="col-num">#</th><th>Réponse</th><th class="col-correct">Correcte</th><th class="col-retirer"><span class="sr-only">Retirer</span></th></tr></thead>
+          <tbody data-choix>{% for f in formset %}{% include "partials/choix_ligne.html" %}{% endfor %}</tbody>
         </table>
-        <p class="muted"><small>Lignes vides ignorées. Enregistre puis rouvre la question pour en ajouter d'autres.</small></p>
+        <template data-choix-modele>{% include "partials/choix_ligne.html" with f=formset.empty_form %}</template>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-sm btn-secondary" type="button" data-choix-ajouter>{% icon "plus" size=14 %} Ajouter une réponse</button>
+          <small class="muted" data-choix-compte aria-live="polite"></small>
+        </div>
       </div>
       <div class="btn-row">
         <button class="btn" type="submit">{% icon "check" size=16 %} Enregistrer</button>
@@ -57,10 +53,11 @@
   function maj() {
     var t = sel.value;
     document.querySelectorAll("[data-pour]").forEach(function (b) { b.hidden = b.dataset.pour.split(" ").indexOf(t) < 0; });
-    document.querySelectorAll(".col-correct").forEach(function (c) { c.hidden = t === "appariement"; });
+    document.querySelector(".choix-tbl").classList.toggle("sans-correct", t === "appariement");
     aide.textContent = aides[t] || "";
   }
   sel.addEventListener("change", maj); maj();
 })();
 </script>
+<script src="{% static 'js/choix.js' %}" defer></script>
 {% endblock %}

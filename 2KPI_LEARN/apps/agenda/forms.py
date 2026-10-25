@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from apps.core.permissions import ADMIN, APPRENANT, FORMATEUR, promotions_visibles, role_de
+from apps.core.permissions import ADMIN, APPRENANT, FORMATEUR, modules_gerables, promotions_visibles, role_de
+from apps.core.texte_riche import ChampRiche, EditeurRiche
 from .models import Annonce
 
 User = get_user_model()
@@ -18,9 +19,9 @@ class AnnonceForm(forms.ModelForm):
 
     class Meta:
         model = Annonce
-        fields = ["cible", "promotion", "destinataires", "titre", "message", "par_email"]
-        widgets = {"message": forms.Textarea(attrs={"rows": 5}),
-                   "cible": forms.RadioSelect}
+        fields = ["cible", "promotion", "destinataires", "titre", "message", "module", "par_email"]
+        field_classes = {"message": ChampRiche}
+        widgets = {"cible": forms.RadioSelect, "message": EditeurRiche}
         labels = {"cible": "Envoyer à", "promotion": "Promotion"}
 
     def __init__(self, *a, auteur, **kw):
@@ -40,6 +41,10 @@ class AnnonceForm(forms.ModelForm):
         self.fields["destinataires"].queryset = personnes.select_related("profil").order_by(
             "first_name", "last_name", "username")
         self.fields["cible"].initial = Annonce.Cible.PROMOTION
+        self.fields["module"].queryset = (modules_gerables(auteur).select_related("formation")
+                                          .order_by("formation__titre", "ordre"))
+        self.fields["module"].label_from_instance = lambda m: f"{m.formation.titre} · {m.code} - {m.titre}"
+        self.fields["module"].empty_label = "Aucun module en particulier"
 
     def clean(self):
         d = super().clean()

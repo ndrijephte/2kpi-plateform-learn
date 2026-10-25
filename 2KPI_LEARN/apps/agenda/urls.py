@@ -5,6 +5,7 @@ app_name = "agenda"
 urlpatterns = [
     path("", views.mon_agenda, name="mon_agenda"),
     path("notifications/", views.notifications, name="notifications"),
+    path("notifications/<int:pk>/", views.notification_ouvrir, name="notification"),
     path("notifications/envoyer/", views.envoyer, name="envoyer"),
     path("promotions/", views.promotions, name="promotions"),
     path("promotions/<int:promo_id>/generer/", views.generer_promo, name="generer_promo"),

@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from django.db import transaction
 from django.db.models import Count, Q
+from django.urls import reverse
 from django.utils import timezone
 from .models import Evenement, Notification, Promotion
 
@@ -235,7 +236,7 @@ def _demarrer(promo, par):
     apprenants, formateurs = _destinataires(promo)
     notifier(apprenants + formateurs, titre=f"La session « {promo.nom} » démarre",
              message="Retrouve le calendrier dans ton agenda ; les modules s'ouvrent au fil des semaines.",
-             type=Notification.Type.INFO, expediteur=par)
+             type=Notification.Type.INFO, expediteur=par, lien=reverse("agenda:mon_agenda"))
     restantes = promo.inscriptions.filter(statut=Inscription.Statut.ADMISE).count()
     return (f" {_pluriel(len(apprenants), 'apprenant')} en formation."
             + (f" {_pluriel(restantes, 'inscription')} encore à confirmer." if restantes else ""))
@@ -276,7 +277,7 @@ def _cloturer(promo, par):
                  message=f"{insc.get_statut_display()} - assiduité {insc.taux_assiduite} %, "
                          f"note finale {insc.note_finale}/20."
                          + (" Ton attestation de réussite est disponible sur ton tableau de bord." if ok else ""),
-                 type=Notification.Type.INFO, expediteur=par)
+                 type=Notification.Type.INFO, expediteur=par, lien=reverse("tableau_bord:accueil"))
     abandons = _abandonner_restantes(promo, par, "Inscription non confirmée à la clôture de la session")
     return (f" {validees}/{len(inscriptions)} validée(s)."
             + (f" {_pluriel(abandons, 'inscription')} non confirmée(s) passée(s) en abandon." if abandons else ""))
@@ -350,7 +351,7 @@ def changer_statut_inscription(insc, cible, par=None, motif="", systeme=False):
         from .services import notifier
         notifier([insc.apprenant], titre=f"Inscription confirmée : {insc.promotion.nom}",
                  message=f"Démarrage le {insc.promotion.date_debut:%d/%m/%Y}. Tes modules s'ouvriront au fil du calendrier.",
-                 type=Notification.Type.INFO, expediteur=par)
+                 type=Notification.Type.INFO, expediteur=par, lien=reverse("formation:modules"))
         if insc.promotion.statut == P.EN_COURS:  # arrivée en cours de session
             changer_statut_inscription(insc, S.EN_COURS, par=par, motif="Promotion déjà démarrée", systeme=True)
     return insc
@@ -381,7 +382,8 @@ def demarrages_du_jour(aujourd_hui=None):
         titre = f"Démarrage bloqué : {promo.nom}"
         if not Notification.objects.filter(titre=titre).exists():  # une alerte par promotion
             notifier_admins(titre, f"La session devait démarrer le {promo.date_debut:%d/%m/%Y} mais elle est "
-                                   f"« {promo.get_statut_display()} ». Ouvre son pilotage pour voir ce qui manque.")
+                                   f"« {promo.get_statut_display()} ». Ouvre son pilotage pour voir ce qui manque.",
+                            lien=reverse("agenda:pilotage", args=[promo.pk]))
     return demarrees, en_retard
 
 
@@ -400,12 +402,14 @@ def relances_presences(maintenant=None):
         titre = f"Présences à saisir : {ev.libelle} ({jour})"
         if not Notification.objects.filter(evenement=ev, titre=titre).exists():
             notifier(formateurs_de(ev), titre=titre, type=Notification.Type.RAPPEL, evenement=ev,
+                     lien=reverse("agenda:presences", args=[ev.pk]),
                      message=f"« {ev.promotion.nom} » : la feuille de présence de cette séance n'est pas enregistrée. "
                              "Elle conditionne l'assiduité des apprenants et la clôture de la promotion.")
             rappels += 1
         titre_admin = f"Présences non saisies depuis 3 jours : {ev.libelle} ({jour})"
         if ev.date_debut <= maintenant - dt.timedelta(days=3) and not Notification.objects.filter(titre=titre_admin).exists():
             noms = ", ".join(f.get_full_name() or f.username for f in formateurs_de(ev)) or "aucun formateur"
-            notifier_admins(titre_admin, f"« {ev.promotion.nom} » · formateur(s) : {noms}.")
+            notifier_admins(titre_admin, f"« {ev.promotion.nom} » · formateur(s) : {noms}.",
+                            lien=reverse("agenda:presences", args=[ev.pk]))
             alertes += 1
     return rappels, alertes

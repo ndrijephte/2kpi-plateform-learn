@@ -15,7 +15,7 @@
   <div class="card question-exercice">
     <div class="card-head"><h2 class="section-title"><span class="pill">Q{{ forloop.counter }}</span> {{ q.get_type_display }}</h2>
       <strong>{% if r and r.points is not None %}{{ r.points|floatformat:"-2" }}{% else %}…{% endif %} / {{ q.points|floatformat:"-2" }}</strong></div>
-    <p>{{ q.enonce|linebreaksbr }}</p>
+    <div class="texte-riche enonce">{{ q.enonce|riche }}</div>
     {% include "exercices/_reponse.html" with montrer_attendu=True %}
     {% if r %}
     <div class="form-grid correction-saisie">

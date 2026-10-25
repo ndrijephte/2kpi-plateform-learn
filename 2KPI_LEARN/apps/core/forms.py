@@ -152,9 +152,15 @@ class QuestionForm(forms.ModelForm):
         widgets = {"intitule": forms.Textarea(attrs={"rows": 3})}
 
 
-ChoixFormSet = inlineformset_factory(
-    Question, Choix, fields=["texte", "correct"], extra=4, can_delete=True,
-    labels={"texte": "Réponse", "correct": "Correcte"})
+def choix_formset(question):
+    """Réponses proposées : lignes ajoutées et retirées à la volée (partials/choix_ligne.html, js/choix.js) ;
+    deux lignes vides pour commencer une question sans réponses."""
+    extra = 0 if question.pk and question.choix.exists() else 2
+    return inlineformset_factory(
+        Question, Choix, fields=["texte", "correct"], extra=extra, can_delete=True,
+        labels={"texte": "Réponse", "correct": "Correcte"},
+        widgets={"texte": forms.TextInput(attrs={"placeholder": "Saisis une réponse", "aria-label": "Réponse"}),
+                 "correct": forms.CheckboxInput(attrs={"aria-label": "Réponse correcte"})})
 
 
 def verifier_question(type_q, reponse, choix):

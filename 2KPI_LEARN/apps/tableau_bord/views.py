@@ -29,7 +29,7 @@ def _apprenant(request):
     user = request.user
     inscription = inscription_courante(user)
     ctx = {"inscription": inscription, "synthese": None, "a_venir": [], "reprendre": None,
-           "notifications": user.notifications.filter(lu=False)[:3],
+           "notifications": user.notifications.filter(lu=False).select_related("evenement", "module")[:3],
            "taches": a_faire.taches_apprenant(user, inscription)}
     if not inscription:  # compte créé en ligne : demande d'inscription en attente de validation ?
         ctx["demande"] = user.candidatures.filter(statut="nouvelle").order_by("-date_reception").first()
@@ -76,7 +76,7 @@ def _pilotage(request, admin):
                           .select_related("promotion", "seance", "seance__module").order_by("date_debut")[:5]),
         "a_corriger": livrables.select_related("inscription__apprenant", "seance__module")
                                .order_by("seance__module__ordre", "seance__ordre")[:5],
-        "notifications": user.notifications.filter(lu=False)[:3],
+        "notifications": user.notifications.filter(lu=False).select_related("evenement", "module")[:3],
         "taches": a_faire.taches_admin(user) if admin else a_faire.taches_formateur(user),
         "aides": (AutoEvaluation.objects
                   .filter(q_interventions(user, promotion="inscription__promotion", module="objectif__seance__module"),

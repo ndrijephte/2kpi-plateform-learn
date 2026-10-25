@@ -1,0 +1,7 @@
+{% load ui %}<tr{% if f.DELETE.value %} hidden{% endif %}>
+  <td class="col-num muted" data-choix-num></td>
+  <td class="col-texte">{{ f.id }}{{ f.texte }}{{ f.texte.errors }}</td>
+  <td class="col-correct">{{ f.correct }}</td>
+  <td class="col-retirer"><span hidden>{{ f.DELETE }}</span>
+    <button class="btn btn-sm btn-secondary" type="button" data-choix-retirer title="Retirer cette ligne">{% icon "trash" size=14 %}<span class="sr-only">Retirer cette ligne</span></button></td>
+</tr>

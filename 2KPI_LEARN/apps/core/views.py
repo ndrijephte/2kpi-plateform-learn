@@ -11,9 +11,9 @@ from apps.agenda.models import Indisponibilite
 from apps.formation.models import Competence, Formation, Module, Seance
 from apps.evaluation.gift import importer_gift
 from apps.evaluation.models import Question, Quiz
-from .forms import (AIDE_TYPES, SECTIONS, ChoixFormSet, CompetenceForm, CriteresFormSet, FormationForm, GiftForm,
+from .forms import (AIDE_TYPES, SECTIONS, CompetenceForm, CriteresFormSet, FormationForm, GiftForm,
                     IndisponibiliteForm, ModuleForm, PrerequisFormSet, QuestionForm, QuizForm, SeanceForm,
-                    parametres_form, verifier_question)
+                    choix_formset, parametres_form, verifier_question)
 from .models import Parametres
 from .permissions import admin_requis
 
@@ -267,7 +267,7 @@ def question(request, quiz_pk, pk=None):
     obj = get_object_or_404(Question, pk=pk, quiz=q) if pk else Question(quiz=q)
     data = request.POST if request.method == "POST" else None
     form = QuestionForm(data, instance=obj)
-    formset = ChoixFormSet(data, instance=obj, prefix="choix")
+    formset = choix_formset(obj)(data, instance=obj, prefix="choix")
     erreurs = []
     if request.method == "POST" and form.is_valid() and formset.is_valid():
         choix = [(f.cleaned_data["texte"].strip(), f.cleaned_data.get("correct", False))

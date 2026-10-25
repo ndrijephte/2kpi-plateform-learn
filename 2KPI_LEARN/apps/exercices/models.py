@@ -68,7 +68,8 @@ class Question(models.Model):
         ordering = ["ordre", "id"]
 
     def __str__(self):
-        return self.enonce[:70]
+        from apps.core.texte_riche import en_texte
+        return en_texte(self.enonce)[:70]
 
     @property
     def reponse_attendue(self):

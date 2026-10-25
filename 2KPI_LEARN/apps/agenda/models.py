@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
-from apps.formation.models import Formation, Seance
+from django.urls import reverse
+from apps.formation.models import Formation, Module, Seance
 
 
 class Promotion(models.Model):
@@ -232,6 +233,9 @@ class Annonce(models.Model):
     cible = models.CharField(max_length=12, choices=Cible.choices)
     promotion = models.ForeignKey(Promotion, on_delete=models.SET_NULL, null=True, blank=True,
                                   related_name="annonces")
+    module = models.ForeignKey(Module, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+                               verbose_name="Module concerné",
+                               help_text="Facultatif : un clic sur la notification ouvre ce module.")
     par_email = models.BooleanField("Envoyer aussi par e-mail", default=False)
     nb_destinataires = models.PositiveIntegerField(default=0)
     date_envoi = models.DateTimeField(auto_now_add=True)
@@ -263,6 +267,10 @@ class Notification(models.Model):
                                    help_text="Vide = message automatique de la plateforme.")
     annonce = models.ForeignKey(Annonce, on_delete=models.CASCADE, null=True, blank=True,
                                 related_name="notifications")
+    module = models.ForeignKey(Module, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+                               help_text="Module concerné (affiché avec la notification).")
+    lien = models.CharField(max_length=300, blank=True,
+                            help_text="Page ouverte au clic (chemin interne) ; à défaut, la séance ou le module.")
     lu = models.BooleanField(default=False)
     date_creation = models.DateTimeField(auto_now_add=True)
 
@@ -273,3 +281,22 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.titre} → {self.destinataire}"
+
+    @property
+    def destination(self):
+        """Page ouverte au clic : lien explicite, sinon la séance de l'événement, sinon le module."""
+        if self.lien.startswith("/") and not self.lien.startswith("//"):
+            return self.lien
+        if self.evenement_id and self.evenement.seance_id:
+            return reverse("formation:seance", args=[self.evenement.seance_id])
+        if self.module_id:
+            return self.module.get_absolute_url()
+        return ""
+
+    @property
+    def libelle_destination(self):
+        if self.lien:
+            return "Ouvrir"
+        if self.evenement_id and self.evenement.seance_id:
+            return "Voir la séance"
+        return f"Ouvrir le module {self.module.code}" if self.module_id else ""

@@ -77,18 +77,24 @@ def apprenants_de(promotion):
 
 
 def notifier(destinataires, titre, message, evenement=None, type="info", envoyer_email=True,
-             expediteur=None, annonce=None):
+             expediteur=None, annonce=None, module=None, lien=""):
     """Crée une notification in-app pour chaque destinataire, + e-mail si possible.
-    `expediteur` : admin/formateur à l'origine du message (None = message automatique)."""
+    `expediteur` : admin/formateur à l'origine du message (None = message automatique).
+    `lien` : page ouverte au clic ; à défaut, la séance de l'événement ou le `module` concerné
+    (déduit de la séance si absent). `message` peut être mis en forme (texte riche)."""
+    from apps.core.texte_riche import en_texte, est_riche, rendre
     from .models import Notification
+    if module is None and evenement is not None and evenement.seance_id:
+        module = evenement.seance.module
+    texte, html = en_texte(message), (rendre(message) if est_riche(message) else None)
     crees = []
     for u in destinataires:
         crees.append(Notification.objects.create(
             destinataire=u, titre=titre, message=message, evenement=evenement, type=type,
-            expediteur=expediteur, annonce=annonce))
+            expediteur=expediteur, annonce=annonce, module=module, lien=lien))
         if envoyer_email and getattr(u, "email", ""):
             try:
-                send_mail(titre, message, settings.DEFAULT_FROM_EMAIL, [u.email])
+                send_mail(titre, texte, settings.DEFAULT_FROM_EMAIL, [u.email], html_message=html)
             except Exception:  # l'e-mail est un plus : la notification in-app est déjà créée
                 logger.warning("Échec d'envoi de l'e-mail « %s » à %s", titre, u.email, exc_info=True)
     return crees
